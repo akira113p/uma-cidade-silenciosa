@@ -73,6 +73,7 @@ em `default.project.json`). Se o usuário trocar o place, trocar só esses dois.
 | `docs/plano.md` | fases 0–9 do corte vertical, cada uma com verificação |
 | `docs/arquitetura.md` | contrato entre as 7 partes: arquivos, funções públicas, atributos, rede, mapa |
 | `docs/rastejador.md` | contrato e estado do Rastejador (modelo, animação, degrau, carro, arrombar) |
+| `docs/preset-monstro.md` | preset do Rastejador (IA, animação, pipeline, números) como receita para monstros novos |
 | `docs/mapa-v2.md` | contrato do gerador de mapa v2: módulos, dono, ctx, catálogo de edifícios, mobília, props |
 | `docs/pendencias-integracao.md` | o que cada parte deixou para as outras / para decidir |
 | `.claude/skills/teste-no-void/SKILL.md` | como testar no place oficial sem sujar o mapa: ZonaTeste, limites do código, limpeza |
