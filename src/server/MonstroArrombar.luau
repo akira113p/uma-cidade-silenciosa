@@ -1,6 +1,6 @@
 --!strict
 -- MonstroArrombar: o Rastejador acha uma parede de construção, bate nela e abre um buraco permanente (docs/rastejador.md §5.3).
--- Parede = peça de Mapa.Construcoes classificada por TAMANHO em tempo de execução (Regras.paredeArrombavel) e destrutível para a
+-- Parede = peça de Mapa.Construcoes (ou ZonaTeste.Construcoes) classificada por TAMANHO em tempo de execução (Regras.paredeArrombavel) e destrutível para a
 -- Destruicao; nada no mapa muda. O dano, o escurecer e o buraco são da Destruicao (docs/destruicao.md); aqui fica só a decisão
 -- do monstro (qual parede, quando desistir) e o registro dos vãos. Estado por monstro em d.cap.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -9,6 +9,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cfg = require(Shared.Config.Rastejador) :: any
 local Malhas = require(Shared.Config.MonstrosMalhas) :: any
 local Regras = require(Shared.Regras.Rastejador)
+local Raizes = require(Shared.Raizes)
 
 local MonstroArrombar = {}
 
@@ -27,17 +28,16 @@ end
 local params = RaycastParams.new()
 params.FilterType = Enum.RaycastFilterType.Include
 params.IgnoreWater = true
-local construcoesAtual: Instance? = nil
+local construcoesAtual: { Instance } = {}
 local classe: { [Instance]: boolean } = setmetatable({}, { __mode = "k" }) :: any -- cache: peça -> arrombável
 
 local function atualizar(): boolean
-	local mapa = workspace:FindFirstChild("Mapa")
-	local c = mapa and mapa:FindFirstChild("Construcoes")
-	if c ~= construcoesAtual then
-		construcoesAtual = c
-		params.FilterDescendantsInstances = if c then { c } else {}
+	local lista = Raizes.obter("Construcoes") -- Mapa e ZonaTeste; sem cache, a pasta pode surgir ou sumir
+	if not Raizes.iguais(lista, construcoesAtual) then
+		construcoesAtual = lista
+		params.FilterDescendantsInstances = lista
 	end
-	return c ~= nil
+	return #lista > 0
 end
 
 local function horizontal(v: Vector3): number

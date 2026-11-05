@@ -67,13 +67,19 @@ por `Destruicao`.
 | `src/server/Teste.luau` (registros) | comandos de teste (§8) |
 | `docs/calculos.md` §7, `docs/pendencias-integracao.md` "Destruição", `docs/rastejador.md` | números e pendências |
 
+**Raízes (2026-11-05, teste no void):** a lista de pastas válidas vem de uma função só, `Shared/Raizes.obter("Construcoes" | "Props")` (regra pura em `Regras/Raizes`, spec `tests/Raizes.spec.luau`):
+`Workspace.Mapa.<nome>` e, se existir, `Workspace.ZonaTeste.<nome>` (nessa ordem). É usada por `Destruicao.classificar` (e pelo filtro de `explosao`/`pecasNaCaixa`), por `Monstros.atualizarConstrucoes`
+(atenuação de ruído por parede) e por `MonstroArrombar`. Sem cache: cada chamada relê o Workspace (2 `FindFirstChild` a mais), então a ZonaTeste pode surgir ou sumir durante o jogo; os filtros de raycast só são
+refeitos quando a lista muda (`Raizes.iguais`). Sem ZonaTeste o resultado é idêntico ao de antes (só o Mapa). Peça de teste em `ZonaTeste.Construcoes` usa os mesmos nomes de peça (`Parede`, `Piso`...) e atributos
+do mapa; em `ZonaTeste.Props`, Model com atributo `Prop`. Veículos, Loot e Combustível não usam as raízes da zona.
+
 Rede: **nenhum RemoteEvent novo.** Cor e remoção replicam sozinhas; som por `Sons.tocar`; poeira por emissor temporário (como a de hoje).
 
 ## 3. O que é destrutível
 
 Uma instância `inst` é destrutível se **todas** valerem:
 1. `BasePart`, `CanQuery == true` (senão ninguém a acerta), não `Indestrutivel` (atributo) e descendente de `Mapa.Construcoes`
-   ou de `Mapa.Props`;
+   ou de `Mapa.Props` (ou das pastas de mesmo nome em `Workspace.ZonaTeste`, ver "Raízes" abaixo);
 2. **Construcoes**: o `Name` casa com um prefixo de `Config/Destruicao.nomes` cujo papel tem `destrutivel = true` (lista branca;
    nome desconhecido = indestrutível; o comando `destruicao_nomes` mostra o que ficou de fora);
 3. **Props**: o Model-pai tem atributo `Prop` listado em `Config/Destruicao.props` (muro_baixo, cerca_madeira, cerca_arame,

@@ -14,6 +14,7 @@ local Percepcao = require(Shared.Regras.Percepcao)
 local CfgRast = require(Shared.Config.Rastejador)
 local MalhasCfg = require(Shared.Config.MonstrosMalhas)
 local RegrasRast = require(Shared.Regras.Rastejador)
+local Raizes = require(Shared.Raizes)
 
 local Monstros = {}
 
@@ -328,17 +329,16 @@ end
 local paramsParedes = RaycastParams.new()
 paramsParedes.FilterType = Enum.RaycastFilterType.Include
 paramsParedes.IgnoreWater = true
-local construcoesAtual: Instance? = nil
+local construcoesAtual: { Instance } = {}
 
--- Só as construções entram no filtro (Include): personagens e monstros ficam de fora sem precisar listá-los.
+-- Só as construções (Mapa e ZonaTeste) entram no filtro (Include): personagens e monstros ficam de fora sem precisar listá-los.
 local function atualizarConstrucoes(): boolean
-	local mapa = workspace:FindFirstChild("Mapa")
-	local c = mapa and mapa:FindFirstChild("Construcoes")
-	if c ~= construcoesAtual then
-		construcoesAtual = c
-		paramsParedes.FilterDescendantsInstances = if c then { c } else {}
+	local raizes = Raizes.obter("Construcoes")
+	if not Raizes.iguais(raizes, construcoesAtual) then
+		construcoesAtual = raizes
+		paramsParedes.FilterDescendantsInstances = raizes
 	end
-	return c ~= nil
+	return #raizes > 0
 end
 
 -- Até maxParedes raycasts; cada acerto conta 1 e o raio segue do ponto atingido + 0.1 na mesma direção.

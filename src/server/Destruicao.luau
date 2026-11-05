@@ -8,6 +8,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cfg = require(Shared:WaitForChild("Config"):WaitForChild("Destruicao"))
 local CfgMat = require(Shared.Config:WaitForChild("Materiais"))
 local Regras = require(Shared:WaitForChild("Regras"):WaitForChild("Destruicao"))
+local Raizes = require(Shared:WaitForChild("Raizes"))
 
 local Destruicao = {}
 
@@ -98,24 +99,34 @@ end
 
 -- Classificação ---------------------------------------------------------------------------------------------------
 
-local function pastas(): (Instance?, Instance?)
-	local mapa = workspace:FindFirstChild("Mapa")
-	return mapa and mapa:FindFirstChild("Construcoes"), mapa and mapa:FindFirstChild("Props")
+-- Raiz (Mapa ou ZonaTeste) que contém a peça, sem cache: a ZonaTeste pode surgir ou sumir durante o jogo.
+local function raizDe(inst: Instance, nome: string): Instance?
+	for _, r in Raizes.obter(nome) do
+		if inst:IsDescendantOf(r) then
+			return r
+		end
+	end
+	return nil
 end
 
 local function classificar(inst: Instance): Cls?
 	if not inst:IsA("BasePart") or not inst.CanQuery or inst:GetAttribute("Indestrutivel") == true then
 		return nil
 	end
-	local construcoes, props = pastas()
-	local emConstrucoes = construcoes ~= nil and inst:IsDescendantOf(construcoes)
-	if not emConstrucoes and not (props ~= nil and inst:IsDescendantOf(props)) then
-		return nil
+	local emConstrucoes = false
+	local raiz = raizDe(inst, "Construcoes")
+	if raiz then
+		emConstrucoes = true
+	else
+		raiz = raizDe(inst, "Props")
+		if not raiz then
+			return nil
+		end
 	end
 	local movel = false
 	local prop: string? = nil
 	local atual = inst.Parent
-	while atual and atual ~= construcoes and atual ~= props and atual ~= workspace do
+	while atual and atual ~= raiz and atual ~= workspace do
 		if atual:IsA("Model") then
 			for _, atributo in { "Movel", "Estrutura" } do
 				local nome = atual:GetAttribute(atributo)
@@ -578,24 +589,13 @@ local paramsPecas = OverlapParams.new()
 paramsPecas.FilterType = Enum.RaycastFilterType.Include
 local raizesAtuais: { Instance } = {}
 
--- Include {Construcoes, Props}; refeito quando as pastas mudam.
+-- Include {Construcoes e Props do Mapa e da ZonaTeste}; refeito quando as pastas mudam.
 local function atualizarParams(): boolean
-	local construcoes, props = pastas()
-	local lista: { Instance } = {}
-	for _, p in { construcoes, props } do
-		if p then
-			table.insert(lista, p)
-		end
+	local lista = Raizes.obter("Construcoes")
+	for _, p in Raizes.obter("Props") do
+		table.insert(lista, p)
 	end
-	local igual = #lista == #raizesAtuais
-	if igual then
-		for i, p in lista do
-			if raizesAtuais[i] ~= p then
-				igual = false
-			end
-		end
-	end
-	if not igual then
+	if not Raizes.iguais(lista, raizesAtuais) then
 		raizesAtuais = lista
 		paramsPecas.FilterDescendantsInstances = lista
 	end
@@ -891,14 +891,16 @@ local function registrarTestes()
 		)
 	end)
 	Teste.registrar("destruicao_nomes", function()
-		local construcoes = pastas()
-		if not construcoes then
+		local raizes = Raizes.obter("Construcoes")
+		if #raizes == 0 then
 			return "sem Mapa.Construcoes"
 		end
 		local contagem: { [string]: number } = {}
-		for _, d in construcoes:GetDescendants() do
-			if d:IsA("BasePart") and d.CanQuery then
-				contagem[d.Name] = (contagem[d.Name] or 0) + 1
+		for _, construcoes in raizes do
+			for _, d in construcoes:GetDescendants() do
+				if d:IsA("BasePart") and d.CanQuery then
+					contagem[d.Name] = (contagem[d.Name] or 0) + 1
+				end
 			end
 		end
 		local linhas: { { nome: string, n: number } } = {}
