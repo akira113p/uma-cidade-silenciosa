@@ -60,26 +60,34 @@ local function arrombavel(p: Instance): boolean
 end
 
 -- Há construção em cima do ponto? (teto/laje): alvo "dentro de construção".
-function MonstroArrombar.dentro(ponto: Vector3): boolean
+function MonstroArrombar.dentro(ponto: Vector3, erro: number?): boolean
 	if not atualizar() then
 		return false
 	end
-	return workspace:Raycast(ponto + Vector3.new(0, 1, 0), Vector3.new(0, 60, 0), params) ~= nil
+	local function teto(p: Vector3): boolean
+		return workspace:Raycast(p + Vector3.new(0, 1, 0), Vector3.new(0, 60, 0), params) ~= nil
+	end
+	if teto(ponto) then
+		return true
+	end
+	-- o alvo é o som ESTIMADO (erro de até erroPorDistancia x distância): vale "dentro" se algum ponto do disco de erro tem teto
+	if erro and erro > 1 then
+		for i = 0, 5 do
+			local a = i * math.pi / 3
+			if teto(ponto + Vector3.new(math.cos(a) * erro, 0, math.sin(a) * erro)) then
+				return true
+			end
+		end
+	end
+	return false
 end
 
--- Primeira parede arrombável no caminho reto do monstro até `alvo` (até 3 acertos seguidos, o raio segue de dentro da peça).
-local function acharParede(d: any, alvo: Vector3): (BasePart?, Vector3?, Vector3?)
-	if not atualizar() then
-		return nil
-	end
-	local origem: Vector3 = d.hrp.Position
-	local dir = alvo - origem
-	if dir.Magnitude < 0.5 then
-		return nil
-	end
-	dir = dir.Unit * math.min((alvo - origem).Magnitude, Cfg.arrombar.alcanceRaio)
+-- Primeira parede arrombável ao longo de um raio (até 5 acertos seguidos, o raio segue de dentro da peça).
+local function primeiraParede(origem: Vector3, dir0: Vector3): (BasePart?, Vector3?, Vector3?)
 	local pos = origem
-	for _ = 1, 3 do
+	local fim = origem + dir0
+	local dir = dir0
+	for _ = 1, 5 do
 		local r = workspace:Raycast(pos, dir, params)
 		if not r then
 			return nil
@@ -88,7 +96,7 @@ local function acharParede(d: any, alvo: Vector3): (BasePart?, Vector3?, Vector3
 			return r.Instance :: BasePart, r.Position, r.Normal
 		end
 		pos = r.Position + dir.Unit * 0.2
-		dir = (origem + dir - pos)
+		dir = fim - pos
 		if dir.Magnitude < 0.5 then
 			return nil
 		end
@@ -96,8 +104,49 @@ local function acharParede(d: any, alvo: Vector3): (BasePart?, Vector3?, Vector3
 	return nil
 end
 
+-- Varre raios monstro->alvo (Cfg.arrombar.angulos) e devolve a parede arrombável que abre com menos golpes (Regras.escolherParede).
+local function acharParede(
+	d: any,
+	alvo: Vector3,
+	ruins: { [Instance]: number }?,
+	agora: number
+): (BasePart?, Vector3?, Vector3?)
+	if not atualizar() then
+		return nil
+	end
+	local D = destruicao()
+	local origem: Vector3 = d.hrp.Position
+	local base = alvo - origem
+	if not D or base.Magnitude < 0.5 then
+		return nil
+	end
+	base = base.Unit * math.min(base.Magnitude, Cfg.arrombar.alcanceRaio)
+	local pecas: { { peca: BasePart, ponto: Vector3, normal: Vector3 } } = {}
+	local cands: { { golpes: number, distancia: number } } = {}
+	local vistas: { [Instance]: boolean } = {}
+	for _, graus in Cfg.arrombar.angulos do
+		local a = math.rad(graus)
+		local dir = CFrame.Angles(0, a, 0):VectorToWorldSpace(base)
+		local peca, ponto, normal = primeiraParede(origem, dir)
+		if peca and ponto and normal and not vistas[peca] and not (ruins and (ruins[peca] or 0) > agora) then
+			vistas[peca] = true
+			table.insert(pecas, { peca = peca, ponto = ponto, normal = normal })
+			table.insert(cands, {
+				golpes = D.golpesPara(peca, Cfg.arrombar.dano, "garra"),
+				distancia = horizontal(ponto - origem),
+			})
+		end
+	end
+	local k = Regras.escolherParede(cands, Cfg)
+	if not k then
+		return nil
+	end
+	local c = pecas[k]
+	return c.peca, c.ponto, c.normal
+end
+
 -- Candidato "parede" para o objetivo: em andamento, ou nova (caminho sem entrada curta / travado 3x) em direção a `alvo`.
-function MonstroArrombar.candidato(d: any, alvo: Vector3, agora: number): any?
+function MonstroArrombar.candidato(d: any, alvo: Vector3, agora: number, erro: number?): any?
 	local cap = d.cap
 	local p = cap.parede
 	if p then
@@ -122,7 +171,7 @@ function MonstroArrombar.candidato(d: any, alvo: Vector3, agora: number): any?
 		local cam = cap.caminho
 		if cam then
 			local reta = horizontal(alvo - d.hrp.Position)
-			precisa = Regras.precisaArrombar(cam.estado, cam.comprimento, reta, MonstroArrombar.dentro(alvo), Cfg)
+			precisa = Regras.precisaArrombar(cam.estado, cam.comprimento, reta, MonstroArrombar.dentro(alvo, erro), Cfg)
 		end
 	end
 	if not precisa then
@@ -136,18 +185,9 @@ function MonstroArrombar.candidato(d: any, alvo: Vector3, agora: number): any?
 		cap.parede = { buraco = buraco, ponto = buraco.pos, desde = agora }
 		return { tipo = "parede", distancia = horizontal(buraco.pos - d.hrp.Position) }
 	end
-	local peca, ponto, normal = acharParede(d, alvo)
+	-- varre vários raios e fica com a parede de menos golpes (<= golpesMax); sem nenhuma, tenta de novo em `reprocurar` s
+	local peca, ponto, normal = acharParede(d, alvo, cap.paredesRuins, agora)
 	if not (peca and ponto and normal) then
-		return nil
-	end
-	local ruins = cap.paredesRuins
-	if ruins and (ruins[peca] or 0) > agora then
-		return nil
-	end
-	-- material duro demais para a garra (concreto, metal): não perde tempo; tenta outra parede mais tarde
-	if D.golpesPara(peca, Cfg.arrombar.dano, "garra") > Cfg.arrombar.golpesMax then
-		cap.paredesRuins = ruins or {}
-		cap.paredesRuins[peca] = agora + 30
 		return nil
 	end
 	cap.parede = { peca = peca, ponto = ponto, normal = normal, desde = agora, proximoGolpe = 0 }
@@ -189,6 +229,7 @@ local function impacto(d: any, p: any)
 end
 
 local function bater(d: any, p: any, agora: number)
+	-- (o desistir é de MonstroArrombar.candidato)
 	p.proximoGolpe = agora + Cfg.arrombar.intervalo
 	d.golpeAte = agora
 		+ math.max(Malhas[d.especie.id] and Malhas[d.especie.id].duracao.Attack or 1, Cfg.arrombar.intervalo)

@@ -128,7 +128,7 @@ local function bater(d: any, v: any, agora: number)
 end
 
 -- Um passo. `perc` = d.perc. Devolve { tipo, alvo: Vector3 } para o Monstros seguir, ou nil (fluxo normal: vagar/ponto de som).
-function MonstroObjetivo.passo(d: any, agora: number, perc: any): any?
+function MonstroObjetivo.passo(d: any, agora: number, perc: any, jogadorPos: Vector3?, distJogador: number?): any?
 	local cap = d.cap
 	local pos: Vector3 = d.hrp.Position
 	local cands: { [string]: any } = {}
@@ -166,7 +166,12 @@ function MonstroObjetivo.passo(d: any, agora: number, perc: any): any?
 		then Vector3.new(perc.alvo.x, perc.alvo.y, perc.alvo.z)
 		else nil
 	if alvoSom then
-		local pr = if ctx.arrombar then ctx.arrombar.candidato(d, alvoSom, agora) else nil
+		-- alvo da parede: com o jogador a <= alvoRealDist (já o ouviu/atacou) é a posição dele; senão o som ESTIMADO, com o erro
+		-- de posição (erroDentro x distância) tolerado no teste "dentro de construção"
+		local real = jogadorPos ~= nil and distJogador ~= nil and distJogador <= Cfg.arrombar.alvoRealDist
+		local alvoParede: Vector3 = if real and jogadorPos then jogadorPos else alvoSom
+		local erro = if real then 0 else horizontal(alvoSom - pos) * Cfg.arrombar.erroDentro
+		local pr = if ctx.arrombar then ctx.arrombar.candidato(d, alvoParede, agora, erro) else nil
 		if pr then
 			cands.parede = pr
 		end

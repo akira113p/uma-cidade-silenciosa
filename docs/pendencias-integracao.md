@@ -405,3 +405,10 @@ Tudo o que existe no place oficial "CIDADE SILENCIOSA" e NÃO é reproduzível p
 - (2026-11-05) `Workspace.Mapa`: vem de `mapa/Mapa.rbxm` por substituição controlada, não pelo Rojo. Conferido em 2026-11-05: 160.975 descendentes e as mesmas contagens nas 9 pastas do `mapa/Mapa.rbxm` atual (comparação de contagem, não peça a peça). Universe `10774297290`.
 - (2026-11-05) Terrain/água dos rios: gerado em execução por `src/server/Rios.luau`; nada a registrar.
 - (2026-11-05) Ainda por registrar pelo usuário/sessões anteriores: ajustes manuais no place, malhas e animações enviadas (Open Cloud; ids estão em `Config/*Malhas` e `Config/ArmasAnim`).
+
+### Rastejador: arrombar e velocidade (2026-11-05)
+- **Dano de garra na parede = 60** (`arrombar.dano`; era 20): concreto abre em ~24 s, tijolo ~18 s, madeira ~4 s. Número meu, para o monstro de 2 m conseguir; ajustar com o usuário.
+- **Alvo real:** com o jogador a <= 40 studs o Rastejador usa a posição verdadeira dele como alvo da parede (pedido do usuário); o som estimado só decide à distância.
+- **`golpesMax = 60`** (metal 0,15 de garra: acima disso ele ignora e procura a parede mais fraca). **`desistir = 90 s`** por parede.
+- **Velocidade do Rastejador**: Calmo/Investiga 8, Caça/Ataque 20 (jogador corre 16, sprint 24). Walk patina 40% (precisa 5,0x, limite 3,0x); Run a 20 = 2,30x ok. Decidir: clipe de Walk mais rápido, velMax maior ou Calmo mais lento.
+- **Porta estreita:** o 2x passa a porta de 4,2 em linha reta (corpo 2,66 de largura); só o navmesh (AgentRadius 2,66 = metade do comprimento) diz NoPath. Mantido; o `AgentRadius` continua pendente da decisão anterior.

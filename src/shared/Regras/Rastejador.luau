@@ -56,6 +56,25 @@ function Rastejador.paredeArrombavel(tam: { number }, ehPiso: boolean, atributos
 	return math.min(tam[1], tam[3]) <= a.espessuraMax and tam[2] >= a.alturaMin
 end
 
+-- Velocidade do Rastejador no estado visível (Calmo/Investiga/Caca/Ataque); nil se o estado não está na tabela.
+function Rastejador.velocidade(estado: string, cfg: Cfg): number?
+	return cfg.velocidade[estado]
+end
+
+-- Entre paredes arrombáveis { golpes, distancia }, a de menos golpes (<= golpesMax); desempate pela menor distância.
+function Rastejador.escolherParede(candidatas: { { golpes: number, distancia: number } }, cfg: Cfg): number?
+	local melhor: number? = nil
+	for i, c in candidatas do
+		if c.golpes <= cfg.arrombar.golpesMax then
+			local m = if melhor then candidatas[melhor] else nil
+			if not m or c.golpes < m.golpes or (c.golpes == m.golpes and c.distancia < m.distancia) then
+				melhor = i
+			end
+		end
+	end
+	return melhor
+end
+
 local PRIORIDADE: { [string]: number } = { jogador = 1, veiculo = 2, parede = 3, som = 4 }
 
 function Rastejador.escolherObjetivo(candidatos: { Candidato }, cfg: Cfg): Candidato?

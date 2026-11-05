@@ -257,3 +257,4 @@ Atropelo: (velocidade − 8) × 1,6 de dano, a cada 0,4 s por monstro (58 studs/
 - Carro: raio de busca 25, memória do som 6 s, alcance 3,5 da caixa, golpe a cada 1,4 s, dano 12 (pneu 0,3 / vidro 0,3 só com ocupante / carroceria 0,4), perseguição máxima 4 s se o carro for mais rápido.
 - Ciclos nativos (2x): Walk 1,59 e Run 8,69 studs/s; Run toca a 1,61x com a IA a 14; Walk pediria 3,8x e fica em 2,5x.
 - Animação: Idle 2,5 s, Walk 1,333 s, Run 0,667 s, Attack 1,458 s, Death 1,958 s (24 fps); reprodução limitada a 0,5-2,5x (ver pendências: patinação).
+- Rastejador (2026-11-05): velocidades 8 (Calmo/Investiga) / 20 (Caça/Ataque); garra na parede 60 por golpe (golpes: madeira 3, tijolo 15, concreto 20); `golpesMax` 60, `desistir` 90 s, `alvoRealDist` 40; Run 20 studs/s = 2,30x do ciclo, Walk 8 = 3,0x (limite) vs 5,0x pedido.

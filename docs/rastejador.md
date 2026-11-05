@@ -304,3 +304,32 @@ Altura do jogador oscila com a pose (bbox 5,12-5,23), a razão fica 1,11-1,14.
 - **Não testado no 2x:** a IA completa (Teste, sondas, salto, objetivo veículo, arrombar): neste Studio o `execute_luau` perdeu o acesso ao `ServerStorage.Teste` (erro "additional value for the Capabilities property: Network", também ao criar Script ou `require` dos módulos do servidor), então não consegui injetar ruído nem invocar. Os testes de Fase 4/5 acima valem para o tamanho 1x. Sem teste: se o buraco de 4,26 x 9 resulta bem, ataque com alcance (`distanciaAtaque` 4 do centro, frente do corpo a 2,66), se o corpo 2x cabe nos vãos de caminho do mapa.
 
 **Comandos de teste novos (`ServerStorage.Teste:Invoke`)**: `rastejador_ruido` (x, y, z, db, tipo) e `rastejador_estado`.
+
+### Arrombar casas e velocidade (2026-11-05)
+
+**Place conferido:** `game.PlaceId` 135860309517450; os scripts do place (Monstros, MonstroArrombar/Objetivo/Movimento/Modelo, Destruicao, Config/Monstros, Config/Rastejador,
+Regras/Percepcao, Regras/Rastejador) tinham o mesmo tamanho e checksum dos arquivos do repo: **nenhuma edição do usuário só no Studio**. Havia um Play parado (jogador imóvel no
+spawn, sem zona de teste nem monstro invocado) que eu parei para sincronizar o Rojo; testes na `Workspace.ZonaTeste` (6000, 300, 6000), apagada no fim, checagem pós-teste "ok: place limpo".
+
+**Por que não quebrava (medido):**
+- (a) **confirmado:** `Cfg.arrombar.golpesMax = 25` com dano 20: concreto = 60 golpes, tijolo = 45, madeira = 8 (`Destruicao.golpesPara`, medido). O mapa comercial é todo `Concrete`:
+  o monstro descartava toda parede dura e marcava "ruim" por 30 s, nunca batia.
+- (b) **provável, não medido isolado:** `dentro(alvo)` testava só o ponto estimado (erro até 15% da distância: 6,75 a 45 studs); com o jogador perto da parede o alvo cai fora da pegada.
+- (c) **provável, não medido:** um raio reto e 3 acertos; qualquer rodapé/moldura consultável antes da parede gastava os acertos.
+- (d) `desistir = 25 s` era menor que o tempo de quebrar concreto (24 s só de golpes), mesmo com dano maior.
+- (e) o jogador dentro só vira alvo a <= `distanciaAtaque`: normal; depois do vão ele corre ao jogador e ataca (visto).
+
+**O que mudou:** `arrombar.dano` 20 -> 60 (garra do 2x: concreto 20 golpes, tijolo 15, madeira 3); `golpesMax` 60; `desistir` 90 s; `MonstroArrombar.dentro` testa também 6 pontos no disco de erro
+(`erroDentro = 0.15`); `acharParede` varre 5 raios (`angulos` 0, +-15, +-30 graus, até 5 acertos cada) e `Regras.escolherParede` fica com a de menos golpes (empate: a mais perto);
+com o jogador a <= `alvoRealDist = 40` studs o alvo da parede é a posição dele (já o ouviu/atacou), senão o som estimado. A destruição universal (dano, escurecer, vão permanente, ruído
+`paredeQuebrando`) não mudou.
+**Velocidade por espécie:** `Config/Rastejador.velocidade = { Calmo 8, Investiga 8, Caca 20, Ataque 20 }`, lida por `Regras.velocidade` em `Monstros.velocidadeDe` (só espécies com `capacidades`;
+Corcunda/Esfolado seguem `Config/Monstros.niveis`, `Percepcao` intacta). `animacao.velMax` 2,5 -> 3: Run a 20 toca a 2,30x (sem patinar); Walk a 8 pediria 5,0x e fica em 3,0x
+(clipe anda 4,8 studs/s, patina 40%).
+
+**Testado (ZonaTeste, concreto, paredes 20 x 12 x 1, laje):**
+- Casa fechada, jogador dentro, monstro 45 studs fora: `obj=parede`, bateu 26,7 s (20 golpes), entrou 0,3 s depois, vida 240 -> 200 (golpes de 20 em parte do corpo).
+- Casa com porta de 4,2, monstro alinhado com a porta: entrou em 1,9 s sem bater (corpo 2,66 de largura passa; o navmesh com raio 2,66 diria NoPath, o fallback em linha reta passa), vida 147 -> 107.
+- Mesma casa, monstro do lado oposto à porta: bateu a parede norte, vão aos 26,3 s, entrou aos 27,0 s, **matou o jogador** (vida 27 -> 15 -> morte).
+- Velocidade medida em chão plano: 20 studs/s de Caça (picos 21,1-24,1 na amostragem de 0,3 s/0,1 s). Degraus de 2,0 e 3,5 studs na Caça: passou sem pausa (maior pausa 0,0 s) em ~2,9 s.
+**Não testado:** as suspeitas (b) e (c) isoladas; concreto com jogador longe da parede (alvo só estimado); material metal (golpes > 60 continua ignorado); vários monstros na mesma casa; Death com a IA real.

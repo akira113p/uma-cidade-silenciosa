@@ -69,4 +69,28 @@ util.perto(R.velocidadeAnim("Walk", Cfg.animacao.nativas.Walk, Cfg), 1, "anim wa
 util.perto(R.velocidadeAnim("Run", 1000, Cfg), Cfg.animacao.velMax, "anim limite")
 util.perto(R.velocidadeAnim("Idle", 6, Cfg), 1, "anim idle")
 
+-- velocidade por espécie (Corcunda/Esfolado não usam)
+util.igual(R.velocidade("Caca", Cfg), 20, "velocidade Caca")
+util.igual(R.velocidade("Ataque", Cfg), 20, "velocidade Ataque")
+util.igual(R.velocidade("Calmo", Cfg), 8, "velocidade Calmo")
+util.igual(R.velocidade("Investiga", Cfg), 8, "velocidade Investiga")
+assert(R.velocidade("Inexistente", Cfg) == nil, "estado desconhecido")
+assert(Cfg.velocidade.Caca > 16, "Caça mais rápida que o jogador correndo")
+util.perto(
+	R.velocidadeAnim("Run", Cfg.velocidade.Caca, Cfg),
+	Cfg.velocidade.Caca / Cfg.animacao.nativas.Run,
+	"Run a 20 sem limite"
+)
+
+-- parede mais fraca
+util.igual(R.escolherParede({ { golpes = 20, distancia = 5 }, { golpes = 8, distancia = 30 } }, Cfg), 2, "menos golpes")
+util.igual(
+	R.escolherParede({ { golpes = 8, distancia = 30 }, { golpes = 8, distancia = 5 } }, Cfg),
+	2,
+	"empate: mais perto"
+)
+assert(R.escolherParede({ { golpes = 1000, distancia = 1 } }, Cfg) == nil, "acima de golpesMax ignora")
+assert(R.escolherParede({}, Cfg) == nil, "sem candidatas")
+util.igual(R.escolherParede({ { golpes = Cfg.arrombar.golpesMax, distancia = 1 } }, Cfg), 1, "no limite aceita")
+
 print("Rastejador.spec ok")

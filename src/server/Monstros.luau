@@ -133,6 +133,17 @@ local function regraSom(): any
 	return somCache
 end
 
+-- Velocidade do estado: o Rastejador tem a dele (Config/Rastejador.velocidade); as outras espécies seguem Config/Monstros.niveis.
+local function velocidadeDe(especie: any, nivel: number, estado: string): number
+	if especie.capacidades then
+		local v = RegrasRast.velocidade(estado, CfgRast)
+		if v then
+			return v
+		end
+	end
+	return Percepcao.velocidade(nivel, estado, Config)
+end
+
 local function pastaMonstros(): Folder
 	local pasta = workspace:FindFirstChild("Monstros")
 	if pasta and pasta:IsA("Folder") then
@@ -262,7 +273,7 @@ local function criar(especie: any, chao: Vector3, ponto: BasePart?): Dados?
 	local caixa, tamanho = modelo:GetBoundingBox()
 	modelo:PivotTo(modelo:GetPivot() + Vector3.new(0, chao.Y + 0.5 - (caixa.Position.Y - tamanho.Y / 2), 0))
 
-	humanoid.WalkSpeed = Percepcao.velocidade(especie.nivel, "Calmo", Config)
+	humanoid.WalkSpeed = velocidadeDe(especie, especie.nivel, "Calmo")
 	humanoid.AutoRotate = true
 	humanoid.RequiresNeck = false
 	humanoid.BreakJointsOnDeath = false
@@ -562,7 +573,7 @@ local function aplicarEstadoVisivel(d: Dados, estado: string)
 	end
 	d.estadoVisivel = estado
 	d.modelo:SetAttribute("Estado", estado)
-	d.humanoid.WalkSpeed = Percepcao.velocidade(d.nivel, estado, Config)
+	d.humanoid.WalkSpeed = velocidadeDe(d.especie, d.nivel, estado)
 end
 
 -- Animação (só espécies com malha): escolhe a ação pela regra pura e manda para MonstroModelo (Animator no servidor).
@@ -716,7 +727,14 @@ local function passoMonstro(d: Dados, agora: number, jogadores: { { jogador: Pla
 	local ativoCap = d.cap ~= nil and distPerto <= CfgRast.objetivo.distanciaAtiva
 	if ativoCap and not atacando and (d.perc.estado ~= "Calmo" or d.cap.veiculo or d.cap.parede) then
 		local mods = capModulos()
-		obj = capChamar(mods.objetivo and mods.objetivo.passo, d, agora, d.perc)
+		obj = capChamar(
+			mods.objetivo and mods.objetivo.passo,
+			d,
+			agora,
+			d.perc,
+			if maisPerto then maisPerto.pos else nil,
+			distPerto
+		)
 	end
 
 	if atacando and maisPerto then
