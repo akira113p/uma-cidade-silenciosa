@@ -38,7 +38,7 @@ tests/                  *.spec.luau (Lune)
 3. Eventos em `Rede.luau`; handler no servidor validando tudo.
 4. Cliente só pede e mostra; nunca decide valor.
 5. `pwsh scripts/checar.ps1` verde.
-6. No Studio: `start_stop_play` → `execute_luau` no datamodel `Server` para ler o estado (ex.: moedas do jogador) → `get_console_output` → parar. Erro no console = bug, mesmo que "funcione".
+6. No Studio **oficial** (Regras de versão do `CLAUDE.md`; nunca outro place nem `.rbxl` novo): `start_stop_play` → levar o jogador à `Workspace.ZonaTeste` no void (skill `teste-no-void`) → `execute_luau` no datamodel `Server` para ler o estado (ex.: moedas do jogador) → `get_console_output` → parar → apagar a zona e conferir. Erro no console = bug, mesmo que "funcione".
 7. `systematic-debugging` para qualquer bug, antes de propor correção.
 
 ## Armadilhas
@@ -61,7 +61,9 @@ tests/                  *.spec.luau (Lune)
 
 - (Cidade Silenciosa, 2026-11-01) `PivotTo` logo no `CharacterAdded` é desfeito: o motor posiciona o personagem depois. Esperar `IsDescendantOf(workspace)` + `task.wait()` antes de mover (src/server/Spawn.luau).
 - (Cidade Silenciosa, 2026-11-01) Id de **Decal** em `ImageLabel.Image` falha com "Asset type does not match requested type". UI precisa do id da **Image**.
-- (Cidade Silenciosa, 2026-11-01) Playtest sem Rojo conectado: `rojo build -o build/x.rbxl` e abrir o arquivo (`start build\x.rbxl`); o MCP lista a janela nova pelo nome do arquivo em ~30 s.
+- (Cidade Silenciosa, 2026-11-01, **aposentada em 2026-11-05**) ~~Playtest sem Rojo conectado: `rojo build -o build/x.rbxl` e abrir o arquivo.~~ Em 5 dias isso gerou dezenas de places divergentes e sessões que se atropelavam. Agora: um só place oficial (`CLAUDE.md` > Regras de versão), teste em Play dentro de `Workspace.ZonaTeste` (skill `teste-no-void`); `rojo build` só para `checar.ps1`.
+- (Cidade Silenciosa, 2026-11-05) `scripts/checar.sh` construía `default.project.json` (sem mapa) enquanto o `checar.ps1` constrói `build.project.json` (com mapa): as duas checagens "verdes" não verificavam a mesma coisa. Os dois usam `build.project.json`. E `ferramentas/mapa/_legado_gerar_mapa_v1.luau` gravava em `mapa/Mapa.rbxm`, o arquivo do mapa v2 oficial: rodar o legado por engano apagava o mapa. Agora grava em `build/mapa_v1_legado.rbxm`. Só `gerar_mapa.luau -- --final` escreve em `mapa/Mapa.rbxm`.
+- (Cidade Silenciosa, 2026-11-05) `rojo serve` recusa place com id fora de `servePlaceIds` (`default.project.json`); place local sem id publicado (`PlaceId` 0) deve ser recusado também (não testado, sem Studio nesta sessão; confirmar na 1ª conexão). É o efeito desejado: abrir o place oficial pelo Studio.
 - (Cidade Silenciosa, 2026-11-01) **GuiButton `Modal` NÃO solta o mouse** na primeira pessoa (ModalEnabled ficou false, MouseBehavior ficou LockCenter, mesmo visível e dentro da tela). Funciona: `UserInputService.MouseBehavior = Default` num `BindToRenderStep` com `RenderPriority.Last`, enquanto houver menu aberto (client/Mouse.luau). Ao parar de forçar, a câmera prende de novo sozinha.
 - (Cidade Silenciosa, 2026-11-01) `user_keyboard_input` do MCP **não chega ao jogo** (nem ao UserInputService). Para testar menus: gancho só do Studio, atributo `TesteUI` no jogador (client/init.client.luau). `ContextActionService:CallFunction` não dá no execute_luau (falta capability).
 - (Cidade Silenciosa, 2026-11-01) Atalho de menu: usar `client/Teclas.luau` (InputBegan ignorando `processado` + CAS de prioridade alta, com intervalo mínimo). O Tab padrão do Roblox abre a lista de jogadores: desligar `CoreGuiType.PlayerList`.

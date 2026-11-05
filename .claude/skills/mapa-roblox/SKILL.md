@@ -13,6 +13,9 @@ Um mapa é um espaço por onde o jogador anda, e não uma pilha de peças. As pe
 - Números de movimento em `ReplicatedStorage.Shared.Config.Movimento` (`velocidade`, `alturaPulo`, `quedaMax`). Sem isso, o checker usa `StarterPlayer.CharacterWalkSpeed`/`CharacterJumpHeight`. O código do jogo **aplica os mesmos valores** ao Humanoid: uma fonte só.
 - Tags (CollectionService) para intenção: `Decoracao` (ignorar), `Objetivo` (precisa ser alcançável), `ForaDeAlcance` (não pode ser), `SemSaidaOk` (beco sem saída proposital).
 
+## Fluxo do mapa (Cidade Silenciosa, desde 2026-11-05)
+O mapa **não passa pelo Rojo** e vive só no place oficial (`CLAUDE.md` > Regras de versão). Gerar: `lune run ferramentas/gerar_mapa.luau` (grava `build/mapa_teste.rbxm`, para inspecionar) ou `-- --final` (grava `mapa/Mapa.rbxm`, versionado); a substituição de `Workspace.Mapa` no place é controlada e feita com o usuário sabendo. Nunca gerar um `.rbxl` para testar o mapa em outro place, nunca testar dentro de `Workspace.Mapa` (testes de jogo: skill `teste-no-void`). Se o mapa do place diferir do `mapa/Mapa.rbxm`, registrar em `docs/pendencias-integracao.md` > "No place sem vir do repo".
+
 ## Checar
 Pelo MCP: `execute_luau` (datamodel `Edit`) com o conteúdo de [scripts/checar_mapa.luau](scripts/checar_mapa.luau). Ele devolve um JSON com:
 | Regra | O quê |
@@ -44,4 +47,4 @@ Depois do checker, **olhar**: `screen_capture` de cima e da altura dos olhos em 
 - Padrão visual do projeto (2026-10-12): `Texture` nas faces (Top no chão, 4 laterais na parede) com a textura do Baseplate (`rbxassetid://6372755229`) a 78% de transparência para o quadriculado ficar sutil; a 60% ficou forte demais. No Lune, `Texture.Texture` só aceita string (`Content.fromUri` dá erro de conversão).
 - Cerca de peças soltas (pilares, trilhos, X) se tocam de propósito: marcar tudo `Decoracao` para o checker de mapa não encher o relatório de ENFIADA. A colisão continua valendo.
 - Paredes por bioma em segmentos colineares: o recuo de meia espessura nas pontas (para não atravessar o canto) só vale onde há parede perpendicular; entre segmentos use recuo 0, senão sobra um vão de 2 studs.
-
+- (2026-11-05) `ferramentas/mapa/_legado_gerar_mapa_v1.luau` gravava em `mapa/Mapa.rbxm`, o mesmo arquivo do gerador v2 oficial: rodar o legado por engano sobrescrevia o mapa. Agora grava em `build/mapa_v1_legado.rbxm`. Só `gerar_mapa.luau -- --final` escreve em `mapa/Mapa.rbxm`.

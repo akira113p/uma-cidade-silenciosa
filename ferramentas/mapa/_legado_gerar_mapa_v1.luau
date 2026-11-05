@@ -1,6 +1,6 @@
--- Gera o mapa inteiro (cidade, vilas, fábrica, planície, posto da guarda, avenidas, floresta) em mapa/Mapa.rbxm.
--- Uso (da raiz do projeto): lune run ferramentas/gerar_mapa.luau
--- Determinístico: mesma semente (Config/Mundo.semente) = mesmo mapa. O Rojo sincroniza o arquivo em Workspace.Mapa;
+-- Gera o mapa inteiro (cidade, vilas, fábrica, planície, posto da guarda, avenidas, floresta) em build/mapa_v1_legado.rbxm (LEGADO v1: nunca grava em mapa/Mapa.rbxm, que é do gerar_mapa.luau v2).
+-- Uso (da raiz do projeto): lune run ferramentas/mapa/_legado_gerar_mapa_v1.luau
+-- Determinístico: mesma semente (Config/Mundo.semente) = mesmo mapa. Este arquivo NÃO vai para o Workspace.Mapa;
 -- não editar o mapa no Studio (é sobrescrito na próxima geração). Dono: P1. Contrato: docs/arquitetura.md §6.
 
 local fs = require("@lune/fs")
@@ -1151,8 +1151,8 @@ for _, nome in { "Chao", "Ruas", "Construcoes", "Vegetacao", "Bordas", "Zonas", 
 	table.insert(linhas, string.format("  %-12s %6d peças", nome, n))
 end
 
-fs.writeFile("mapa/Mapa.rbxm", roblox.serializeModel({ mapa }))
-print("mapa/Mapa.rbxm gerado (semente " .. tostring(Mundo.semente) .. ")")
+fs.writeFile("build/mapa_v1_legado.rbxm", roblox.serializeModel({ mapa }))
+print("build/mapa_v1_legado.rbxm gerado, LEGADO v1, não é o mapa oficial (semente " .. tostring(Mundo.semente) .. ")")
 print(table.concat(linhas, "\n"))
 print(string.format("  %-12s %6d peças (limite %d)", "TOTAL", total, LIMITE_PECAS))
 print(

@@ -149,7 +149,7 @@ Contrato e divisão em `docs/mapa-v2.md`. 14 módulos em `ferramentas/mapa/` (es
   parede quando a câmera está colada (sem raycast de limite), terceira pessoa (a luz sai da câmera, longe da cabeça).
 
 ## Veículos
-- **V3 (cliente)**: `client/Direcao`, `Cabine`, `HudVeiculo` escritos; NÃO testados no Studio. Nomes de Config que o cliente lê
+- **V3 (cliente)**: `client/Direcao`, `Cabine`, `HudVeiculo` escritos; NÃO testados no Studio (`docs/veiculos.md` ~l.160 confirma: falta testar `Cabine` e HUD; a direção física foi medida só com o motor ligado pelo servidor). Nomes de Config que o cliente lê
   (todos com padrão no código, então Config/Veiculos pode omitir): `teclas.ligar/buzina`; `camera` (Vector3 ou `{x,y,z}` ou
   `{olho=...}` no espaço do Chassi; sem isso usa Banco1 + (0,1.2,0)) com opcionais `camera.tremor` (studs na VelMax, 0.03),
   `camera.roll` (graus, 0.5), `camera.seguirGiro` (>0 faz a vista girar com o carro; padrão 0 porque a câmera padrão do Roblox
@@ -167,6 +167,7 @@ Contrato e divisão em `docs/mapa-v2.md`. 14 módulos em `ferramentas/mapa/` (es
   `init.server` (`Veiculos` depois de `Loot`), `Sons` (`Sons.loop`, aviso de som sem ids uma vez por nome), `Loot`
   (`registrarCompartimento`), `Armas` (`ehPecaVeiculo` em `ehAlvo` e em `acertar`, require preguiçoso de `Veiculos`), `Vida` (`"batida"`).
   NÃO testado no Studio (nem `rojo build` com os arquivos de V1 ausentes quando escrito).
+  **Atualizado em 2026-11-05 (conforme `docs/veiculos.md`, "Verificação" ~l.160 e "Medidas" ~l.198):** servidor verificado no Studio em chão plano e depois no mapa (2026-11-04): vagas decididas na abertura (241), materialização/remoção por distância, estado e peças dos carros, sedan do posto andou 103 studs em 5 s com o motor ligado pelo servidor. **Ainda sem teste** (mesma fonte): sono com 40 carros, porta-malas, `Cabine` e HUD.
 - Campos de Config que V2 nomeou (V1 precisa ter): `Veiculos.tipos[t].{nome,modelo,tamanho,massa,assentos,dbBase,peso,cor}`,
   `maxAtivos`, `distanciaAcordar`, `pesoSubstituir` (lido como CHANCE 0..1 de um prop `carro` virar carro dirigível, antes do teto
   `maxAtivos`), `suspensao.{comprimento,curso,rigidez,amortecimento}`, `queda.{furado,faltando}` (studs a menos em `FreeLength`),
@@ -264,7 +265,8 @@ Peças que o modelo não permite separar (todas em `Carroceria`, registradas aqu
 - **Filtro (dono do filtro):** `client/Filtro/Aberracao.luau` clona peças do mapa por célula e não ouve remoção; peça destruída continua visível no clone até a célula sair do raio.
 - **Mapa:** comércio sai sempre `Concrete` (a chave `parMat` é lida e nunca definida nas paletas): parede de loja é a mais dura do mapa. Decidir se vira madeira/tijolo por paleta.
 - **Implementação (Fases A/B):** vão de bala/corte em parede parte do chão da peça (contrato); parte pequena demais ou não-Block é destruída inteira; `velImpulso` do
-  atropelo (30) foi inventado para o "acima de um limite" do §6.3; sem playtest ainda. **Fase C** (migrar `MonstroArrombar`, remover `abrirBuraco`/`VidaParede`) pendente.
+  atropelo (30) foi inventado para o "acima de um limite" do §6.3; **Atualizado em 2026-11-05 (conforme `docs/destruicao.md` § Estado, ~l.373):** Fases A, B e C feitas e testadas no Studio em 2026-11-04 (place antigo `11042026_1`, Play, servidor e cliente; arma real, Rastejador abrindo vão, atropelo, console sem erro); `MonstroArrombar` migrado e `abrirBuraco`/`VidaParede` removidos. O `velImpulso` do atropelo continua sendo número inventado. **Ainda NÃO testado em jogo** (mesma fonte): carro real dirigido por jogador, explosão, FPS com dezenas de peças danificadas, dano do atropelo no monstro real, grupo bomba/tanque, telhado/laje, marreta.
+- **Teste no void (2026-11-05):** `Destruicao.classificar`, `Monstros.atualizarConstrucoes` (atenuação de ruído por parede) e `MonstroArrombar` só olham `Workspace.Mapa.Construcoes/Props`; peça em `Workspace.ZonaTeste` é indestrutível e não atenua som. **Decisão do usuário pendente:** aceitar também `Workspace.ZonaTeste.Construcoes`/`Props` nesses três pontos (mudança mínima, só no Studio de teste), ou testar destruição só pela lógica pura (Lune). Não implementado.
 - **Marreta:** não existe item. Entra como arma nova (`Config/Armas` + `Config/Itens` com `tipoDano = "marreta"`) sem mudar o sistema.
 
 ## Rastejador (2026-11-04)
@@ -397,3 +399,9 @@ Escrito por 5 agentes Sonnet (S1 regras/config, S2 servidor do carro, S3 posto/m
 - Os assets já enviados da Faca (modelo 135669372098483, imagem 88186680750227) continuam na conta; a Open Cloud não deixa apagar enquanto a conta estiver moderada: remover no Creator Hub.
 - Antes de reenviar as 8 restantes: conferir as texturas. `peDeCabra.png` tem faixa marrom-avermelhada (parece ferrugem, mas pode ser lida como sangue); `machado.png` é madeira e metal escuro. Decidir com o usuário se escurece/dessatura a faixa do pé de cabra.
 - Nada será enviado até a conta ser liberada e o usuário mandar retomar.
+
+## No place sem vir do repo (registro obrigatório, regra 7 de "Regras de versão" do `CLAUDE.md`)
+Tudo o que existe no place oficial "CIDADE SILENCIOSA" e NÃO é reproduzível por `rojo serve default.project.json` ou por `gerar_mapa.luau`, para ninguém perder trabalho. Uma linha por item (data, o que, quem, como refazer).
+- (2026-11-05) `Workspace.Mapa`: vem de `mapa/Mapa.rbxm` por substituição controlada, não pelo Rojo. Conferir se o `Mapa` do place é o `mapa/Mapa.rbxm` atual (a última substituição não está registrada aqui; o usuário confirma).
+- (2026-11-05) Terrain/água dos rios: gerado em execução por `src/server/Rios.luau`; nada a registrar.
+- (2026-11-05) Ainda por registrar pelo usuário/sessões anteriores: ajustes manuais no place, malhas e animações enviadas (Open Cloud; ids estão em `Config/*Malhas` e `Config/ArmasAnim`).

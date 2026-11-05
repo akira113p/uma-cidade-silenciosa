@@ -16,7 +16,7 @@ testes() {
 }
 
 mkdir -p build
-passo "rojo build" rojo build default.project.json -o build/place.rbxl
+passo "rojo build" rojo build build.project.json -o build/place.rbxl
 passo "testes" testes
 passo "selene" selene src
 passo "stylua" stylua --check src tests
