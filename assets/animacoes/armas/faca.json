@@ -1,0 +1,288 @@
+{
+ "classe": "faca",
+ "rig": "R15",
+ "poses": {
+  "guarda": {
+   "RightShoulder": [
+    38,
+    -6,
+    0
+   ],
+   "RightElbow": [
+    100,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -30,
+    0,
+    0
+   ]
+  },
+  "tras": {
+   "RightShoulder": [
+    22,
+    12,
+    0
+   ],
+   "RightElbow": [
+    126,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -22,
+    0,
+    0
+   ],
+   "Waist": [
+    0,
+    10,
+    0
+   ]
+  },
+  "estocada": {
+   "RightShoulder": [
+    78,
+    -4,
+    0
+   ],
+   "RightElbow": [
+    26,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -24,
+    0,
+    0
+   ],
+   "Waist": [
+    0,
+    -10,
+    0
+   ]
+  },
+  "corteIni": {
+   "RightShoulder": [
+    58,
+    -52,
+    0
+   ],
+   "RightElbow": [
+    70,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -24,
+    0,
+    0
+   ],
+   "Waist": [
+    0,
+    -22,
+    0
+   ]
+  },
+  "corteMeio": {
+   "RightShoulder": [
+    62,
+    -4,
+    0
+   ],
+   "RightElbow": [
+    52,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -24,
+    0,
+    0
+   ],
+   "Waist": [
+    0,
+    2,
+    0
+   ]
+  },
+  "corteFim": {
+   "RightShoulder": [
+    56,
+    42,
+    0
+   ],
+   "RightElbow": [
+    40,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -24,
+    0,
+    0
+   ],
+   "Waist": [
+    0,
+    24,
+    0
+   ]
+  }
+ },
+ "clipes": {
+  "Idle": {
+   "duracao": 2.0,
+   "loop": true,
+   "prioridade": "Action",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "guarda"
+    },
+    {
+     "t": 1.0,
+     "de": "guarda",
+     "juntas": {
+      "RightShoulder": [
+       40,
+       -6,
+       0
+      ],
+      "RightElbow": [
+       98,
+       0,
+       0
+      ]
+     },
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 2.0,
+     "de": "guarda",
+     "easing": "Cubic-InOut"
+    }
+   ]
+  },
+  "Equip": {
+   "duracao": 0.35,
+   "loop": false,
+   "prioridade": "Action2",
+   "quadros": [
+    {
+     "t": 0.0,
+     "juntas": {
+      "RightShoulder": [
+       6,
+       0,
+       0
+      ],
+      "RightElbow": [
+       12,
+       0,
+       0
+      ],
+      "RightWrist": [
+       0,
+       0,
+       0
+      ]
+     }
+    },
+    {
+     "t": 0.18,
+     "juntas": {
+      "RightShoulder": [
+       52,
+       -8,
+       0
+      ],
+      "RightElbow": [
+       112,
+       0,
+       0
+      ],
+      "RightWrist": [
+       -34,
+       0,
+       0
+      ]
+     },
+     "easing": "Cubic-Out"
+    },
+    {
+     "t": 0.35,
+     "de": "guarda",
+     "easing": "Cubic-InOut"
+    }
+   ]
+  },
+  "Golpe1": {
+   "duracao": 0.45,
+   "loop": false,
+   "prioridade": "Action2",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "guarda"
+    },
+    {
+     "t": 0.045,
+     "de": "tras",
+     "easing": "Cubic-Out"
+    },
+    {
+     "t": 0.12,
+     "de": "estocada",
+     "easing": "Cubic-In",
+     "marcadores": [
+      "Impacto"
+     ]
+    },
+    {
+     "t": 0.2,
+     "de": "estocada"
+    },
+    {
+     "t": 0.45,
+     "de": "guarda",
+     "easing": "Cubic-InOut"
+    }
+   ]
+  },
+  "Golpe2": {
+   "duracao": 0.45,
+   "loop": false,
+   "prioridade": "Action2",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "guarda"
+    },
+    {
+     "t": 0.05,
+     "de": "corteIni",
+     "easing": "Cubic-Out"
+    },
+    {
+     "t": 0.12,
+     "de": "corteMeio",
+     "easing": "Cubic-In",
+     "marcadores": [
+      "Impacto"
+     ]
+    },
+    {
+     "t": 0.2,
+     "de": "corteFim",
+     "easing": "Cubic-Out"
+    },
+    {
+     "t": 0.45,
+     "de": "guarda",
+     "easing": "Cubic-InOut"
+    }
+   ]
+  }
+ }
+}

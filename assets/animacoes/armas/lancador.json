@@ -1,0 +1,360 @@
+{
+ "classe": "lancador",
+ "rig": "R15",
+ "ik": {
+  "desligar": [
+   "Equip",
+   "Reload"
+  ],
+  "janelas": {}
+ },
+ "poses": {
+  "baixa": {
+   "RightShoulder": [
+    14,
+    10,
+    0
+   ],
+   "RightElbow": [
+    34,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -10,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    14,
+    -8,
+    0
+   ],
+   "LeftElbow": [
+    28,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    0,
+    0,
+    0
+   ]
+  },
+  "ombro": {
+   "RightShoulder": [
+    46,
+    20,
+    0
+   ],
+   "RightElbow": [
+    100,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -30,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    78,
+    -28,
+    0
+   ],
+   "LeftElbow": [
+    34,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    0,
+    0,
+    0
+   ]
+  },
+  "coice": {
+   "RightShoulder": [
+    40,
+    20,
+    0
+   ],
+   "RightElbow": [
+    106,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -36,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    74,
+    -28,
+    0
+   ],
+   "LeftElbow": [
+    40,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    0,
+    0,
+    0
+   ],
+   "Waist": [
+    -6,
+    0,
+    0
+   ]
+  },
+  "abaixa": {
+   "RightShoulder": [
+    30,
+    18,
+    0
+   ],
+   "RightElbow": [
+    72,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -24,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    56,
+    -24,
+    0
+   ],
+   "LeftElbow": [
+    46,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    0,
+    0,
+    0
+   ],
+   "Waist": [
+    6,
+    0,
+    0
+   ]
+  },
+  "traseira": {
+   "RightShoulder": [
+    30,
+    18,
+    0
+   ],
+   "RightElbow": [
+    72,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -24,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    44,
+    -6,
+    0
+   ],
+   "LeftElbow": [
+    104,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    0,
+    0,
+    0
+   ],
+   "Waist": [
+    6,
+    0,
+    0
+   ]
+  },
+  "mochila": {
+   "RightShoulder": [
+    30,
+    18,
+    0
+   ],
+   "RightElbow": [
+    72,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -24,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    -20,
+    -6,
+    0
+   ],
+   "LeftElbow": [
+    70,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    0,
+    0,
+    0
+   ],
+   "Waist": [
+    6,
+    6,
+    0
+   ]
+  }
+ },
+ "clipes": {
+  "Idle": {
+   "duracao": 2.6,
+   "loop": true,
+   "prioridade": "Action",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "ombro"
+    },
+    {
+     "t": 1.3,
+     "de": "ombro",
+     "juntas": {
+      "RightShoulder": [
+       45,
+       20,
+       0
+      ],
+      "LeftShoulder": [
+       77,
+       -28,
+       0
+      ]
+     },
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 2.6,
+     "de": "ombro",
+     "easing": "Cubic-InOut"
+    }
+   ]
+  },
+  "Equip": {
+   "duracao": 0.6,
+   "loop": false,
+   "prioridade": "Action2",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "baixa"
+    },
+    {
+     "t": 0.3,
+     "de": "abaixa",
+     "easing": "Cubic-Out"
+    },
+    {
+     "t": 0.6,
+     "de": "ombro",
+     "easing": "Cubic-InOut"
+    }
+   ]
+  },
+  "Fire": {
+   "duracao": 0.3,
+   "loop": false,
+   "prioridade": "Action2",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "ombro"
+    },
+    {
+     "t": 0.04,
+     "de": "coice",
+     "easing": "Cubic-Out"
+    },
+    {
+     "t": 0.3,
+     "de": "ombro",
+     "easing": "Cubic-InOut"
+    }
+   ]
+  },
+  "Reload": {
+   "duracao": 3.8,
+   "loop": false,
+   "prioridade": "Action3",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "ombro"
+    },
+    {
+     "t": 0.5,
+     "de": "abaixa",
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 1.0,
+     "de": "traseira",
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 1.6,
+     "de": "mochila",
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 2.2,
+     "de": "traseira",
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 2.7,
+     "de": "traseira",
+     "juntas": {
+      "LeftShoulder": [
+       40,
+       -4,
+       0
+      ],
+      "LeftElbow": [
+       96,
+       0,
+       0
+      ]
+     },
+     "easing": "Cubic-Out"
+    },
+    {
+     "t": 3.2,
+     "de": "abaixa",
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 3.8,
+     "de": "ombro",
+     "easing": "Cubic-InOut"
+    }
+   ]
+  }
+ }
+}

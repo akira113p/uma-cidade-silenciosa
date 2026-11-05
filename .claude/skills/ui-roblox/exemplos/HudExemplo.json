@@ -1,0 +1,28 @@
+{
+  "nome": "HudExemplo",
+  "tema": { "contorno": 3, "canto": 12, "corSombra": "#1b2140" },
+  "raiz": {
+    "tipo": "Frame", "nome": "Raiz", "tam": [1, 0, 1, 0],
+    "filhos": [
+      {
+        "tipo": "Frame", "nome": "Moedas", "tam": [0.3, 0, 0.12, 0], "pos": [0, 16, 0, 12],
+        "proporcao": 4.2, "tamMin": [176, 42], "tamMax": [340, 81],
+        "cor": "#2b3a67", "profundidade": true,
+        "filhos": [
+          { "tipo": "ImageLabel", "nome": "Icone", "tam": [0.7, 0, 0.7, 0], "pos": [0, 8, 0.5, 0], "ancora": [0, 0.5], "proporcao": 1, "imagem": "rbxassetid://0" },
+          { "tipo": "TextLabel", "nome": "Valor", "tam": [0.7, 0, 0.8, 0], "pos": [1, -10, 0.5, 0], "ancora": [1, 0.5], "texto": "1.250", "textoAuto": true, "alinhar": "esquerda" }
+        ]
+      },
+      {
+        "tipo": "TextButton", "nome": "BotaoLoja", "tam": [0.18, 0, 0.14, 0], "pos": [1, -16, 1, -16], "ancora": [1, 1],
+        "proporcao": 2.5, "tamMin": [120, 48], "tamMax": [260, 104],
+        "cor": "#ffb020", "texto": "LOJA", "textoAuto": true, "profundidade": true
+      },
+      {
+        "tipo": "TextButton", "nome": "BotaoJogar", "tam": [0.26, 0, 0.16, 0], "pos": [0.5, 0, 1, -16], "ancora": [0.5, 1],
+        "proporcao": 3.1, "tamMin": [170, 55], "tamMax": [380, 122],
+        "cor": "#3bd16f", "texto": "JOGAR", "textoAuto": true, "profundidade": true, "centro": "x"
+      }
+    ]
+  }
+}

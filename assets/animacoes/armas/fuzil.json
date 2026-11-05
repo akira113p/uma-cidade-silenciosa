@@ -1,0 +1,421 @@
+{
+ "classe": "fuzil",
+ "rig": "R15",
+ "poses": {
+  "baixa": {
+   "RightShoulder": [
+    14,
+    10,
+    0
+   ],
+   "RightElbow": [
+    34,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -10,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    14,
+    -8,
+    0
+   ],
+   "LeftElbow": [
+    28,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    0,
+    0,
+    0
+   ]
+  },
+  "mira": {
+   "RightShoulder": [
+    34,
+    16,
+    0
+   ],
+   "RightElbow": [
+    88,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -26,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    82,
+    -24,
+    0
+   ],
+   "LeftElbow": [
+    24,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    0,
+    0,
+    0
+   ]
+  },
+  "coice": {
+   "RightShoulder": [
+    30,
+    16,
+    0
+   ],
+   "RightElbow": [
+    94,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -32,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    78,
+    -24,
+    0
+   ],
+   "LeftElbow": [
+    30,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    0,
+    0,
+    0
+   ],
+   "Waist": [
+    -2,
+    0,
+    0
+   ]
+  },
+  "pente": {
+   "RightShoulder": [
+    30,
+    16,
+    0
+   ],
+   "RightElbow": [
+    90,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -34,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    62,
+    -26,
+    0
+   ],
+   "LeftElbow": [
+    58,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    10,
+    0,
+    0
+   ]
+  },
+  "cinto": {
+   "RightShoulder": [
+    30,
+    16,
+    0
+   ],
+   "RightElbow": [
+    90,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -34,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    14,
+    -6,
+    0
+   ],
+   "LeftElbow": [
+    68,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    0,
+    0,
+    0
+   ]
+  },
+  "ferrolho": {
+   "RightShoulder": [
+    30,
+    16,
+    0
+   ],
+   "RightElbow": [
+    92,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -30,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    66,
+    4,
+    0
+   ],
+   "LeftElbow": [
+    78,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ "clipes": {
+  "Idle": {
+   "duracao": 2.4,
+   "loop": true,
+   "prioridade": "Action",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "mira"
+    },
+    {
+     "t": 1.2,
+     "de": "mira",
+     "juntas": {
+      "RightShoulder": [
+       33,
+       16,
+       0
+      ],
+      "LeftShoulder": [
+       81,
+       -24,
+       0
+      ]
+     },
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 2.4,
+     "de": "mira",
+     "easing": "Cubic-InOut"
+    }
+   ]
+  },
+  "Equip": {
+   "duracao": 0.5,
+   "loop": false,
+   "prioridade": "Action2",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "baixa"
+    },
+    {
+     "t": 0.24,
+     "juntas": {
+      "RightShoulder": [
+       44,
+       14,
+       0
+      ],
+      "RightElbow": [
+       104,
+       0,
+       0
+      ],
+      "RightWrist": [
+       -30,
+       0,
+       0
+      ],
+      "LeftShoulder": [
+       70,
+       -20,
+       0
+      ],
+      "LeftElbow": [
+       50,
+       0,
+       0
+      ],
+      "LeftWrist": [
+       0,
+       0,
+       0
+      ]
+     },
+     "easing": "Cubic-Out"
+    },
+    {
+     "t": 0.5,
+     "de": "mira",
+     "easing": "Cubic-InOut"
+    }
+   ]
+  },
+  "Fire": {
+   "duracao": 0.12,
+   "loop": false,
+   "prioridade": "Action2",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "mira"
+    },
+    {
+     "t": 0.025,
+     "de": "coice",
+     "easing": "Cubic-Out"
+    },
+    {
+     "t": 0.12,
+     "de": "mira",
+     "easing": "Cubic-InOut"
+    }
+   ]
+  },
+  "Reload": {
+   "duracao": 2.6,
+   "loop": false,
+   "prioridade": "Action3",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "mira"
+    },
+    {
+     "t": 0.3,
+     "de": "pente",
+     "easing": "Cubic-Out"
+    },
+    {
+     "t": 0.5,
+     "de": "pente",
+     "juntas": {
+      "LeftShoulder": [
+       52,
+       -22,
+       0
+      ],
+      "LeftElbow": [
+       72,
+       0,
+       0
+      ]
+     },
+     "easing": "Cubic-In"
+    },
+    {
+     "t": 0.95,
+     "de": "cinto",
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 1.25,
+     "de": "cinto",
+     "juntas": {
+      "LeftShoulder": [
+       16,
+       -6,
+       0
+      ],
+      "LeftElbow": [
+       72,
+       0,
+       0
+      ]
+     }
+    },
+    {
+     "t": 1.6,
+     "de": "pente",
+     "juntas": {
+      "LeftShoulder": [
+       58,
+       -26,
+       0
+      ],
+      "LeftElbow": [
+       62,
+       0,
+       0
+      ]
+     },
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 1.75,
+     "de": "pente",
+     "easing": "Cubic-Out"
+    },
+    {
+     "t": 2.1,
+     "de": "ferrolho",
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 2.3,
+     "de": "ferrolho",
+     "juntas": {
+      "LeftShoulder": [
+       58,
+       6,
+       0
+      ],
+      "LeftElbow": [
+       88,
+       0,
+       0
+      ]
+     },
+     "easing": "Cubic-In"
+    },
+    {
+     "t": 2.6,
+     "de": "mira",
+     "easing": "Cubic-InOut"
+    }
+   ]
+  }
+ },
+ "ik": {
+  "desligar": [
+   "Equip",
+   "Reload"
+  ],
+  "janelas": {}
+ }
+}

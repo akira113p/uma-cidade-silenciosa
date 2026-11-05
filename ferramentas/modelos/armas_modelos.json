@@ -1,0 +1,251 @@
+{
+	"_leia": "Dados por arma para exportar_armas.py (docs/armas.md §8). frente/arriba = direcoes no espaco do .blend (mundo): cano (ou ponta da lamina) e lado que vira +Y do Roblox. Pontos {t,h,s}: t = 0 traseira..1 boca, h = 0 base..1 topo, s = 0 esquerda..1 direita (0,5 = meio) da caixa da arma ja orientada. punho = origem do modelo (onde a palma segura). boca 'auto' = ponta da frente. Comprimento = total na direcao frente (tabela de docs/armas.md §1, x 2,908 studs/m).",
+	"studs_por_metro": 2.908,
+	"armas": {
+		"faca": {
+			"pasta": "Faca",
+			"comprimento_m": 0.3,
+			"frente": "+X",
+			"arriba": "+Y",
+			"punho": {
+				"t": 0.15,
+				"h": 0.79
+			},
+			"boca": "auto"
+		},
+		"peDeCabra": {
+			"pasta": "Pe_de_Cabra",
+			"comprimento_m": 0.6,
+			"frente": "-X",
+			"arriba": "+Z",
+			"punho": {
+				"t": 0.5,
+				"h": 0.5
+			},
+			"boca": "auto"
+		},
+		"machado": {
+			"pasta": "Machado",
+			"comprimento_m": 0.8,
+			"frente": "cabeca",
+			"arriba": "gume_baixo",
+			"punho": {
+				"t": 0.38,
+				"h": 0.62
+			},
+			"boca": "auto"
+		},
+		"pistola": {
+			"pasta": "Pistola",
+			"comprimento_m": 0.2,
+			"frente": "+X",
+			"arriba": "+Z",
+			"punho": {
+				"t": 0.15,
+				"h": 0.4
+			},
+			"boca": "auto",
+			"ejecao": {
+				"t": 0.5,
+				"h": 0.9,
+				"s": 1.0
+			},
+			"mira": {
+				"t": 0.1,
+				"h": 1.0
+			}
+		},
+		"beretta": {
+			"pasta": "Pistola_Beretta",
+			"comprimento_m": 0.217,
+			"frente": "+X",
+			"arriba": "+Z",
+			"excluir": [
+				"^ammo$",
+				"^bullet$"
+			],
+			"punho": {
+				"t": 0.17,
+				"h": 0.36
+			},
+			"boca": "auto",
+			"ejecao": {
+				"t": 0.55,
+				"h": 0.9,
+				"s": 1.0
+			},
+			"mira": {
+				"t": 0.08,
+				"h": 1.0
+			}
+		},
+		"ar15": {
+			"pasta": "AR15",
+			"comprimento_m": 0.9,
+			"frente": "+Y",
+			"arriba": "+Z",
+			"punho": {
+				"t": 0.33,
+				"h": 0.3
+			},
+			"boca": "auto",
+			"ejecao": {
+				"t": 0.4,
+				"h": 0.6,
+				"s": 1.0
+			},
+			"apoio": {
+				"t": 0.7,
+				"h": 0.5
+			},
+			"mira": {
+				"t": 0.4,
+				"h": 1.0
+			}
+		},
+		"carabinaM5": {
+			"pasta": "Carabina_M5",
+			"comprimento_m": 0.72,
+			"frente": "+X",
+			"arriba": "+Z",
+			"excluir": [
+				"^55645$",
+				"^55645 case$",
+				"^55645 ar15 30rnd mag \\(pmag\\)$"
+			],
+			"punho": {
+				"t": 0.33,
+				"h": 0.3
+			},
+			"boca": "auto",
+			"ejecao": {
+				"t": 0.4,
+				"h": 0.6,
+				"s": 1.0
+			},
+			"apoio": {
+				"t": 0.7,
+				"h": 0.5
+			},
+			"mira": {
+				"t": 0.4,
+				"h": 1.0
+			}
+		},
+		"ak74": {
+			"pasta": "AK74",
+			"comprimento_m": 0.943,
+			"frente": "-Y",
+			"arriba": "+Z",
+			"punho": {
+				"t": 0.32,
+				"h": 0.48
+			},
+			"boca": "auto",
+			"ejecao": {
+				"t": 0.5,
+				"h": 0.6,
+				"s": 1.0
+			},
+			"apoio": {
+				"t": 0.7,
+				"h": 0.62
+			},
+			"mira": {
+				"t": 0.5,
+				"h": 1.0
+			}
+		},
+		"escopeta": {
+			"pasta": "Escopeta",
+			"comprimento_m": 1.05,
+			"frente": "+Y",
+			"arriba": "+Z",
+			"punho": {
+				"t": 0.13,
+				"h": 0.5
+			},
+			"boca": "auto",
+			"ejecao": {
+				"t": 0.4,
+				"h": 0.8,
+				"s": 1.0
+			},
+			"apoio": {
+				"t": 0.65,
+				"h": 0.62
+			},
+			"mira": {
+				"t": 0.5,
+				"h": 1.0
+			}
+		},
+		"escopetaM1912": {
+			"pasta": "Escopeta_M1912",
+			"comprimento_m": 1.01,
+			"frente": "+Y",
+			"arriba": "+Z",
+			"incluir": [
+				"^v_gun$",
+				"^v_pump$",
+				"^v_trigger$",
+				"^w_bolt$"
+			],
+			"punho": {
+				"t": 0.3,
+				"h": 0.45
+			},
+			"boca": "auto",
+			"ejecao": {
+				"t": 0.4,
+				"h": 0.8,
+				"s": 1.0
+			},
+			"apoio": {
+				"t": 0.7,
+				"h": 0.6
+			},
+			"mira": {
+				"t": 0.5,
+				"h": 1.0
+			}
+		},
+		"lancaFoguetes": {
+			"pasta": "Lanca_Foguetes",
+			"comprimento_m": 0.95,
+			"frente": "+Y",
+			"arriba": "+Z",
+			"partes": {
+				"Corpo": [
+					"^rpg2$"
+				],
+				"Foguete": [
+					"^rocket$"
+				]
+			},
+			"montar": {
+				"Foguete": {
+					"dx": 0.0,
+					"dy": 0.345,
+					"dz": -0.087
+				}
+			},
+			"punho": {
+				"t": 0.13,
+				"h": 0.22
+			},
+			"boca": "auto",
+			"apoio": {
+				"t": 0.4,
+				"h": 0.62
+			},
+			"mira": {
+				"t": 0.3,
+				"h": 1.0
+			}
+		}
+	},
+	"excluidas": {
+		"faca": "2026-11-05: a textura (Map__2.png, com sangue) causou a moderacao da conta (403 User is moderated). Fora do envio ate o usuario decidir."
+	}
+}

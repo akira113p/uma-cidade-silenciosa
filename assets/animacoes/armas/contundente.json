@@ -1,0 +1,211 @@
+{
+ "classe": "contundente",
+ "rig": "R15",
+ "poses": {
+  "guarda": {
+   "RightShoulder": [
+    30,
+    -10,
+    0
+   ],
+   "RightElbow": [
+    78,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -36,
+    0,
+    0
+   ]
+  },
+  "ergue": {
+   "RightShoulder": [
+    40,
+    -58,
+    0
+   ],
+   "RightElbow": [
+    96,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -50,
+    0,
+    0
+   ],
+   "Waist": [
+    0,
+    -30,
+    0
+   ]
+  },
+  "bate": {
+   "RightShoulder": [
+    62,
+    6,
+    0
+   ],
+   "RightElbow": [
+    34,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -30,
+    0,
+    0
+   ],
+   "Waist": [
+    0,
+    8,
+    0
+   ]
+  },
+  "segue": {
+   "RightShoulder": [
+    52,
+    52,
+    0
+   ],
+   "RightElbow": [
+    46,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -24,
+    0,
+    0
+   ],
+   "Waist": [
+    0,
+    28,
+    0
+   ]
+  }
+ },
+ "clipes": {
+  "Idle": {
+   "duracao": 2.2,
+   "loop": true,
+   "prioridade": "Action",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "guarda"
+    },
+    {
+     "t": 1.1,
+     "de": "guarda",
+     "juntas": {
+      "RightShoulder": [
+       32,
+       -10,
+       0
+      ],
+      "RightElbow": [
+       76,
+       0,
+       0
+      ]
+     },
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 2.2,
+     "de": "guarda",
+     "easing": "Cubic-InOut"
+    }
+   ]
+  },
+  "Equip": {
+   "duracao": 0.4,
+   "loop": false,
+   "prioridade": "Action2",
+   "quadros": [
+    {
+     "t": 0.0,
+     "juntas": {
+      "RightShoulder": [
+       6,
+       0,
+       0
+      ],
+      "RightElbow": [
+       12,
+       0,
+       0
+      ],
+      "RightWrist": [
+       0,
+       0,
+       0
+      ]
+     }
+    },
+    {
+     "t": 0.2,
+     "juntas": {
+      "RightShoulder": [
+       44,
+       -14,
+       0
+      ],
+      "RightElbow": [
+       92,
+       0,
+       0
+      ],
+      "RightWrist": [
+       -44,
+       0,
+       0
+      ]
+     },
+     "easing": "Cubic-Out"
+    },
+    {
+     "t": 0.4,
+     "de": "guarda",
+     "easing": "Cubic-InOut"
+    }
+   ]
+  },
+  "Golpe": {
+   "duracao": 0.7,
+   "loop": false,
+   "prioridade": "Action2",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "guarda"
+    },
+    {
+     "t": 0.12,
+     "de": "ergue",
+     "easing": "Cubic-Out"
+    },
+    {
+     "t": 0.25,
+     "de": "bate",
+     "easing": "Cubic-In",
+     "marcadores": [
+      "Impacto"
+     ]
+    },
+    {
+     "t": 0.4,
+     "de": "segue",
+     "easing": "Cubic-Out"
+    },
+    {
+     "t": 0.7,
+     "de": "guarda",
+     "easing": "Cubic-InOut"
+    }
+   ]
+  }
+ }
+}

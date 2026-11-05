@@ -1,0 +1,1334 @@
+{
+  "_doc": "Regras de corte por tipo. Cada peca lista seletores; a primeira regra que casar com o centro da face vence; o resto vai para Carroceria. Seletor: mask=[r,g,b] (cor da mascara de pintura do PZ no centro da UV da face), lado='E'|'D' (esquerda/direita do motorista), caixa=[xmin,xmax,ymin,ymax,zmin,zmax] em coordenadas cruas do conversor (x largura, y comprimento, z altura, origem do FBX; unidade nominal ~metro). Portas e janelas: a cor da mascara se repete nos dois lados em alguns tipos (compacto), entao o lado (x<0 = E) decide.",
+  "sedan": {
+    "arquivo": "Vehicles_CarNormal.fbx",
+    "queimado": "Vehicles_CarNormal_Burnt.FBX",
+    "textura": "vehicle_carnormalshell.png",
+    "mascara": "vehicle_carnormal_mask.png",
+    "textura_queimado": "vehicles_carnormal_burnt.png",
+    "frente": 1,
+    "comprimento_jogo": 2.617,
+    "comprimento_jogo_queimado": 2.63,
+    "rodas_jogo": {
+      "FE": [
+        -0.3626,
+        0.8516
+      ],
+      "FD": [
+        0.3626,
+        0.8516
+      ],
+      "TE": [
+        -0.3626,
+        -0.6099
+      ],
+      "TD": [
+        0.3626,
+        -0.6099
+      ]
+    },
+    "pecas": {
+      "Capo": [
+        {
+          "mask": [
+            255,
+            0,
+            127
+          ]
+        }
+      ],
+      "PortaMalas": [
+        {
+          "mask": [
+            0,
+            255,
+            127
+          ]
+        },
+        {
+          "mask": [
+            0,
+            255,
+            115
+          ]
+        }
+      ],
+      "ParaChoque": [
+        {
+          "mask": [
+            255,
+            0,
+            0
+          ]
+        },
+        {
+          "mask": [
+            64,
+            0,
+            0
+          ]
+        },
+        {
+          "mask": [
+            192,
+            0,
+            0
+          ]
+        }
+      ],
+      "PortaE": [
+        {
+          "mask": [
+            255,
+            0,
+            255
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            0,
+            255,
+            255
+          ],
+          "lado": "E"
+        }
+      ],
+      "PortaD": [
+        {
+          "mask": [
+            255,
+            0,
+            255
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            0,
+            255,
+            255
+          ],
+          "lado": "D"
+        }
+      ],
+      "Vidro_ParaBrisa": [
+        {
+          "mask": [
+            127,
+            0,
+            0
+          ]
+        }
+      ],
+      "Vidro_Traseiro": [
+        {
+          "mask": [
+            0,
+            127,
+            0
+          ]
+        }
+      ],
+      "Vidro_JanelaE": [
+        {
+          "mask": [
+            0,
+            0,
+            127
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            127,
+            0,
+            127
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            127,
+            127,
+            0
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            0,
+            127,
+            127
+          ],
+          "lado": "E"
+        }
+      ],
+      "Vidro_JanelaD": [
+        {
+          "mask": [
+            0,
+            0,
+            127
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            127,
+            0,
+            127
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            127,
+            127,
+            0
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            0,
+            127,
+            127
+          ],
+          "lado": "D"
+        }
+      ],
+      "Volante": [
+        {
+          "caixa": [
+            -0.85,
+            -0.28,
+            0.77,
+            1.02,
+            -0.26,
+            0.3
+          ]
+        }
+      ]
+    },
+    "ausentes": {},
+    "escala": 1.8028,
+    "medida": {
+      "teto_interno_1x": 2.607,
+      "altura_1x": 2.7541,
+      "volante_1x_blender": [
+        -0.747,
+        1.217,
+        1.4373
+      ]
+    }
+  },
+  "suv": {
+    "arquivo": "Vehicles_SUV.fbx",
+    "queimado": "Vehicles_SUV_Burnt.FBX",
+    "textura": "vehicle_suvshell.png",
+    "mascara": "vehicle_suv_mask.png",
+    "textura_queimado": "vehicles_suv_burnt.png",
+    "frente": 1,
+    "comprimento_jogo": 2.093,
+    "comprimento_jogo_queimado": 2.247,
+    "rodas_jogo": {
+      "FE": [
+        -0.3791,
+        0.6978
+      ],
+      "FD": [
+        0.3791,
+        0.6978
+      ],
+      "TE": [
+        -0.3791,
+        -0.5824
+      ],
+      "TD": [
+        0.3791,
+        -0.5824
+      ]
+    },
+    "pecas": {
+      "Capo": [
+        {
+          "mask": [
+            255,
+            0,
+            127
+          ]
+        }
+      ],
+      "PortaMalas": [
+        {
+          "mask": [
+            0,
+            255,
+            127
+          ]
+        },
+        {
+          "mask": [
+            0,
+            255,
+            115
+          ]
+        }
+      ],
+      "ParaChoque": [
+        {
+          "mask": [
+            255,
+            0,
+            0
+          ]
+        },
+        {
+          "mask": [
+            64,
+            0,
+            0
+          ]
+        },
+        {
+          "mask": [
+            192,
+            0,
+            0
+          ]
+        }
+      ],
+      "PortaE": [
+        {
+          "mask": [
+            255,
+            0,
+            255
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            0,
+            255,
+            255
+          ],
+          "lado": "E"
+        }
+      ],
+      "PortaD": [
+        {
+          "mask": [
+            255,
+            0,
+            255
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            0,
+            255,
+            255
+          ],
+          "lado": "D"
+        }
+      ],
+      "Vidro_ParaBrisa": [
+        {
+          "mask": [
+            127,
+            0,
+            0
+          ]
+        }
+      ],
+      "Vidro_Traseiro": [
+        {
+          "mask": [
+            0,
+            127,
+            0
+          ]
+        }
+      ],
+      "Vidro_JanelaE": [
+        {
+          "mask": [
+            0,
+            0,
+            127
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            127,
+            0,
+            127
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            127,
+            127,
+            0
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            0,
+            127,
+            127
+          ],
+          "lado": "E"
+        }
+      ],
+      "Vidro_JanelaD": [
+        {
+          "mask": [
+            0,
+            0,
+            127
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            127,
+            0,
+            127
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            127,
+            127,
+            0
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            0,
+            127,
+            127
+          ],
+          "lado": "D"
+        }
+      ],
+      "Volante": [
+        {
+          "caixa": [
+            -0.85,
+            -0.28,
+            0.93,
+            1.18,
+            -0.22,
+            0.33
+          ]
+        }
+      ]
+    },
+    "ausentes": {},
+    "escala": 1.8572,
+    "medida": {
+      "teto_interno_1x": 2.5306,
+      "altura_1x": 2.6773,
+      "volante_1x_blender": [
+        -0.7467,
+        1.3919,
+        1.3594
+      ]
+    }
+  },
+  "pickup": {
+    "arquivo": "Vehicles_PickUpTruck.fbx",
+    "queimado": "Vehicles_PickupBurnt.FBX",
+    "textura": "vehicle_pickupshell.png",
+    "mascara": "vehicle_pickuptruck_mask.png",
+    "textura_queimado": "vehicles_pickupburnt.png",
+    "frente": 1,
+    "comprimento_jogo": 2.26,
+    "comprimento_jogo_queimado": 2.345,
+    "rodas_jogo": {
+      "FE": [
+        -0.3462,
+        0.7582
+      ],
+      "FD": [
+        0.3462,
+        0.7582
+      ],
+      "TE": [
+        -0.3462,
+        -0.5879
+      ],
+      "TD": [
+        0.3462,
+        -0.5879
+      ]
+    },
+    "pecas": {
+      "Capo": [
+        {
+          "mask": [
+            255,
+            0,
+            127
+          ]
+        }
+      ],
+      "PortaMalas": [
+        {
+          "mask": [
+            0,
+            255,
+            127
+          ]
+        },
+        {
+          "mask": [
+            0,
+            255,
+            115
+          ]
+        }
+      ],
+      "ParaChoque": [
+        {
+          "mask": [
+            255,
+            0,
+            0
+          ]
+        },
+        {
+          "mask": [
+            64,
+            0,
+            0
+          ]
+        },
+        {
+          "mask": [
+            192,
+            0,
+            0
+          ]
+        }
+      ],
+      "PortaE": [
+        {
+          "mask": [
+            255,
+            0,
+            255
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            0,
+            255,
+            255
+          ],
+          "lado": "E"
+        }
+      ],
+      "PortaD": [
+        {
+          "mask": [
+            255,
+            0,
+            255
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            0,
+            255,
+            255
+          ],
+          "lado": "D"
+        }
+      ],
+      "Vidro_ParaBrisa": [
+        {
+          "mask": [
+            127,
+            0,
+            0
+          ]
+        }
+      ],
+      "Vidro_Traseiro": [
+        {
+          "mask": [
+            0,
+            127,
+            0
+          ]
+        }
+      ],
+      "Vidro_JanelaE": [
+        {
+          "mask": [
+            0,
+            0,
+            127
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            127,
+            0,
+            127
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            127,
+            127,
+            0
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            0,
+            127,
+            127
+          ],
+          "lado": "E"
+        }
+      ],
+      "Vidro_JanelaD": [
+        {
+          "mask": [
+            0,
+            0,
+            127
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            127,
+            0,
+            127
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            127,
+            127,
+            0
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            0,
+            127,
+            127
+          ],
+          "lado": "D"
+        }
+      ],
+      "Volante": [
+        {
+          "caixa": [
+            -0.85,
+            -0.28,
+            0.76,
+            1.0,
+            -0.22,
+            0.33
+          ]
+        }
+      ]
+    },
+    "ausentes": {},
+    "escala": 1.6233,
+    "medida": {
+      "teto_interno_1x": 2.8954,
+      "altura_1x": 2.9722,
+      "volante_1x_blender": [
+        -0.7473,
+        1.1799,
+        1.7074
+      ]
+    }
+  },
+  "van": {
+    "arquivo": "Vehicles_Van.fbx",
+    "queimado": "Vehicles_Van_Burnt.FBX",
+    "textura": "vehicle_vanshell.png",
+    "mascara": "vehicle_van_mask.png",
+    "textura_queimado": "vehicles_van_burnt.png",
+    "frente": 1,
+    "comprimento_jogo": 2.349,
+    "comprimento_jogo_queimado": 2.456,
+    "rodas_jogo": {
+      "FE": [
+        -0.3791,
+        0.8681
+      ],
+      "FD": [
+        0.3791,
+        0.8681
+      ],
+      "TE": [
+        -0.3791,
+        -0.5385
+      ],
+      "TD": [
+        0.3791,
+        -0.5385
+      ]
+    },
+    "pecas": {
+      "Capo": [
+        {
+          "mask": [
+            255,
+            0,
+            127
+          ]
+        }
+      ],
+      "PortaMalas": [
+        {
+          "mask": [
+            0,
+            255,
+            0
+          ]
+        }
+      ],
+      "ParaChoque": [
+        {
+          "mask": [
+            255,
+            0,
+            0
+          ]
+        },
+        {
+          "mask": [
+            64,
+            0,
+            0
+          ]
+        },
+        {
+          "mask": [
+            192,
+            0,
+            0
+          ]
+        }
+      ],
+      "PortaE": [
+        {
+          "mask": [
+            255,
+            0,
+            255
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            0,
+            255,
+            255
+          ],
+          "lado": "E"
+        }
+      ],
+      "PortaD": [
+        {
+          "mask": [
+            255,
+            0,
+            255
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            0,
+            255,
+            255
+          ],
+          "lado": "D"
+        }
+      ],
+      "Vidro_ParaBrisa": [
+        {
+          "mask": [
+            127,
+            0,
+            0
+          ]
+        }
+      ],
+      "Vidro_Traseiro": [
+        {
+          "mask": [
+            0,
+            127,
+            0
+          ]
+        }
+      ],
+      "Vidro_JanelaE": [
+        {
+          "mask": [
+            0,
+            0,
+            127
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            127,
+            0,
+            127
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            127,
+            127,
+            0
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            0,
+            127,
+            127
+          ],
+          "lado": "E"
+        }
+      ],
+      "Vidro_JanelaD": [
+        {
+          "mask": [
+            0,
+            0,
+            127
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            127,
+            0,
+            127
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            127,
+            127,
+            0
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            0,
+            127,
+            127
+          ],
+          "lado": "D"
+        }
+      ],
+      "Volante": [
+        {
+          "caixa": [
+            -0.95,
+            -0.3,
+            1.9,
+            2.18,
+            -0.2,
+            0.45
+          ]
+        }
+      ]
+    },
+    "ausentes": {},
+    "escala": 1.4808,
+    "medida": {
+      "teto_interno_1x": 3.174,
+      "altura_1x": 3.2905,
+      "volante_1x_blender": [
+        -0.801,
+        2.6824,
+        1.9212
+      ]
+    }
+  },
+  "compacto": {
+    "arquivo": "Vehicles_SmallCar.fbx",
+    "queimado": "Vehicles_SmallCar_Burnt.FBX",
+    "textura": "vehicle_smallcarshell.png",
+    "mascara": "vehicle_smallcar_mask.png",
+    "textura_queimado": "vehicles_smallcar_burnt.png",
+    "frente": 1,
+    "comprimento_jogo": 1.84,
+    "comprimento_jogo_queimado": 1.894,
+    "rodas_jogo": {
+      "FE": [
+        -0.2857,
+        0.511
+      ],
+      "FD": [
+        0.2857,
+        0.511
+      ],
+      "TE": [
+        -0.2857,
+        -0.5549
+      ],
+      "TD": [
+        0.2857,
+        -0.5549
+      ]
+    },
+    "pecas": {
+      "Capo": [
+        {
+          "mask": [
+            255,
+            0,
+            127
+          ]
+        }
+      ],
+      "PortaMalas": [
+        {
+          "mask": [
+            0,
+            255,
+            127
+          ]
+        },
+        {
+          "mask": [
+            0,
+            255,
+            115
+          ]
+        }
+      ],
+      "ParaChoque": [
+        {
+          "mask": [
+            255,
+            0,
+            0
+          ]
+        },
+        {
+          "mask": [
+            64,
+            0,
+            0
+          ]
+        },
+        {
+          "mask": [
+            192,
+            0,
+            0
+          ]
+        }
+      ],
+      "PortaE": [
+        {
+          "mask": [
+            255,
+            0,
+            255
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            0,
+            255,
+            255
+          ],
+          "lado": "E"
+        }
+      ],
+      "PortaD": [
+        {
+          "mask": [
+            255,
+            0,
+            255
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            0,
+            255,
+            255
+          ],
+          "lado": "D"
+        }
+      ],
+      "Vidro_ParaBrisa": [
+        {
+          "mask": [
+            127,
+            0,
+            0
+          ]
+        }
+      ],
+      "Vidro_Traseiro": [
+        {
+          "mask": [
+            0,
+            127,
+            0
+          ]
+        }
+      ],
+      "Vidro_JanelaE": [
+        {
+          "mask": [
+            0,
+            0,
+            127
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            127,
+            0,
+            127
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            127,
+            127,
+            0
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            0,
+            127,
+            127
+          ],
+          "lado": "E"
+        }
+      ],
+      "Vidro_JanelaD": [
+        {
+          "mask": [
+            0,
+            0,
+            127
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            127,
+            0,
+            127
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            127,
+            127,
+            0
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            0,
+            127,
+            127
+          ],
+          "lado": "D"
+        }
+      ],
+      "Volante": [
+        {
+          "caixa": [
+            -0.75,
+            -0.25,
+            0.48,
+            0.58,
+            -0.24,
+            -0.05
+          ]
+        }
+      ]
+    },
+    "ausentes": {},
+    "escala": 1.9566,
+    "medida": {
+      "teto_interno_1x": 2.4021,
+      "altura_1x": 2.5117,
+      "volante_1x_blender": [
+        -0.652,
+        0.7295,
+        1.1199
+      ]
+    }
+  },
+  "esportivo": {
+    "arquivo": "Vehicles_SportsCar.fbx",
+    "queimado": "Vehicles_SportsCar_Burnt.FBX",
+    "textura": "vehicle_sportscarshell.png",
+    "mascara": "vehicle_sportscar_mask.png",
+    "textura_queimado": "vehicles_sportscar_burnt.png",
+    "frente": 1,
+    "comprimento_jogo": 2.09,
+    "comprimento_jogo_queimado": 2.088,
+    "rodas_jogo": {
+      "FE": [
+        -0.3242,
+        0.5879
+      ],
+      "FD": [
+        0.3242,
+        0.5879
+      ],
+      "TE": [
+        -0.3352,
+        -0.5659
+      ],
+      "TD": [
+        0.3352,
+        -0.5659
+      ]
+    },
+    "pecas": {
+      "Capo": [
+        {
+          "mask": [
+            255,
+            0,
+            127
+          ]
+        }
+      ],
+      "PortaMalas": [
+        {
+          "mask": [
+            0,
+            255,
+            127
+          ]
+        },
+        {
+          "mask": [
+            0,
+            255,
+            115
+          ]
+        }
+      ],
+      "ParaChoque": [
+        {
+          "mask": [
+            255,
+            0,
+            0
+          ]
+        },
+        {
+          "mask": [
+            64,
+            0,
+            0
+          ]
+        },
+        {
+          "mask": [
+            192,
+            0,
+            0
+          ]
+        }
+      ],
+      "PortaE": [
+        {
+          "mask": [
+            255,
+            0,
+            255
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            0,
+            255,
+            255
+          ],
+          "lado": "E"
+        }
+      ],
+      "PortaD": [
+        {
+          "mask": [
+            255,
+            0,
+            255
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            0,
+            255,
+            255
+          ],
+          "lado": "D"
+        }
+      ],
+      "Vidro_ParaBrisa": [
+        {
+          "mask": [
+            127,
+            0,
+            0
+          ]
+        }
+      ],
+      "Vidro_Traseiro": [
+        {
+          "mask": [
+            0,
+            127,
+            0
+          ]
+        }
+      ],
+      "Vidro_JanelaE": [
+        {
+          "mask": [
+            0,
+            0,
+            127
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            127,
+            0,
+            127
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            127,
+            127,
+            0
+          ],
+          "lado": "E"
+        },
+        {
+          "mask": [
+            0,
+            127,
+            127
+          ],
+          "lado": "E"
+        }
+      ],
+      "Vidro_JanelaD": [
+        {
+          "mask": [
+            0,
+            0,
+            127
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            127,
+            0,
+            127
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            127,
+            127,
+            0
+          ],
+          "lado": "D"
+        },
+        {
+          "mask": [
+            0,
+            127,
+            127
+          ],
+          "lado": "D"
+        }
+      ],
+      "Volante": [
+        {
+          "caixa": [
+            -0.75,
+            -0.22,
+            0.04,
+            0.28,
+            -0.18,
+            0.36
+          ]
+        }
+      ]
+    },
+    "ausentes": {},
+    "escala": 2.264,
+    "medida": {
+      "teto_interno_1x": 2.076,
+      "altura_1x": 2.1843,
+      "volante_1x_blender": [
+        -0.6333,
+        0.2216,
+        1.2348
+      ]
+    }
+  }
+}

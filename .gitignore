@@ -1,0 +1,21 @@
+build/
+sourcemap.json
+Packages/
+*.rbxl.lock
+*.rbxlx.lock
+.env
+
+# Terceiros / sem direito de redistribuir
+modelos 3d/
+pesquisa/veiculos-pz/
+
+# Local
+.claude/settings.local.json
+__pycache__/
+*.pyc
+
+# Binarios de editor (o mapa fica em mapa/Mapa.rbxm, que e versionado)
+*.blend
+*.blend1
+*.rbxl
+*.rbxlx

@@ -1,0 +1,401 @@
+{
+ "classe": "escopeta",
+ "rig": "R15",
+ "ik": {
+  "desligar": [
+   "Equip",
+   "RecargaInicio",
+   "RecargaCartucho",
+   "RecargaFim"
+  ],
+  "janelas": {
+   "Fire": [
+    0.2,
+    0.58
+   ]
+  }
+ },
+ "poses": {
+  "baixa": {
+   "RightShoulder": [
+    14,
+    10,
+    0
+   ],
+   "RightElbow": [
+    34,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -10,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    14,
+    -8,
+    0
+   ],
+   "LeftElbow": [
+    28,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    0,
+    0,
+    0
+   ]
+  },
+  "mira": {
+   "RightShoulder": [
+    34,
+    16,
+    0
+   ],
+   "RightElbow": [
+    88,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -26,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    80,
+    -26,
+    0
+   ],
+   "LeftElbow": [
+    28,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    0,
+    0,
+    0
+   ]
+  },
+  "coice": {
+   "RightShoulder": [
+    24,
+    16,
+    0
+   ],
+   "RightElbow": [
+    100,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -40,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    76,
+    -26,
+    0
+   ],
+   "LeftElbow": [
+    34,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    0,
+    0,
+    0
+   ],
+   "Waist": [
+    -5,
+    0,
+    0
+   ]
+  },
+  "bombaTras": {
+   "RightShoulder": [
+    34,
+    16,
+    0
+   ],
+   "RightElbow": [
+    90,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -28,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    74,
+    -26,
+    0
+   ],
+   "LeftElbow": [
+    50,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    0,
+    0,
+    0
+   ]
+  },
+  "porta": {
+   "RightShoulder": [
+    40,
+    10,
+    0
+   ],
+   "RightElbow": [
+    82,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -14,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    56,
+    -22,
+    0
+   ],
+   "LeftElbow": [
+    72,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    0,
+    0,
+    0
+   ]
+  },
+  "bolsa": {
+   "RightShoulder": [
+    40,
+    10,
+    0
+   ],
+   "RightElbow": [
+    82,
+    0,
+    0
+   ],
+   "RightWrist": [
+    -14,
+    0,
+    0
+   ],
+   "LeftShoulder": [
+    22,
+    -8,
+    0
+   ],
+   "LeftElbow": [
+    78,
+    0,
+    0
+   ],
+   "LeftWrist": [
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ "clipes": {
+  "Idle": {
+   "duracao": 2.4,
+   "loop": true,
+   "prioridade": "Action",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "mira"
+    },
+    {
+     "t": 1.2,
+     "de": "mira",
+     "juntas": {
+      "RightShoulder": [
+       33,
+       16,
+       0
+      ]
+     },
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 2.4,
+     "de": "mira",
+     "easing": "Cubic-InOut"
+    }
+   ]
+  },
+  "Equip": {
+   "duracao": 0.5,
+   "loop": false,
+   "prioridade": "Action2",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "baixa"
+    },
+    {
+     "t": 0.24,
+     "juntas": {
+      "RightShoulder": [
+       44,
+       14,
+       0
+      ],
+      "RightElbow": [
+       104,
+       0,
+       0
+      ],
+      "RightWrist": [
+       -30,
+       0,
+       0
+      ],
+      "LeftShoulder": [
+       70,
+       -22,
+       0
+      ],
+      "LeftElbow": [
+       50,
+       0,
+       0
+      ],
+      "LeftWrist": [
+       0,
+       0,
+       0
+      ]
+     },
+     "easing": "Cubic-Out"
+    },
+    {
+     "t": 0.5,
+     "de": "mira",
+     "easing": "Cubic-InOut"
+    }
+   ]
+  },
+  "Fire": {
+   "duracao": 0.7,
+   "loop": false,
+   "prioridade": "Action2",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "mira"
+    },
+    {
+     "t": 0.04,
+     "de": "coice",
+     "easing": "Cubic-Out"
+    },
+    {
+     "t": 0.2,
+     "de": "mira",
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 0.34,
+     "de": "bombaTras",
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 0.5,
+     "de": "mira",
+     "easing": "Cubic-Out"
+    },
+    {
+     "t": 0.7,
+     "de": "mira"
+    }
+   ]
+  },
+  "RecargaInicio": {
+   "duracao": 0.5,
+   "loop": false,
+   "prioridade": "Action3",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "mira"
+    },
+    {
+     "t": 0.5,
+     "de": "porta",
+     "easing": "Cubic-Out"
+    }
+   ]
+  },
+  "RecargaCartucho": {
+   "duracao": 0.55,
+   "loop": false,
+   "prioridade": "Action3",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "porta"
+    },
+    {
+     "t": 0.2,
+     "de": "bolsa",
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 0.4,
+     "de": "porta",
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 0.55,
+     "de": "porta",
+     "easing": "Cubic-Out"
+    }
+   ]
+  },
+  "RecargaFim": {
+   "duracao": 0.4,
+   "loop": false,
+   "prioridade": "Action3",
+   "quadros": [
+    {
+     "t": 0.0,
+     "de": "porta"
+    },
+    {
+     "t": 0.14,
+     "de": "bombaTras",
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 0.28,
+     "de": "mira",
+     "easing": "Cubic-InOut"
+    },
+    {
+     "t": 0.4,
+     "de": "mira"
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,58 @@
+{
+  "classe": "pistola",
+  "rig": "R15",
+  "poses": {
+    "guardada": {
+      "RightShoulder": [18, 4, 0], "RightElbow": [30, 0, 0], "RightWrist": [-8, 0, 0]
+    },
+    "mira": {
+      "RightShoulder": [48, 8, 0], "RightElbow": [42, 0, 0], "RightWrist": [0, 0, 0]
+    },
+    "coice": {
+      "RightShoulder": [58, 8, 0], "RightElbow": [44, 0, 0], "RightWrist": [-14, 0, 0]
+    },
+    "perto": {
+      "RightShoulder": [62, -14, 0], "RightElbow": [82, 0, 0], "RightWrist": [-6, 0, 0],
+      "LeftShoulder": [48, 30, 0], "LeftElbow": [92, 0, 0], "LeftWrist": [0, 0, 0]
+    }
+  },
+  "clipes": {
+    "Idle": {
+      "duracao": 2.0, "loop": true, "prioridade": "Action",
+      "quadros": [
+        { "t": 0.0, "de": "mira" },
+        { "t": 1.0, "de": "mira", "juntas": { "RightShoulder": [46, 8, 0], "RightElbow": [43, 0, 0] }, "easing": "Cubic-InOut" },
+        { "t": 2.0, "de": "mira" }
+      ]
+    },
+    "Equip": {
+      "duracao": 0.35, "loop": false, "prioridade": "Action2",
+      "quadros": [
+        { "t": 0.0, "juntas": { "RightShoulder": [4, 0, 0], "RightElbow": [8, 0, 0], "RightWrist": [0, 0, 0] } },
+        { "t": 0.16, "juntas": { "RightShoulder": [64, 6, 0], "RightElbow": [60, 0, 0], "RightWrist": [-10, 0, 0] }, "easing": "Cubic-Out" },
+        { "t": 0.35, "de": "mira", "easing": "Cubic-InOut" }
+      ]
+    },
+    "Fire": {
+      "duracao": 0.15, "loop": false, "prioridade": "Action2",
+      "quadros": [
+        { "t": 0.0, "de": "mira" },
+        { "t": 0.035, "de": "coice", "easing": "Cubic-Out" },
+        { "t": 0.15, "de": "mira", "easing": "Cubic-InOut" }
+      ]
+    },
+    "Reload": {
+      "duracao": 2.0, "loop": false, "prioridade": "Action3",
+      "quadros": [
+        { "t": 0.0, "de": "mira" },
+        { "t": 0.3, "de": "perto", "easing": "Cubic-Out" },
+        { "t": 0.45, "de": "perto", "juntas": { "LeftShoulder": [44, 30, 0], "LeftElbow": [102, 0, 0], "RightWrist": [0, 0, 0] } },
+        { "t": 0.75, "de": "perto", "juntas": { "LeftShoulder": [12, 8, 0], "LeftElbow": [62, 0, 0] }, "easing": "Cubic-InOut" },
+        { "t": 1.1, "de": "perto", "juntas": { "LeftShoulder": [14, 8, 0], "LeftElbow": [64, 0, 0] } },
+        { "t": 1.45, "de": "perto", "juntas": { "LeftShoulder": [44, 30, 0], "LeftElbow": [100, 0, 0] }, "easing": "Cubic-InOut" },
+        { "t": 1.6, "de": "perto", "juntas": { "LeftShoulder": [48, 30, 0], "LeftElbow": [92, 0, 0], "RightWrist": [-12, 0, 0] }, "easing": "Cubic-Out" },
+        { "t": 2.0, "de": "mira", "easing": "Cubic-InOut" }
+      ]
+    }
+  }
+}

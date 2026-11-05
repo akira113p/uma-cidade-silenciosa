@@ -1,0 +1,113 @@
+{
+  "name": "UmaCidadeSilenciosa-serve",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "Server": {
+        "$path": "src/server"
+      }
+    },
+    "StarterPlayer": {
+      "$properties": {
+        "CameraMode": "LockFirstPerson",
+        "CharacterWalkSpeed": 16,
+        "CharacterUseJumpPower": false,
+        "CharacterJumpHeight": 6
+      },
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "src/client"
+        }
+      },
+      "StarterCharacterScripts": {
+        "Sound": {
+          "$className": "LocalScript",
+          "$properties": {
+            "Source": "-- Vazio de propósito: substitui o RbxCharacterSounds padrão. Passos e pulo são do servidor (src/server/Ruido.luau)."
+          }
+        }
+      }
+    },
+    "Players": {
+      "$properties": {
+        "RespawnTime": 10,
+        "CharacterAutoLoads": true
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "Technology": "Voxel",
+        "LightingStyle": "Soft",
+        "Ambient": [
+          0.18,
+          0.18,
+          0.2
+        ],
+        "OutdoorAmbient": [
+          0.32,
+          0.32,
+          0.36
+        ],
+        "Brightness": 1.2,
+        "ClockTime": 21,
+        "GlobalShadows": true
+      },
+      "Retro": {
+        "$className": "ColorGradingEffect",
+        "$properties": {
+          "TonemapperPreset": "Retro"
+        }
+      },
+      "Ceu": {
+        "$className": "Sky",
+        "$properties": {
+          "CelestialBodiesShown": false,
+          "StarCount": 0
+        }
+      },
+      "Brilho": {
+        "$className": "BloomEffect",
+        "$properties": {
+          "Intensity": 0.6,
+          "Size": 30,
+          "Threshold": 0.9
+        }
+      },
+      "Profundidade": {
+        "$className": "DepthOfFieldEffect",
+        "$properties": {
+          "NearIntensity": 0,
+          "FarIntensity": 0.25,
+          "FocusDistance": 25,
+          "InFocusRadius": 35
+        }
+      },
+      "Cor": {
+        "$className": "ColorCorrectionEffect",
+        "$properties": {
+          "Saturation": -0.3,
+          "Contrast": 0.1,
+          "Brightness": -0.03
+        }
+      }
+    },
+    "SoundService": {
+      "$properties": {
+        "RespectFilteringEnabled": true
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "StreamingEnabled": true,
+        "StreamingMinRadius": 64,
+        "StreamingTargetRadius": 512,
+        "Gravity": 196.2
+      }
+    }
+  }
+}
