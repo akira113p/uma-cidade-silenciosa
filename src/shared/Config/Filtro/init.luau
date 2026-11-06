@@ -9,4 +9,6 @@ return {
 	Ceu = require(script.Ceu),
 	Postes = require(script.Postes),
 	Texturas = require(script.Texturas),
+	Retro = require(script.Retro),
+	Seletor = require(script.Seletor),
 }

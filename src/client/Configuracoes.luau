@@ -9,6 +9,8 @@ local Rede = require(Shared:WaitForChild("Rede"))
 local Config = Shared:WaitForChild("Config")
 local ConfigCamera = require(Config:WaitForChild("Camera"))
 local ConfigMovimento = require(Config:WaitForChild("Movimento"))
+local ConfigFiltro = require(Config:WaitForChild("Filtro"))
+local FiltrosSeletor = require(script.Parent:WaitForChild("FiltrosSeletor"))
 
 local Configuracoes = {}
 
@@ -259,7 +261,26 @@ local function construir(): ScreenGui
 	linhaLigaDesliga(7, "Neblina em camadas", "Pref_NeblinaVolume", rolagem)
 	linhaPasso(8, "Volume (%)", "Pref_Volume", 10, rolagem)
 
-	local fechar = botao("Fechar", rolagem, { Size = UDim2.new(1, 0, 0, ALTURA_LINHA), LayoutOrder = 9 })
+	-- Seção dos filtros do DitherDown (docs/filtro-ditherdown.md §6): ocupa as ordens de 9 em diante.
+	local okSecao, ordemFechar = pcall(FiltrosSeletor.montar, {
+		lista = rolagem,
+		ordemInicial = 9,
+		config = ConfigFiltro,
+		alturaLinha = ALTURA_LINHA,
+		fonte = FONTE,
+		corTexto = COR_TEXTO,
+		criar = criar,
+		botao = botao,
+		pedir = pedir,
+		linhaLigaDesliga = linhaLigaDesliga,
+		linhaOpcoes = linhaOpcoes,
+	})
+	if not okSecao then
+		warn("[Configuracoes] seção de filtros falhou: " .. tostring(ordemFechar))
+		ordemFechar = 9
+	end
+
+	local fechar = botao("Fechar", rolagem, { Size = UDim2.new(1, 0, 0, ALTURA_LINHA), LayoutOrder = ordemFechar })
 	fechar.Activated:Connect(function()
 		tocarClique()
 		Configuracoes.fechar()

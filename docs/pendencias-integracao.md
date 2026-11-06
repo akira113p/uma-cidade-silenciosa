@@ -412,3 +412,15 @@ Tudo o que existe no place oficial "CIDADE SILENCIOSA" e NÃO é reproduzível p
 - **`golpesMax = 60`** (metal 0,15 de garra: acima disso ele ignora e procura a parede mais fraca). **`desistir = 90 s`** por parede.
 - **Velocidade do Rastejador**: Calmo/Investiga 8, Caça/Ataque 20 (jogador corre 16, sprint 24). Walk patina 40% (precisa 5,0x, limite 3,0x); Run a 20 = 2,30x ok. Decidir: clipe de Walk mais rápido, velMax maior ou Calmo mais lento.
 - **Porta estreita:** o 2x passa a porta de 4,2 em linha reta (corpo 2,66 de largura); só o navmesh (AgentRadius 2,66 = metade do comprimento) diz NoPath. Mantido; o `AgentRadius` continua pendente da decisão anterior.
+
+## Filtro DitherDown
+Contrato em `docs/filtro-ditherdown.md`. Branch `filtros-ditherdown`, tudo nasce desligado, nada testado no Studio (só Lune, selene, stylua). Não verificado:
+- **EditableImage:** nomes e comportamento de `AssetService:CreateEditableImage`, `WritePixelsBuffer`, `Content.fromObject` e `ImageLabel.ImageContent`; teto de tamanho da imagem.
+- **Permissão no jogo publicado:** se o jogo publicado deixa criar EditableImage (as camadas devem sumir sem derrubar o filtro; conferir o `warn` único).
+- **Ordem visual dos overlays:** Dither 5, ScanDura 6, ScanSuave 7, Bandas 8 acima da Aberração, tudo no `guiMundo` (abaixo do HUD): conferir em captura se nenhum cobre HUD, grão ou moldura.
+- **Desempenho:** custo dos overlays em tile, das Bandas (mexem por quadro) e do VHS (2 ViewportFrames de novo, nível 3); medir FPS em PC e celular e ver se a qualidade automática cobre.
+- **Mobile:** alvos de toque da seção na tela de Configurações (tecla P / botão Config), rolagem do painel 460x440 com a seção longa, `TileSize` em telas de DPI alto.
+- **VHS linear (modo linear da Aberração):** deslocamento ±d só na `Position` (Size tela cheia). Revisão do Opus em 2026-11-06 tirou o alargamento (tela + 2d) que o agente tinha feito: ele mostrava d px (2 a 19) de cena além da borda no vermelho/ciano e quebrava a regra de justiça do PvP. Efeito: a borda oposta fica d px sem fantasma. No PC conferir se a escala bate com a cena real e se o FOV vertical do viewport mantém o mesmo tamanho de pixel. Com Pref_FVhs ligado a franja radial por FOV fica suspensa; força 0 esconde a camada.
+- **Afinar números por captura:** alfas do Dither, mínimos das scanlines, período e velocidade das Bandas, `offsetMax` do VHS, forças padrão; o espaço de cor do projeto Unity original é desconhecido.
+- **Pixelado indisponível:** o Roblox não tem shader de tela, leitura dos pixels do frame nem escala de render, então não dá para reduzir a resolução do 3D; a linha aparece desabilitada com o motivo. Tampouco há quantização por pixel (o Dither é só o padrão Bayer sobreposto).
+- **Seletor:** os cliques de um preset tocam o som de clique uma vez por preferência (o `pedir` toca sempre); aceitável, ajustar se incomodar.
