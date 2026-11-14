@@ -32,7 +32,7 @@ return {
 		Pref_FDitherMatriz = 4, -- 2..16 (potência de 2)
 		Pref_FScanDura = true,
 		Pref_FScanDuraForca = 100,
-		Pref_FScanSuave = true,
+		Pref_FScanSuave = false, -- pedido do usuário 2026-11-13: esta nasce desligada
 		Pref_FScanSuaveForca = 100,
 		Pref_FBandas = true,
 		Pref_FBandasForca = 100,
