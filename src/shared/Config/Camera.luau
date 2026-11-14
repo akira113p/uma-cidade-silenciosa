@@ -26,18 +26,18 @@ return {
 		Pref_Lente = false,
 		Pref_NeblinaVolume = true,
 		Pref_Volume = 100, -- 0..100
-		-- Filtros do DitherDown (docs/filtro-ditherdown.md §6): tudo nasce desligado
-		Pref_FDither = false,
+		-- Filtros do DitherDown (docs/filtro-ditherdown.md §6): tudo nasce ligado no máximo (pedido do usuário 2026-11-13)
+		Pref_FDither = true,
 		Pref_FDitherForca = 100, -- 0..100
 		Pref_FDitherMatriz = 4, -- 2..16 (potência de 2)
-		Pref_FScanDura = false,
+		Pref_FScanDura = true,
 		Pref_FScanDuraForca = 100,
-		Pref_FScanSuave = false,
+		Pref_FScanSuave = true,
 		Pref_FScanSuaveForca = 100,
-		Pref_FBandas = false,
-		Pref_FBandasForca = 50,
-		Pref_FVhs = false,
-		Pref_FVhsForca = 20,
+		Pref_FBandas = true,
+		Pref_FBandasForca = 100,
+		Pref_FVhs = true,
+		Pref_FVhsForca = 100,
 	},
 	limitesPreferencias = {
 		Pref_Intensidade = { 0, 100 },

@@ -7,10 +7,13 @@ local camera = require("../src/shared/Config/Camera")
 local erros = R.validar(seletor, camera.preferenciasPadrao, camera.limitesPreferencias)
 util.igual(#erros, 0, "dados reais sem erro: " .. table.concat(erros, "; "))
 
--- tudo nasce desligado (docs/filtro-ditherdown.md §0)
+-- tudo nasce ligado no máximo (pedido do usuário 2026-11-13; antes nascia desligado)
 for _, f in seletor.filtros do
 	if f.pref then
-		util.igual(camera.preferenciasPadrao[f.pref], false, "padrão desligado " .. f.pref)
+		util.igual(camera.preferenciasPadrao[f.pref], true, "padrão ligado " .. f.pref)
+		if f.forca then
+			util.igual(camera.preferenciasPadrao[f.forca.pref], 100, "força máxima " .. f.forca.pref)
+		end
 	end
 end
 
