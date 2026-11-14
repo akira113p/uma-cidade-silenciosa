@@ -101,6 +101,11 @@ Ninguém edita arquivo de outro dono.
 1. `pwsh scripts/checar.ps1` verde (rojo build, testes Lune, selene, stylua).
 2. Revisão do Opus: lê todo o código, confere contra este contrato, roda os testes, procura loop por quadro, instância criada por quadro, falta de `pcall`, número fora de Config.
 3. Pendente (dona do Studio): Play no place oficial dentro da `ZonaTeste`, capturas com cada filtro, conferir o §4 (EditableImage), medir FPS, afinar números.
+4. **Teste de 2026-11-13** (place de teste `build/teste-filtros.rbxl` do worktree, sem mapa, Play pelo MCP): sem erro no console; as 4 texturas
+   (Dither, ScanDura, ScanSuave, Bandas) geradas por `EditableImage` (`ImageContent.SourceType = Object`), então o §4 funciona no Studio; prefs ligadas
+   pelo servidor ligam as camadas; seletor aparece em Configurações e reflete o estado (força, matriz). Achado: com FPS ~16 no Studio (3 instâncias abertas)
+   a qualidade automática baixou o nível para 0 e escondeu todas as camadas retro mesmo ligadas; com `Filtro_nivel = 3` voltaram. `screen_capture` em Play
+   não mostra o 3D, então a aparência sobre a cena ainda precisa de olho humano. Falta: permissão no jogo publicado, FPS real, mobile, afinar números.
 
 ## Fontes (acesso 2026-11-05)
 Unity Shader Graph: Posterize, Screen Position, URP Sample Buffer, Remap, Step (docs.unity3d.com). Roblox: ViewportFrame, ImageLabel (ResampleMode, TileSize),

@@ -415,7 +415,8 @@ Tudo o que existe no place oficial "CIDADE SILENCIOSA" e NÃO é reproduzível p
 
 ## Filtro DitherDown
 Contrato em `docs/filtro-ditherdown.md`. Branch `filtros-ditherdown`, tudo nasce desligado, nada testado no Studio (só Lune, selene, stylua). Não verificado:
-- **EditableImage:** nomes e comportamento de `AssetService:CreateEditableImage`, `WritePixelsBuffer`, `Content.fromObject` e `ImageLabel.ImageContent`; teto de tamanho da imagem.
+- **Decidir:** a qualidade automática esconde as camadas retro (nível mínimo 1) quando o FPS cai, mesmo com o jogador ligando no seletor. Os overlays são baratos; talvez nível mínimo 0 para Dither/Scan.
+- **EditableImage (funciona no Studio, testado 2026-11-13):** nomes e comportamento de `AssetService:CreateEditableImage`, `WritePixelsBuffer`, `Content.fromObject` e `ImageLabel.ImageContent`; teto de tamanho da imagem.
 - **Permissão no jogo publicado:** se o jogo publicado deixa criar EditableImage (as camadas devem sumir sem derrubar o filtro; conferir o `warn` único).
 - **Ordem visual dos overlays:** Dither 5, ScanDura 6, ScanSuave 7, Bandas 8 acima da Aberração, tudo no `guiMundo` (abaixo do HUD): conferir em captura se nenhum cobre HUD, grão ou moldura.
 - **Desempenho:** custo dos overlays em tile, das Bandas (mexem por quadro) e do VHS (2 ViewportFrames de novo, nível 3); medir FPS em PC e celular e ver se a qualidade automática cobre.
