@@ -2,6 +2,8 @@
 -- 2 ViewportFrames (vermelho, ciano) com câmeras no CFrame da câmera real e FOV menor/maior → franja radial.
 -- Conteúdo: clones estáticos de workspace.Mapa perto da câmera (cache por célula) + monstros e personagens de outros
 -- jogadores SÓ quando a câmera os vê (regra de justiça do PvP: nunca mostrar o que a câmera não vê).
+-- Modo linear (VHS do DitherDown, docs/filtro-ditherdown.md §5): com Pref_FVhs os dois viewports usam o FOV real e
+-- ficam deslocados em X (vermelho +d, ciano -d) em vez da franja radial por FOV. Sem Pref_FVhs nada disso roda.
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -51,6 +53,8 @@ local cfg: any = nil -- cópia viva da config (com ajustes do Studio)
 local ligado = true
 local nivelAtual = 3
 local ativo = false -- viewports visíveis
+local deslocAtual = 0 -- px do modo linear já aplicados na geometria dos viewports (0 = geometria normal)
+local regrasRetro: any = nil -- Regras/FiltroRetro, carregado na primeira vez que o VHS linear liga (false = ausente)
 
 local vfV: ViewportFrame, vfC: ViewportFrame
 local camV: Camera, camC: Camera
@@ -204,6 +208,48 @@ local function atualizarCfg()
 	cfg.base = ler("AberracaoBase", cfg.base)
 	cfg.fovDelta = ler("AberracaoFov", cfg.fovDelta)
 	cfg.raioEstatico = ler("AberracaoRaio", cfg.raioEstatico)
+end
+
+-- VHS linear ----------------------------------------------------------------------------------------------
+
+local function carregarRegrasRetro(): any
+	if regrasRetro == nil then
+		local pasta = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Regras")
+		local ok, modulo = pcall(require, pasta:FindFirstChild("FiltroRetro") :: ModuleScript)
+		regrasRetro = if ok and type(modulo) == "table" then modulo else false
+		if not regrasRetro then
+			warn("[Aberracao] Regras/FiltroRetro ausente: VHS linear desligado")
+		end
+	end
+	return regrasRetro
+end
+
+-- (linear?, deslocamento em px, nível mínimo). Linear só com Pref_FVhs, Retro.ativo e a config/regras do VHS presentes.
+local function vhsLinear(): (boolean, number, number)
+	if ctx.jogador:GetAttribute("Pref_FVhs") ~= true then
+		return false, 0, 0
+	end
+	local retro = ctx.config.Retro
+	local R = carregarRegrasRetro()
+	if type(retro) ~= "table" or not retro.ativo or type(retro.Vhs) ~= "table" or not R then
+		return false, 0, 0
+	end
+	local forca = ctx.jogador:GetAttribute("Pref_FVhsForca")
+	if type(forca) ~= "number" then
+		forca = 0
+	end
+	local largura = ctx.guiMundo.AbsoluteSize.X
+	local px = R.vhsDeslocPx(retro.Vhs.offsetMax * R.escalaForca(forca), largura)
+	return true, math.floor(px + 0.5), retro.Vhs.nivelMinimo
+end
+
+-- Só desloca a Position; o Size continua tela cheia. NÃO alargar o viewport: o fantasma mostraria d px de cena fora da
+-- borda da tela, e a regra de justiça do PvP é nunca mostrar o que a câmera não vê. A faixa de d px da borda oposta fica
+-- sem fantasma (é um overlay translúcido, ninguém nota). d = 0 volta à geometria normal.
+local function aplicarGeometria(d: number)
+	deslocAtual = d
+	vfV.Position = UDim2.fromOffset(d, 0) -- vermelho para a direita
+	vfC.Position = UDim2.fromOffset(-d, 0) -- ciano para a esquerda
 end
 
 -- Estático ------------------------------------------------------------------------------------------------
@@ -527,8 +573,16 @@ function Aberracao.atualizar(e: any)
 	if not ligado or nivelAtual < NIVEL_MINIMO_DINAMICO then
 		return -- desligada: nada por quadro
 	end
+	local linear, desloc, nivelLinear = vhsLinear()
+	if linear and (desloc <= 0 or nivelAtual < nivelLinear) then
+		ocultar() -- VHS sem deslocamento (força 0) ou nível baixo: nada a mostrar
+		return
+	end
 	local p = e.pulsos
 	local intensidade = Regras.intensidade(cfg, p.dano, p.susto, e.caca)
+	if linear then
+		intensidade = 1 -- o VHS é permanente: a força vai no deslocamento, não na transparência
+	end
 	if intensidade < cfg.minimoVisivel then
 		ocultar()
 		return
@@ -568,7 +622,10 @@ function Aberracao.atualizar(e: any)
 	end
 
 	local cf = camera.CFrame
-	local fv, fc = Regras.fovs(e.fov, intensidade, cfg)
+	local fv, fc = Regras.fovs(e.fov, if linear then 0 else intensidade, cfg) -- linear: os dois no FOV real
+	if desloc ~= deslocAtual then
+		aplicarGeometria(desloc)
+	end
 	camV.CFrame, camC.CFrame = cf, cf
 	camV.FieldOfView, camC.FieldOfView = fv, fc
 	local tV, tC = Regras.transparencias(intensidade, cfg)

@@ -8,9 +8,43 @@ local RunService = game:GetService("RunService")
 
 local Filtro = {}
 
-local ORDEM = { "Ceu", "Neblina", "Lente", "Aberracao", "Postes", "Grao", "Moldura" }
+local ORDEM = {
+	"Ceu",
+	"Neblina",
+	"Lente",
+	"Aberracao",
+	"Dither",
+	"ScanDura",
+	"ScanSuave",
+	"Bandas",
+	"Postes",
+	"Grao",
+	"Moldura",
+}
+-- Camadas do DitherDown (docs/filtro-ditherdown.md): só carregam com Config/Filtro/Retro.ativo
+local CAMADAS_RETRO = { Dither = true, ScanDura = true, ScanSuave = true, Bandas = true }
 -- Preferência própria de cada camada (as ausentes seguem só o filtro geral)
-local PREF_CAMADA = { Aberracao = "Pref_Aberracao", Lente = "Pref_Lente", Neblina = "Pref_NeblinaVolume" }
+local PREF_CAMADA = {
+	Aberracao = "Pref_Aberracao",
+	Lente = "Pref_Lente",
+	Neblina = "Pref_NeblinaVolume",
+	Dither = "Pref_FDither",
+	ScanDura = "Pref_FScanDura",
+	ScanSuave = "Pref_FScanSuave",
+	Bandas = "Pref_FBandas",
+}
+-- Prefs que ligam/desligam camadas (as de força ficam com cada camada)
+local PREFS_LIGA = {
+	"Pref_FiltroPS1",
+	"Pref_Aberracao",
+	"Pref_Lente",
+	"Pref_NeblinaVolume",
+	"Pref_FDither",
+	"Pref_FScanDura",
+	"Pref_FScanSuave",
+	"Pref_FBandas",
+	"Pref_FVhs",
+}
 local ESTADOS_CACA = { Caca = true, ["Caça"] = true }
 
 type Camada = {
@@ -153,7 +187,11 @@ function Filtro._montar()
 
 	-- Camadas
 	local camadas: { Camada } = {}
+	local retroAtivo = type(config.Retro) == "table" and config.Retro.ativo == true
 	for _, nome in ORDEM do
+		if CAMADAS_RETRO[nome] and not retroAtivo then
+			continue
+		end
 		local arquivo = script:FindFirstChild(nome)
 		if not arquivo then
 			warn("[Filtro] camada ausente: " .. nome)
@@ -203,7 +241,11 @@ function Filtro._montar()
 		end
 		for _, c in camadas do
 			local nomePref = PREF_CAMADA[c.nome]
-			local querLigar = geralLigado and (nomePref == nil or pref(nomePref))
+			local prefLiga = nomePref == nil or pref(nomePref)
+			if c.nome == "Aberracao" then
+				prefLiga = prefLiga or (retroAtivo and pref("Pref_FVhs")) -- o VHS linear usa esta camada
+			end
+			local querLigar = geralLigado and prefLiga
 			if c.ligada ~= querLigar then
 				c.ligada = querLigar
 				chamar(c, "ligar", querLigar)
@@ -211,7 +253,7 @@ function Filtro._montar()
 		end
 	end
 	aplicarPrefs()
-	for _, nome in { "Pref_FiltroPS1", "Pref_Aberracao", "Pref_Lente", "Pref_NeblinaVolume" } do
+	for _, nome in PREFS_LIGA do
 		jogador:GetAttributeChangedSignal(nome):Connect(aplicarPrefs)
 	end
 

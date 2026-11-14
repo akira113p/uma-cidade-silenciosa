@@ -19,4 +19,10 @@ return {
 	coneLuz = "rbxassetid://107050879762706", -- T3
 	tracking = "rbxassetid://73406609300688", -- T4
 	poeira = "rbxassetid://132047947622474", -- T5
+	-- Filtros do DitherDown (docs/filtro-ditherdown.md §4). Vazio = textura gerada em execução (EditableImage) por
+	-- src/client/Filtro/RetroTextura.luau; um id aqui tem prioridade (use se o upload voltar a funcionar).
+	retroDither = "",
+	retroScanDura = "",
+	retroScanSuave = "",
+	retroBandas = "",
 }
