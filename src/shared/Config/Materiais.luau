@@ -73,12 +73,15 @@ return {
 		},
 	},
 
+	-- Multiplicador global do dano a construções (armas, monstros, carro, explosão...): 1.5 desde 2026-11-13.
+	multiplicadorDano = 1.5,
 	-- dano efetivo = dano x matriz[tipo][classe]. Tipo novo = linha nova (sem mudar código).
 	matriz = {
 		bala = { vidro = 6, madeira = 0.5, alvenaria = 0.25, metal = 0.2, leve = 2 },
 		corte = { vidro = 3, madeira = 1.5, alvenaria = 0.15, metal = 0.1, leve = 3 },
 		alavanca = { vidro = 3, madeira = 1.2, alvenaria = 0.5, metal = 0.4, leve = 2 },
 		marreta = { vidro = 4, madeira = 1.3, alvenaria = 1.6, metal = 0.8, leve = 3 },
+		lamina = { vidro = 4, madeira = 2.5, alvenaria = 0.05, metal = 0.05, leve = 3 }, -- MonstroPS1 (logica.md §6.4)
 		garra = { vidro = 3, madeira = 1, alvenaria = 0.4, metal = 0.15, leve = 2 },
 		soco = { vidro = 1.5, madeira = 0.2, alvenaria = 0.05, metal = 0.02, leve = 1 },
 		impacto = { vidro = 3, madeira = 1, alvenaria = 1, metal = 1, leve = 1 },

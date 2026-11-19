@@ -16,6 +16,33 @@ return {
 		{ rotulo = "Noite", hora = 0 },
 	},
 	quantidades = { 1, 5, 10, 30 },
+	-- Seção separada "Armas novas" do menu (docs/armas.md §13: pane, engatilhar, recarga rápida). Arma dá 1 por clique; munição dá 1 PENTE
+	-- (Config/Itens.<id>.pente). Esses ids saem da lista geral de itens.
+	armasNovas = {
+		"beretta",
+		"ar15",
+		"carabinaM5",
+		"ak74",
+		"escopeta",
+		"escopetaM1912",
+		"lancaFoguetes",
+		"municaoPistola",
+		"municaoRifle",
+		"municaoEscopeta",
+		"municaoMissil",
+	},
+	-- Seção própria "Gold Bright" (docs/gold-bright-import.md): as armas com viewmodel do Gold Bright, 1 por clique. Saem da lista geral.
+	armasGoldBright = {
+		"tt33",
+		"ots20",
+		"mp5",
+		"pp91",
+		"sr3m",
+		"ots48k",
+		"rmb93",
+		"toz34",
+		"canoChumbo",
+	},
 
 	-- Invocação de carros e monstros (menu de admin). Nascem na frente do jogador, no chão.
 	invocar = {

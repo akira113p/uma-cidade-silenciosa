@@ -214,6 +214,8 @@ function HudVida.iniciar()
 	local function atualizarStatus()
 		if jogador:GetAttribute("Correndo") == true then
 			status.Text = "Correndo"
+		elseif jogador:GetAttribute("Deitado") == true then
+			status.Text = "Deitado"
 		elseif jogador:GetAttribute("Agachado") == true then
 			status.Text = "Agachado"
 		else
@@ -235,6 +237,7 @@ function HudVida.iniciar()
 	end
 	jogador:GetAttributeChangedSignal("Correndo"):Connect(atualizarStatus)
 	jogador:GetAttributeChangedSignal("Agachado"):Connect(atualizarStatus)
+	jogador:GetAttributeChangedSignal("Deitado"):Connect(atualizarStatus)
 	atualizarStatus()
 
 	-- Flash vermelho nas bordas (CanvasGroup para transparecer as quatro faixas juntas)
@@ -314,15 +317,59 @@ function HudVida.iniciar()
 		ZIndex = 6,
 	})
 
+	-- Botão "Trocar personagem" (seletor, parte S): o cursor fica livre enquanto a tela de morte aparece.
+	local trocar = criar("TextButton", {
+		Name = "TrocarPersonagem",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.7),
+		Size = UDim2.fromOffset(240, 48),
+		BackgroundColor3 = Color3.fromRGB(44, 44, 48),
+		BorderSizePixel = 0,
+		AutoButtonColor = true,
+		Font = FONTE,
+		Text = "Trocar personagem",
+		TextSize = 20,
+		TextColor3 = COR_TEXTO,
+		ZIndex = 7,
+	}, morte)
+	contorno(trocar)
+	trocar.Activated:Connect(function()
+		local ok, Seletor = pcall(function()
+			return require(script.Parent.SeletorPersonagem)
+		end)
+		if ok and Seletor and Seletor.abrir then
+			Seletor.abrir({ modo = "morte" })
+		end
+	end)
+	local mouseLivre = false
+	local function liberarMouse(livre: boolean)
+		if livre == mouseLivre then
+			return
+		end
+		mouseLivre = livre
+		local ok, Mouse = pcall(function()
+			return require(script.Parent.Mouse)
+		end)
+		if ok and Mouse then
+			if livre then
+				Mouse.pedir("Morte")
+			else
+				Mouse.liberar("Morte")
+			end
+		end
+	end
+
 	local fichaMorte = 0 -- invalida a contagem anterior quando a tela some ou reaparece
 	local function esconderMorte()
 		fichaMorte += 1
 		morte.Visible = false
 		morte.BackgroundTransparency = 1
+		liberarMouse(false)
 	end
 	local function mostrarMorte(motivo: string)
 		fichaMorte += 1
 		local minha = fichaMorte
+		liberarMouse(true)
 		causa.Text = CAUSAS[motivo] or "Você morreu."
 		morte.BackgroundTransparency = 1
 		morte.Visible = true

@@ -1,0 +1,75 @@
+{
+  "grupo": "corpo/vida",
+  "rig": "R15",
+  "poses": {
+    "neutro": {
+      "Root": [0, 0, 0, 0, 0, 0], "Waist": [0, 0, 0], "Neck": [0, 0, 0],
+      "RightShoulder": [0, 0, 0], "RightElbow": [0, 0, 0], "RightWrist": [0, 0, 0],
+      "LeftShoulder": [0, 0, 0], "LeftElbow": [0, 0, 0], "LeftWrist": [0, 0, 0],
+      "RightHip": [0, 0, 0], "RightKnee": [0, 0, 0], "RightAnkle": [0, 0, 0],
+      "LeftHip": [0, 0, 0], "LeftKnee": [0, 0, 0], "LeftAnkle": [0, 0, 0]
+    },
+    "susto": {
+      "Root": [4, 0, 0, 0, 0, 0], "Waist": [-6, 0, 0], "Neck": [-8, 0, 0],
+      "RightShoulder": [60, -6, 0], "RightElbow": [20, 0, 0], "RightWrist": [0, 0, 0],
+      "LeftShoulder": [60, 6, 0], "LeftElbow": [20, 0, 0], "LeftWrist": [0, 0, 0],
+      "RightHip": [0, 0, 0], "RightKnee": [0, 0, 0], "RightAnkle": [0, 0, 0],
+      "LeftHip": [0, 0, 0], "LeftKnee": [0, 0, 0], "LeftAnkle": [0, 0, 0]
+    },
+    "tombando": {
+      "Root": [55, 0, 0, 0, -1.0, 0], "Waist": [8, 0, 0], "Neck": [-10, 0, 0],
+      "RightShoulder": [20, -6, 0], "RightElbow": [30, 0, 0], "RightWrist": [0, 0, 0],
+      "LeftShoulder": [26, 6, 0], "LeftElbow": [24, 0, 0], "LeftWrist": [0, 0, 0],
+      "RightHip": [20, 0, 0], "RightKnee": [-40, 0, 0], "RightAnkle": [20, 0, 0],
+      "LeftHip": [14, 0, 0], "LeftKnee": [-30, 0, 0], "LeftAnkle": [16, 0, 0]
+    },
+    "caido": {
+      "Root": [88, 0, 0, 0, -2.3, 0], "Waist": [0, 0, 0], "Neck": [4, 0, 0],
+      "RightShoulder": [10, -12, 0], "RightElbow": [18, 0, 0], "RightWrist": [0, 0, 0],
+      "LeftShoulder": [6, 12, 0], "LeftElbow": [12, 0, 0], "LeftWrist": [0, 0, 0],
+      "RightHip": [10, 0, 0], "RightKnee": [-25, 0, 0], "RightAnkle": [0, 0, 0],
+      "LeftHip": [-4, 0, 0], "LeftKnee": [-6, 0, 0], "LeftAnkle": [0, 0, 0]
+    },
+    "ar": {
+      "RightShoulder": [-25, 0, 0], "RightElbow": [15, 0, 0], "RightWrist": [0, 0, 0],
+      "LeftShoulder": [-25, 0, 0], "LeftElbow": [15, 0, 0], "LeftWrist": [0, 0, 0],
+      "RightHip": [15, 0, 0], "RightKnee": [-30, 0, 0], "RightAnkle": [15, 0, 0],
+      "LeftHip": [5, 0, 0], "LeftKnee": [-15, 0, 0], "LeftAnkle": [10, 0, 0]
+    },
+    "amortecendo": {
+      "Root": [0, 0, 0, 0, -0.4, 0], "Waist": [-8, 0, 0],
+      "RightShoulder": [20, 0, 0], "RightElbow": [10, 0, 0], "RightWrist": [0, 0, 0],
+      "LeftShoulder": [20, 0, 0], "LeftElbow": [10, 0, 0], "LeftWrist": [0, 0, 0],
+      "RightHip": [28, 0, 0], "RightKnee": [-56, 0, 0], "RightAnkle": [28, 0, 0],
+      "LeftHip": [28, 0, 0], "LeftKnee": [-56, 0, 0], "LeftAnkle": [28, 0, 0]
+    }
+  },
+  "clipes": {
+    "Morte": {
+      "duracao": 1.3, "loop": false, "prioridade": "Action4",
+      "quadros": [
+        { "t": 0.0, "de": "neutro" },
+        { "t": 0.12, "de": "susto", "easing": "Cubic-Out" },
+        { "t": 0.55, "de": "tombando", "easing": "Cubic-In" },
+        { "t": 1.0, "de": "caido", "easing": "Bounce-Out" },
+        { "t": 1.25, "de": "caido", "marcadores": ["Congelar"] },
+        { "t": 1.3, "de": "caido" }
+      ]
+    },
+    "Queda": {
+      "duracao": 0.8, "loop": true, "prioridade": "Movement",
+      "quadros": [
+        { "t": 0.0, "de": "ar" },
+        { "t": 0.4, "de": "ar", "juntas": { "RightShoulder": [-32, 0, 0], "LeftShoulder": [-18, 0, 0], "RightKnee": [-38, 0, 0] }, "easing": "Cubic-InOut" },
+        { "t": 0.8, "de": "ar", "easing": "Cubic-InOut" }
+      ]
+    },
+    "Aterrissagem": {
+      "duracao": 0.35, "loop": false, "prioridade": "Movement",
+      "quadros": [
+        { "t": 0.0, "de": "amortecendo", "juntas": { "Neck": [0, 0, 0] } },
+        { "t": 0.35, "de": "neutro", "easing": "Cubic-Out" }
+      ]
+    }
+  }
+}

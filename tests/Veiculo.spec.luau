@@ -266,3 +266,49 @@ local batido = Veiculo.bater(bom(), 50, "Frente", util.seq({ 0 }), cfg)
 util.igual(batido.combustivel, 30, "bater preserva a gasolina (copiar)")
 local atirado = Veiculo.acertar(bom(), "Carroceria", 10, util.seq({ 0 }), cfg)
 util.igual(atirado.combustivel, 30, "acertar preserva a gasolina (copiar)")
+
+-- Condução dinâmica / freio de mão / derrapagem (2026-11-14)
+-- guinadaAlvo: direita (ângulo +) gira negativo; ré inverte; freio de mão exagera; teto respeitado
+util.igual(Veiculo.guinadaAlvo(0, 40, 10, 1, 2.6), 0, "guinada: rodas retas, sem giro")
+util.igual(
+	Veiculo.guinadaAlvo(20, 30, 10, 1, 9) < 0,
+	true,
+	"guinada: volante à direita gira para a direita (negativo)"
+)
+util.igual(Veiculo.guinadaAlvo(-20, 30, 10, 1, 9) > 0, true, "guinada: volante à esquerda gira positivo")
+util.igual(Veiculo.guinadaAlvo(20, -30, 10, 1, 9) > 0, true, "guinada: ré inverte o giro")
+util.perto(
+	Veiculo.guinadaAlvo(20, 30, 10, 1.4, 9),
+	Veiculo.guinadaAlvo(20, 30, 10, 1, 9) * 1.4,
+	"guinada: o fator do freio de mão multiplica o giro"
+)
+util.igual(Veiculo.guinadaAlvo(34, 80, 4, 1.4, 2.6), -2.6, "guinada: respeita o teto")
+util.igual(
+	Veiculo.guinadaAlvo(20, 30, 0, 1, 99) == Veiculo.guinadaAlvo(20, 30, 1, 1, 99),
+	true,
+	"guinada: entre-eixos 0 não divide por zero"
+)
+-- contraVolante: nada abaixo do limiar, cresce depois, vira para o lado da deriva, teto
+util.igual(Veiculo.contraVolante(2, 3, 0.45, 14), 0, "contraVolante: abaixo do limiar não corrige")
+util.igual(Veiculo.contraVolante(-3, 3, 0.45, 14), 0, "contraVolante: no limiar não corrige")
+util.perto(Veiculo.contraVolante(7, 3, 0.5, 14), 2, "contraVolante: cresce a partir do limiar")
+util.perto(Veiculo.contraVolante(-7, 3, 0.5, 14), -2, "contraVolante: deriva para a esquerda, volante para a esquerda")
+util.igual(Veiculo.contraVolante(500, 3, 0.45, 14), 14, "contraVolante: respeita o teto")
+-- derrapando: precisa de velocidade E deslize
+util.igual(Veiculo.derrapando(30, 15, cfg), true, "derrapando: rápido e de lado")
+util.igual(Veiculo.derrapando(30, -15, cfg), true, "derrapando: deslize para a esquerda também conta")
+util.igual(Veiculo.derrapando(30, 2, cfg), false, "derrapando: sem deslize não")
+util.igual(Veiculo.derrapando(3, 15, cfg), false, "derrapando: devagar não")
+-- Config novo
+util.igual(table.find(cfg.teclas.freioMao, "LeftShift") ~= nil, true, "Config: freio de mão no Shift")
+util.igual(cfg.teclas.farol[1], "L", "Config: farol no L")
+util.igual(
+	cfg.farol.angulo > 0 and cfg.farol.alcance <= 60 and cfg.farol.brilho > 0,
+	true,
+	"Config: farol válido (Range <= 60)"
+)
+util.igual(
+	cfg.derrapagem.intervalo > 0 and cfg.derrapagem.velMin > 0 and cfg.derrapagem.deslizeMin > 0,
+	true,
+	"Config: derrapagem válida"
+)

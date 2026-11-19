@@ -1,6 +1,7 @@
 -- Armas: equipar, atacar, pente, recarga e dano do PvP, tudo decidido no servidor. Dono: P7 (reescrito pelo A2).
--- Contrato: docs/armas.md §6-§7 (e docs/arquitetura.md §P7). O cliente só pede (Atacar, Recarregar, Mira, Equipar).
--- Dono dos atributos Player.ArmaEquipada, ArmaSlot, Pente, Reserva, Recarregando e MiraPitch.
+-- Contrato: docs/armas.md §6-§7 e §13 (pane, engatilhar, recarga rápida). O cliente só pede (Atacar, Recarregar, Engatilhar, Mira, Equipar).
+-- Dono dos atributos Player.ArmaEquipada, ArmaSlot, Pente, Reserva, Recarregando, Engatilhada, Travada, Engatilhando, MiraPitch e GolpeSeq (contador de golpes
+-- corpo a corpo aceitos: os outros clientes tocam o clipe de golpe no corpo de quem golpeou, client/ArmasTerceira).
 -- A arma na mão é o Model de Shared/ArmaModelo preso à RightHand por Motor6D; se o módulo faltar ou falhar, o modelo de
 -- blocos do item (Config/ItensModelos) entra pelo ItemNaMao (docs/itens-no-mundo.md).
 local Players = game:GetService("Players")
@@ -13,6 +14,9 @@ local CfgCorpo = require(Shared.Config:WaitForChild("Corpo"))
 local CfgItens = require(Shared.Config:WaitForChild("Itens"))
 local CfgSom = require(Shared.Config:WaitForChild("Som"))
 local Regra = require(Shared:WaitForChild("Regras"):WaitForChild("Armas"))
+local RegraAparar = require(Shared.Regras:WaitForChild("Aparar"))
+local CfgArmasMonstro = require(Shared.Config:WaitForChild("ArmasMonstro"))
+local CfgDestruicao = require(Shared.Config:WaitForChild("Destruicao"))
 
 local Limite = require(script.Parent.Limite)
 local Inventario = require(script.Parent.Inventario)
@@ -45,6 +49,18 @@ type Estado = {
 	recargaId: number, -- ficha da recarga em andamento; mudar a ficha cancela os passos agendados
 	recarregando: boolean,
 	equipId: number, -- ficha da arma na mão; mudar cancela golpes corpo a corpo agendados
+	-- pane / engatilhar (docs/armas.md §13). Valem só para a arma na mão; equipar zera.
+	engatilhada: boolean, -- pronta para atirar (bomba: só depois de engatilhar na mão)
+	travada: boolean, -- pane: o gatilho só faz clique até engatilhar/recarregar
+	travadaNestePente: boolean, -- já travou com este pente (no máximo uma pane por pente)
+	engatilhandoAte: number, -- os.clock() até quando a mão está ocupada engatilhando/destravando (bloqueia tiro e recarga)
+	engatilharId: number, -- ficha do engatilhar em andamento; mudar cancela
+	-- recarga de pente em andamento (recarga rápida / falha)
+	recargaInicio: number,
+	recargaDuracao: number,
+	recargaCapacidade: number, -- até quantas balas a recarga de pente completa (+1 se há bala na câmara)
+	recargaRapida: boolean,
+	recargaFalhou: boolean,
 }
 local estados: { [Player]: Estado } = {}
 local rng = Random.new()
@@ -61,6 +77,16 @@ local function estadoDe(jogador: Player): Estado
 			recargaId = 0,
 			recarregando = false,
 			equipId = 0,
+			engatilhada = true,
+			travada = false,
+			travadaNestePente = false,
+			engatilhandoAte = 0,
+			engatilharId = 0,
+			recargaInicio = 0,
+			recargaDuracao = 0,
+			recargaCapacidade = 0,
+			recargaRapida = false,
+			recargaFalhou = false,
 		}
 		estados[jogador] = e
 	end
@@ -191,11 +217,19 @@ local function sincronizarMunicao(jogador: Player)
 		jogador:SetAttribute("Pente", nil)
 		jogador:SetAttribute("Reserva", nil)
 		jogador:SetAttribute("Recarregando", nil)
+		jogador:SetAttribute("Engatilhada", nil)
+		jogador:SetAttribute("Travada", nil)
+		jogador:SetAttribute("Engatilhando", nil)
 		return
 	end
 	jogador:SetAttribute("Pente", Inventario.pente(jogador, e.slot) or 0)
 	jogador:SetAttribute("Reserva", Inventario.contar(jogador, cfg.municao))
 	jogador:SetAttribute("Recarregando", e.recarregando)
+	-- Engatilhada/Travada só existem em arma que engatilha (o lançador não tem); o cliente usa para prever e mostrar.
+	local usa = Regra.usaEngatilhar(cfg)
+	jogador:SetAttribute("Engatilhada", if usa then e.engatilhada else nil)
+	jogador:SetAttribute("Travada", if usa then e.travada else nil)
+	jogador:SetAttribute("Engatilhando", if usa then os.clock() < e.engatilhandoAte else nil)
 end
 
 -- Cancela a recarga em andamento sem perder o que já entrou no pente (os passos agendados morrem pela ficha).
@@ -205,9 +239,14 @@ local function cancelarRecarga(jogador: Player)
 		return
 	end
 	e.recargaId += 1
+	local engatilhava = os.clock() < e.engatilhandoAte
+	e.engatilharId += 1 -- trocar de arma, morrer ou usar item também interrompe engatilhar/destravar
+	e.engatilhandoAte = 0
 	if e.recarregando then
 		e.recarregando = false
 		sincronizarMunicao(jogador)
+	elseif engatilhava then
+		sincronizarMunicao(jogador) -- senão o atributo Engatilhando ficaria preso em true e o gatilho travaria
 	end
 end
 
@@ -323,6 +362,12 @@ local function equipar(jogador: Player, slot: number?): (boolean, string?)
 		-- arma de fábrica (kit/admin): cheia no primeiro uso. A de loot já vem com o pente sorteado (server/Loot).
 		Inventario.definirPente(jogador, slot, cfg.pente, true)
 	end
+	-- pane/engatilhar valem só para a arma na mão: equipar zera. Consequência aceita: trocar de arma e voltar também destrava a pane
+	-- (custa a animação de equipar); se virar abuso no playtest, guardar o estado por slot (docs/armas.md §13.6).
+	e.travada = false
+	e.travadaNestePente = false
+	e.engatilhandoAte = 0
+	e.engatilhada = Regra.engatilhadaAoEquipar(cfg, Inventario.pente(jogador, slot) or 0)
 	jogador:SetAttribute("ArmaSlot", slot) -- antes de ArmaEquipada: é a mudança dela que reenvia o inventário (equipado = ArmaSlot)
 	jogador:SetAttribute("ArmaEquipada", item.arma)
 	sincronizarMunicao(jogador)
@@ -362,11 +407,26 @@ local function ehPecaVeiculo(inst: Instance): boolean
 	return modelo ~= nil and modelo:GetAttribute("Veiculo") == true
 end
 
+-- Flor da Florescida (atributo Flor): sobe a hierarquia a partir da peça atingida.
+local function acharFlor(inst: Instance): Instance?
+	local atual: Instance? = inst
+	while atual and atual ~= workspace do
+		if atual:GetAttribute("Flor") then
+			return atual
+		end
+		atual = atual.Parent
+	end
+	return nil
+end
+
 local function ehAlvo(resultado: RaycastResult?): boolean
 	if not resultado then
 		return false
 	end
 	if ehPecaVeiculo(resultado.Instance) then
+		return true
+	end
+	if acharFlor(resultado.Instance) then
 		return true
 	end
 	local jogador, monstro = resolverAlvo(resultado.Instance)
@@ -382,28 +442,84 @@ end
 -- por monstro, por peça de veículo e por peça de construção.
 type Acumulador = {
 	jogadores: { [Player]: { partes: { [string]: number }, pos: Vector3 } },
-	monstros: { [Model]: { dano: number, pos: Vector3 } },
+	monstros: { [Model]: { dano: number, pos: Vector3, aparou: boolean } },
 	veiculos: { [Instance]: { dano: number, pos: Vector3 } },
-	construcoes: { [Instance]: { dano: number, pos: Vector3, normal: Vector3 } },
+	construcoes: { [Instance]: { dano: number, pos: Vector3, normal: Vector3, pontos: { Vector3 } } },
 	direcao: Vector3?,
+	flores: { [Instance]: boolean },
 }
 
 local function novoAcumulador(): Acumulador
-	return { jogadores = {}, monstros = {}, veiculos = {}, construcoes = {}, direcao = nil }
+	return { jogadores = {}, monstros = {}, veiculos = {}, construcoes = {}, direcao = nil, flores = {} }
 end
 
 local function registrarConstrucao(acc: Acumulador, inst: Instance, dano: number, pos: Vector3, normal: Vector3)
 	local g = acc.construcoes[inst]
 	if g then
 		g.dano += dano
+		table.insert(g.pontos, pos)
 	else
-		acc.construcoes[inst] = { dano = dano, pos = pos, normal = normal }
+		acc.construcoes[inst] = { dano = dano, pos = pos, normal = normal, pontos = { pos } }
 	end
 end
 
-local function registrar(acc: Acumulador, atacante: Player, resultado: RaycastResult, dano: number, direcao: Vector3)
+-- Flores.atingir (agente A, Flores.luau) pode não existir ainda: pcall e módulo opcional.
+local function atingirFlor(flor: Instance, atacante: Player, cfg: any)
+	local Flores = moduloOpcional(script.Parent, "Flores")
+	if not (Flores and Flores.atingir) then
+		return
+	end
+	local F = CfgArmasMonstro.flor
+	local tipo = if cfg.tipo == "fogo"
+		then F.tipoTiro
+		elseif table.find(F.classesFaca, cfg.classe) then F.tipoFaca
+		else F.tipoCorpo
+	local ok, erro =
+		pcall(Flores.atingir, flor, atacante, { tipo = tipo, agachado = atacante:GetAttribute("Agachado") == true })
+	if not ok then
+		warn("[Armas] Flores.atingir falhou: " .. tostring(erro))
+	end
+end
+
+-- MonstroPS1 em Caça aparando pistola no tronco vinda da frente (§6.5): multiplicador do dano (1 = sem bloqueio).
+local function multiplicadorAparar(inst: Instance, modelo: Model, direcao: Vector3, cfg: any): number
+	local A = CfgArmasMonstro.aparar
+	if modelo:GetAttribute("Especie") ~= A.especie then
+		return 1
+	end
+	local hrp = modelo:FindFirstChild("HumanoidRootPart")
+	if not (hrp and hrp:IsA("BasePart")) then
+		return 1
+	end
+	local f, d = hrp.CFrame.LookVector, direcao
+	return RegraAparar.multiplicador(
+		cfg.classe,
+		modelo:GetAttribute("Estado"),
+		inst.Name,
+		{ x = f.X, y = f.Y, z = f.Z },
+		{ x = d.X, y = d.Y, z = d.Z },
+		A
+	)
+end
+
+local function registrar(
+	acc: Acumulador,
+	atacante: Player,
+	resultado: RaycastResult,
+	dano: number,
+	direcao: Vector3,
+	cfg: any
+)
 	local inst = resultado.Instance
 	acc.direcao = acc.direcao or direcao
+	local flor = acharFlor(inst)
+	if flor then
+		if not acc.flores[flor] then
+			acc.flores[flor] = true
+			atingirFlor(flor, atacante, cfg)
+		end
+		return
+	end
 	if ehPecaVeiculo(inst) then
 		local g = acc.veiculos[inst]
 		if g then
@@ -426,12 +542,14 @@ local function registrar(acc: Acumulador, atacante: Player, resultado: RaycastRe
 		end
 		g.partes[parte] = (g.partes[parte] or 0) + Regra.dano({ dano = dano }, parte, CfgCorpo)
 	elseif alvoMonstro then
+		local mult = if cfg.tipo == "fogo" then multiplicadorAparar(inst, alvoMonstro, direcao, cfg) else 1
 		local g = acc.monstros[alvoMonstro]
-		if g then
-			g.dano += dano
-		else
-			acc.monstros[alvoMonstro] = { dano = dano, pos = resultado.Position }
+		if not g then
+			g = { dano = 0, pos = resultado.Position, aparou = false }
+			acc.monstros[alvoMonstro] = g
 		end
+		g.dano += dano * mult
+		g.aparou = g.aparou or mult < 1
 	else
 		registrarConstrucao(acc, inst, dano, resultado.Position, resultado.Normal)
 	end
@@ -462,7 +580,17 @@ local function aplicar(acc: Acumulador, atacante: Player, cfg: any)
 	end
 	for modelo, g in acc.monstros do
 		Monstros.dano(modelo, g.dano, atacante)
-		Sons.tocar(cfg.somAcerto, g.pos)
+		local A = CfgArmasMonstro.aparar
+		if g.aparou then
+			Sons.tocar(A.som, g.pos)
+		else
+			Sons.tocar(cfg.somAcerto, g.pos)
+		end
+		-- golpe corpo a corpo no MonstroPS1: lâmina contra metal, barulho alto no lugar dele (§6.5)
+		if cfg.tipo ~= "fogo" and modelo:GetAttribute("Especie") == A.especie then
+			-- fonte = jogador: monstro ignora ruído de monstro do mesmo nível (processarRuido), e este barulho tem de atrair os outros
+			Ruido.emitir(g.pos, A.ruido.db, A.ruido.tipo, atacante)
+		end
 		Rede.evento("Acerto"):FireClient(atacante, false, nil)
 	end
 	-- construção: sem somAcerto nem evento Acerto (o som é da classe do material, tocado pela Destruicao)
@@ -470,11 +598,27 @@ local function aplicar(acc: Acumulador, atacante: Player, cfg: any)
 	for peca, g in acc.construcoes do
 		if D and D.ehDestrutivel(peca) then
 			if cfg.tipoDano then
+				-- vários chumbos na mesma peça: o furo nasce no meio deles, do tamanho do espalhamento (docs/destruicao.md §11)
+				local ponto, largura = g.pos, nil
+				if #g.pontos > 1 then
+					local soma = Vector3.zero
+					for _, p in g.pontos do
+						soma += p
+					end
+					ponto = soma / #g.pontos
+					local raio = 0
+					for _, p in g.pontos do
+						raio = math.max(raio, (p - ponto).Magnitude)
+					end
+					largura = 2 * raio + CfgDestruicao.furo.margemChumbo
+				end
 				D.dano(peca, g.dano, {
 					tipo = cfg.tipoDano,
-					ponto = g.pos,
+					ponto = ponto,
 					normal = g.normal,
 					fonte = atacante,
+					largura = largura,
+					direcao = acc.direcao,
 				})
 			elseif not avisouSemTipoDano[cfg.nome] then
 				avisouSemTipoDano[cfg.nome] = true
@@ -547,6 +691,20 @@ local function atacarFogo(
 		return
 	end
 
+	-- bomba desengatilhada, arma travada ou mão ocupada engatilhando: só o clique (o gatilho não gasta cadência nem pente)
+	local bloqueio = Regra.bloqueioDeTiro(cfg, e.engatilhada, e.travada, agora < e.engatilhandoAte)
+	if bloqueio then
+		if Limite.ok(jogador, "CliqueTravada", 0.4) then
+			Sons.tocar(cfg.somVazio or "CliqueVazio", cabeca)
+			if bloqueio == "travada" then
+				aviso(jogador, "Arma travada: engatilhe (Q)")
+			elseif bloqueio == "desengatilhada" then
+				aviso(jogador, "Engatilhe (Q)")
+			end
+		end
+		return
+	end
+
 	-- espalhamento: cone + bloom (que decai com o tempo parado) x estado do atirador x braço zerado
 	local bloom = math.min(Regra.bloomRecuperado(cfg, e.bloom, agora - e.ultimoTiro), cfg.bloom.maximo)
 	local graus = Regra.espalhamentoTotal(
@@ -557,6 +715,9 @@ local function atacarFogo(
 		CfgArmas,
 		CfgCorpo
 	)
+	if jogador:GetAttribute("Mirando") == true and jogador:GetAttribute("Correndo") ~= true then
+		graus *= CfgArmas.mira.multEspalhamento -- mira (botão direito): cone mais fechado
+	end
 
 	local lancador = cfg.projetil ~= nil
 	local Foguete = if lancador then foguete() else nil
@@ -572,9 +733,27 @@ local function atacarFogo(
 	Inventario.definirPente(jogador, slot, pente, true)
 	jogador:SetAttribute("Pente", pente)
 
+	-- Pane e engatilhada depois do tiro (docs/armas.md §13.2): o tiro SAIU; arma de pente sorteia se travou (5% semi, 1,25% auto, uma
+	-- vez por pente, nunca na última bala); bomba fica desengatilhada; o lançador não usa nada disto.
+	local travou = false
+	if Regra.usaEngatilhar(cfg) then
+		travou = Regra.travou(cfg, CfgArmas.pane, e.travadaNestePente, pente, rng:NextNumber())
+		e.engatilhada = Regra.engatilhadaAposTiro(cfg, travou)
+		if travou then
+			e.travada = true
+			e.travadaNestePente = true
+		end
+		jogador:SetAttribute("Engatilhada", e.engatilhada)
+		jogador:SetAttribute("Travada", e.travada)
+	end
+
 	-- Efeitos que acontecem sempre: som e ruído (o tiro chama monstros a 600 studs: custo do PvP). Chumbinhos contam como um ruído só.
 	Sons.tocar(cfg.som, cabeca, { db = cfg.ruidoDb })
 	Ruido.emitir(cabeca.Position, cfg.ruidoDb, "arma", jogador)
+	if travou then
+		Sons.tocar(cfg.somVazio or "CliqueVazio", cabeca)
+		aviso(jogador, "A arma travou! Engatilhe (Q)")
+	end
 
 	if lancador then
 		local d = Regra.espalhar(dirTabela, graus, function()
@@ -597,7 +776,14 @@ local function atacarFogo(
 		local fim = origem + dir * cfg.alcance
 		if resultado then
 			fim = resultado.Position
-			registrar(acc, jogador, resultado, Regra.danoNaDistancia(cfg, (resultado.Position - origem).Magnitude), dir)
+			registrar(
+				acc,
+				jogador,
+				resultado,
+				Regra.danoNaDistancia(cfg, (resultado.Position - origem).Magnitude),
+				dir,
+				cfg
+			)
 		end
 		if i <= MAX_RASTROS_DISPARO then
 			table.insert(fins, fim)
@@ -633,7 +819,7 @@ local function resolverGolpe(jogador: Player, equipId: number, id: string, dir: 
 		return -- o alvo saiu do alcance durante o atraso: golpe no ar, sem custo
 	end
 	local acc = novoAcumulador()
-	registrar(acc, jogador, resultado, cfg.dano, dir)
+	registrar(acc, jogador, resultado, cfg.dano, dir, cfg)
 	aplicar(acc, jogador, cfg)
 end
 
@@ -643,6 +829,7 @@ local function atacarCorpo(jogador: Player, e: Estado, id: string, cfg: any, cab
 		return
 	end
 	e.ultimo = agora -- a cadência reinicia no pedido; o golpe só resolve em atrasoImpacto
+	jogador:SetAttribute("GolpeSeq", ((jogador:GetAttribute("GolpeSeq") :: number?) or 0) + 1)
 	Sons.tocar(cfg.som, cabeca, { db = cfg.ruidoDb })
 	Ruido.emitir(cabeca.Position, cfg.ruidoDb, "arma", jogador)
 	local equipId = e.equipId
@@ -732,8 +919,8 @@ local function somDaRecarga(jogador: Player, nome: string)
 	end
 end
 
--- Move até `n` balas da reserva para o pente do slot (pente: completa; tubo: 1 cartucho). false se não moveu nada.
-local function moverMunicao(jogador: Player, e: Estado, cfg: any, tubo: boolean): boolean
+-- Move até `n` balas da reserva para o pente do slot (pente: completa até `capacidade`; tubo: 1 cartucho). false se não moveu nada.
+local function moverMunicao(jogador: Player, e: Estado, cfg: any, tubo: boolean, capacidade: number): boolean
 	local slot = e.slot
 	if not slot then
 		return false
@@ -744,7 +931,7 @@ local function moverMunicao(jogador: Player, e: Estado, cfg: any, tubo: boolean)
 	if tubo then
 		novoPente, _, movidas = Regra.cartuchoParaTubo(pente, cfg.pente, reserva)
 	else
-		novoPente, _, movidas = Regra.recarregarPente(pente, cfg.pente, reserva)
+		novoPente, _, movidas = Regra.recarregarPente(pente, capacidade, reserva)
 	end
 	if movidas < 1 then
 		return false
@@ -758,6 +945,70 @@ local function moverMunicao(jogador: Player, e: Estado, cfg: any, tubo: boolean)
 	return true
 end
 
+-- Fim da recarga de PENTE (também depois de recarga rápida ou falha): completa o pente, o pente novo não travou e a arma volta pronta.
+local function terminarRecargaPente(jogador: Player, e: Estado, cfg: any, id: string, ficha: number)
+	if not recargaAtiva(jogador, ficha, id) then
+		return
+	end
+	moverMunicao(jogador, e, cfg, false, e.recargaCapacidade)
+	e.travada = false
+	e.travadaNestePente = false
+	e.engatilhada = true
+	encerrarRecarga(jogador, ficha)
+end
+
+local function agendarFimPente(jogador: Player, e: Estado, cfg: any, id: string, ficha: number, restante: number)
+	task.delay(math.max(0, restante), function()
+		terminarRecargaPente(jogador, e, cfg, id, ficha)
+	end)
+end
+
+-- O pente velho cai no chão com as balas que tinha (recarga rápida). Vira item de munição no chão, que dá para pegar de novo.
+local function soltarPente(jogador: Player, cfg: any, balas: number)
+	if balas < 1 then
+		return
+	end
+	local ok, ItensChao = pcall(require, script.Parent.ItensChao)
+	if not ok then
+		warn("[Armas] ItensChao indisponível: " .. tostring(ItensChao))
+		return
+	end
+	ItensChao.largar(jogador, cfg.municao, balas)
+end
+
+-- R de novo DURANTE a recarga de pente: dentro da janela = recarga rápida (termina antes, o pente velho cai no chão); fora, uma vez
+-- só = atrapalha (a recarga demora mais). O servidor decide pela hora do clique; o cliente só mostra (docs/armas.md §13.4).
+local function cliqueNaRecarga(jogador: Player, e: Estado, cfg: any, id: string)
+	local slot = e.slot
+	if not slot then
+		return
+	end
+	local rapida = CfgArmas.recargaRapida
+	local decorrido = os.clock() - e.recargaInicio
+	local acao = Regra.cliqueNaRecarga(cfg, rapida, decorrido, e.recargaDuracao, e.recargaFalhou, e.recargaRapida)
+	if acao == "ignorar" then
+		return
+	end
+	local nova = Regra.duracaoAposClique(acao, rapida, decorrido, e.recargaDuracao)
+	e.recargaId += 1 -- os passos agendados da recarga normal morrem; o fim novo nasce abaixo
+	local ficha = e.recargaId
+	e.recargaDuracao = nova
+	if acao == "rapida" then
+		e.recargaRapida = true
+		local noChao, camara = Regra.penteVelho(Inventario.pente(jogador, slot) or 0, e.engatilhada, e.travada)
+		if noChao > 0 then
+			Inventario.definirPente(jogador, slot, camara, true)
+			soltarPente(jogador, cfg, noChao)
+		end
+		somDaRecarga(jogador, "RecargaPenteEntra")
+	else
+		e.recargaFalhou = true
+		aviso(jogador, "Recarga atrapalhada")
+	end
+	sincronizarMunicao(jogador)
+	agendarFimPente(jogador, e, cfg, id, ficha, nova - decorrido)
+end
+
 local function recarregar(jogador: Player)
 	if not Limite.ok(jogador, "Recarregar", INTERVALO_MIN_RECARREGAR) then
 		return
@@ -769,11 +1020,20 @@ local function recarregar(jogador: Player)
 		return
 	end
 	local personagem, _, cabeca = vivo(jogador)
-	if not (personagem and cabeca) or e.recarregando or jogador:GetAttribute("Usando") == true then
+	if
+		not (personagem and cabeca)
+		or jogador:GetAttribute("Usando") == true
+		or os.clock() < e.engatilhandoAte -- a mão está ocupada engatilhando/destravando
+	then
+		return
+	end
+	if e.recarregando then
+		cliqueNaRecarga(jogador, e, cfg, id)
 		return
 	end
 	local pente = Inventario.pente(jogador, e.slot) or 0
-	if pente >= cfg.pente then
+	local capacidade = Regra.capacidadeRecarga(cfg, pente, e.engatilhada, e.travada)
+	if pente >= capacidade then
 		return
 	end
 	local reserva = Inventario.contar(jogador, cfg.municao)
@@ -785,11 +1045,16 @@ local function recarregar(jogador: Player)
 	e.recarregando = true
 	e.recargaId += 1
 	local ficha = e.recargaId
+	e.recargaInicio = os.clock()
+	e.recargaCapacidade = capacidade
+	e.recargaRapida = false
+	e.recargaFalhou = false
 	sincronizarMunicao(jogador)
 
 	local recarga = cfg.recarga
 	if recarga.tipo == "pente" then
 		local duracao = Regra.tempoRecarga(cfg, pente, reserva)
+		e.recargaDuracao = duracao
 		for _, s in cfg.somRecarga or {} do
 			task.delay(s.t * duracao, function()
 				if recargaAtiva(jogador, ficha, id) then
@@ -797,23 +1062,19 @@ local function recarregar(jogador: Player)
 				end
 			end)
 		end
-		task.delay(duracao, function()
-			if not recargaAtiva(jogador, ficha, id) then
-				return
-			end
-			moverMunicao(jogador, e, cfg, false)
-			encerrarRecarga(jogador, ficha)
-		end)
+		agendarFimPente(jogador, e, cfg, id, ficha, duracao)
 		return
 	end
 
-	-- Tubo: `inicio` s, depois um cartucho a cada `porCartucho` s até encher ou acabar a reserva, e `fim` s de bombeio.
+	-- Tubo: `inicio` s, depois um cartucho a cada `porCartucho` s até encher ou acabar a reserva, e `fim` s de bombeio
+	-- (o bombeio engatilha a arma: se a recarga é interrompida antes dele, a bomba continua desengatilhada).
 	local function fechar()
 		if cfg.somBombear then
 			somDaRecarga(jogador, cfg.somBombear)
 		end
 		task.delay(recarga.fim, function()
 			if recargaAtiva(jogador, ficha, id) then
+				e.engatilhada = true
 				encerrarRecarga(jogador, ficha)
 			end
 		end)
@@ -823,7 +1084,7 @@ local function recarregar(jogador: Player)
 			if not recargaAtiva(jogador, ficha, id) then
 				return
 			end
-			if not moverMunicao(jogador, e, cfg, true) then
+			if not moverMunicao(jogador, e, cfg, true, cfg.pente) then
 				return fechar()
 			end
 			if cfg.somCartucho then
@@ -841,6 +1102,54 @@ local function recarregar(jogador: Player)
 		if recargaAtiva(jogador, ficha, id) then
 			esperarCartucho()
 		end
+	end)
+end
+
+-- Engatilhar / destravar (tecla Q): bomba precisa a cada tiro; arma de pente só depois de pane ou de recarga vazia. A mão fica
+-- ocupada `tempo` s (sem tiro nem recarga). Sem balas, só o clique (docs/armas.md §13.3).
+local function engatilhar(jogador: Player)
+	if not Limite.ok(jogador, "Engatilhar", 0.15) then
+		return
+	end
+	local e = estados[jogador]
+	local id = e and e.arma
+	local cfg = if id then CfgArmas.armas[id] else nil
+	if not (e and id and cfg and e.slot and cfg.tipo == "fogo" and Regra.usaEngatilhar(cfg)) then
+		return
+	end
+	local personagem, _, cabeca = vivo(jogador)
+	if
+		not (personagem and cabeca)
+		or e.recarregando
+		or jogador:GetAttribute("Usando") == true
+		or os.clock() < e.engatilhandoAte
+	then
+		return
+	end
+	local pente = Inventario.pente(jogador, e.slot) or 0
+	local acao, tempo = Regra.engatilhar(cfg, pente, e.engatilhada, e.travada, CfgArmas.pane)
+	if acao == "vazio" then
+		somDaRecarga(jogador, cfg.somVazio or "CliqueVazio")
+		return
+	elseif acao == "nada" then
+		return
+	end
+	e.engatilharId += 1
+	local ficha = e.engatilharId
+	e.engatilhandoAte = os.clock() + tempo
+	sincronizarMunicao(jogador)
+	somDaRecarga(jogador, cfg.somBombear or "Bombear")
+	task.delay(tempo, function()
+		local atual = estados[jogador]
+		if not atual or atual.engatilharId ~= ficha or atual.arma ~= id or jogador.Parent == nil then
+			return -- trocou de arma, morreu ou saiu: engatilharId já mudou
+		end
+		atual.engatilhandoAte = 0
+		atual.engatilhada = true
+		if acao == "destravar" then
+			atual.travada = false
+		end
+		sincronizarMunicao(jogador)
 	end)
 end
 
@@ -879,6 +1188,7 @@ function Armas.iniciar()
 	Inventario.aoMudar(conferirSlot)
 	Vida.aoMorrer(function(jogador)
 		desequipar(jogador)
+		jogador:SetAttribute("Mirando", false)
 	end)
 
 	Rede.evento("Equipar").OnServerEvent:Connect(function(jogador: Player, slot: any)
@@ -895,7 +1205,28 @@ function Armas.iniciar()
 
 	Rede.evento("Atacar").OnServerEvent:Connect(atacar)
 
+	-- Mira (botão direito): só com arma de fogo na mão e vivo; trocar de arma ou morrer tira. O cliente lê Player.Mirando.
+	Rede.evento("Mirar").OnServerEvent:Connect(function(jogador: Player, ligado: any)
+		if type(ligado) ~= "boolean" or not Limite.ok(jogador, "Mirar", 0.05) then
+			return
+		end
+		local id = jogador:GetAttribute("ArmaEquipada")
+		local cfg = if type(id) == "string" then CfgArmas.armas[id] else nil
+		local pode = cfg ~= nil and cfg.tipo == "fogo" and jogador:GetAttribute("Morto") ~= true
+		jogador:SetAttribute("Mirando", ligado and pode)
+	end)
+	local function tirarMira(jogador: Player)
+		jogador:GetAttributeChangedSignal("ArmaEquipada"):Connect(function()
+			jogador:SetAttribute("Mirando", false)
+		end)
+	end
+	for _, jogador in Players:GetPlayers() do
+		tirarMira(jogador)
+	end
+	Players.PlayerAdded:Connect(tirarMira)
+
 	Rede.evento("Recarregar").OnServerEvent:Connect(recarregar)
+	Rede.evento("Engatilhar").OnServerEvent:Connect(engatilhar)
 
 	-- Pitch da mira (para o corpo dos outros jogadores olhar para cima/baixo): só com arma, finito, limitado.
 	Rede.evento("Mira").OnServerEvent:Connect(function(jogador: Player, pitch: any)

@@ -10,6 +10,7 @@ local Rede = require(Shared:WaitForChild("Rede"))
 local Corpo = require(Shared:WaitForChild("Regras"):WaitForChild("Corpo"))
 local CfgCorpo = require(Shared:WaitForChild("Config"):WaitForChild("Corpo"))
 local CfgMonstros = require(Shared:WaitForChild("Config"):WaitForChild("Monstros"))
+local CfgAnimCorpo = require(Shared:WaitForChild("Config"):WaitForChild("AnimacoesCorpo"))
 
 export type FonteDano = {
 	tipo: "monstro" | "jogador" | "queda" | "fome" | "sede" | "frio" | "batida",
@@ -214,6 +215,9 @@ local function aoPersonagem(jogador: Player, personagem: Model)
 
 	humanoide.MaxHealth = VIDA_HUMANOIDE
 	humanoide.Health = VIDA_HUMANOIDE
+	-- com Config/AnimacoesCorpo.morteAnimada as juntas ficam inteiras na morte: o clipe corpo/vida Morte (client/AnimacaoCorpo)
+	-- é quem derruba o corpo. Desligado = desmonte padrão do motor.
+	humanoide.BreakJointsOnDeath = not CfgAnimCorpo.morteAnimada
 
 	-- sem regeneração padrão
 	local regen = personagem:FindFirstChild("Health")

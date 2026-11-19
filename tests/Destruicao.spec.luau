@@ -43,9 +43,9 @@ util.perto(R.vidaMaxima("Brick", 10, CfgMat), 1080, "clamp máximo (3)")
 util.perto(R.vidaMaxima("Metal", 0.2, CfgMat), 300, "metal fino (0,5)")
 
 -- matriz
-util.perto(R.danoEfetivo(40, "corte", "madeira", CfgMat), 60, "machado em madeira")
-util.perto(R.danoEfetivo(40, "corte", "alvenaria", CfgMat), 6, "machado em tijolo")
-util.perto(R.danoEfetivo(25, "bala", "vidro", CfgMat), 150, "pistola em vidro")
+util.perto(R.danoEfetivo(40, "corte", "madeira", CfgMat), 90, "machado em madeira")
+util.perto(R.danoEfetivo(40, "corte", "alvenaria", CfgMat), 9, "machado em tijolo")
+util.perto(R.danoEfetivo(25, "bala", "vidro", CfgMat), 225, "pistola em vidro")
 util.igual(R.danoEfetivo(25, "bala", "classeFantasma", CfgMat), 0, "classe inexistente")
 util.igual(R.danoEfetivo(25, "tipoFantasma", "vidro", CfgMat), 0, "tipo inexistente")
 
@@ -59,6 +59,8 @@ local tipo = {
 	marreta = "marreta",
 	garra = "garra",
 }
+-- a tabela do §4.3 vale com multiplicador 1; o multiplicador global (Config/Materiais) é testado acima
+local CfgMatBase = setmetatable({ multiplicadorDano = 1 }, { __index = CfgMat })
 local golpes = {
 	{ "vidro", 10, { pistola = 1, faca = 1, peDeCabra = 1, machado = 1, marreta = 1, garra = 1 } },
 	{ "madeira", 150, { pistola = 12, faca = 6, peDeCabra = 5, machado = 3, marreta = 3, garra = 8 } },
@@ -70,7 +72,7 @@ local golpes = {
 for _, linha in golpes do
 	for arma, n in linha[3] do
 		util.igual(
-			R.golpesPara(linha[2], dano[arma], tipo[arma], linha[1], CfgMat),
+			R.golpesPara(linha[2], dano[arma], tipo[arma], linha[1], CfgMatBase),
 			n,
 			string.format("golpes %s vida %d com %s", linha[1], linha[2], arma)
 		)
@@ -201,17 +203,123 @@ util.igual(#lajeMeio, 4, "laje no meio: 4 retalhos")
 -- vão maior que a peça inteira: sem retalho
 util.igual(#R.recortar({ 2, 3, 0.5 }, 3, { 0, 0, 0 }, { largura = 9, altura = 9 }, true, 0.8), 0, "vão cobre a peça")
 
+-- formas do vão em faixas (2026-11-16): volume conservado, sem sobreposição, tudo dentro da peça
+local function conferirFaixas(
+	tam: { number },
+	fino: number,
+	ponto: { number },
+	buraco: R.Buraco,
+	forma: string,
+	chao: boolean,
+	nome: string,
+	base: number?
+): ({ R.Faixa }, { R.Retalho })
+	local faixas = R.faixas(tam, fino, ponto, buraco, forma, chao, Cfg.retalhos.minimo, Cfg, base)
+	assert(#faixas > 0, nome .. ": tem faixa")
+	local pecas = R.recortarFaixas(tam, fino, faixas)
+	local u, v = R.eixosDoPlano(fino)
+	local caixas = {}
+	local soma = 0
+	for _, f in faixas do
+		assert(f.u0 >= -tam[u] / 2 - 1e-6 and f.u1 <= tam[u] / 2 + 1e-6, nome .. ": faixa dentro (u)")
+		assert(f.v0 >= -tam[v] / 2 - 1e-6 and f.v1 <= tam[v] / 2 + 1e-6, nome .. ": faixa dentro (v)")
+		local r = { centro = { 0, 0, 0 }, tamanho = { tam[1], tam[2], tam[3] } }
+		r.centro[u], r.centro[v] = (f.u0 + f.u1) / 2, (f.v0 + f.v1) / 2
+		r.tamanho[u], r.tamanho[v] = f.u1 - f.u0, f.v1 - f.v0
+		table.insert(caixas, caixa(r))
+		soma += vol(r.tamanho)
+	end
+	local limite = { -tam[1] / 2, tam[1] / 2, -tam[2] / 2, tam[2] / 2, -tam[3] / 2, tam[3] / 2 }
+	for _, r in pecas do
+		local cr = caixa(r)
+		for i = 1, 5, 2 do
+			assert(cr[i] >= limite[i] - 1e-6 and cr[i + 1] <= limite[i + 1] + 1e-6, nome .. ": retalho dentro da peça")
+		end
+		for _, outra in caixas do
+			assert(not sobrepoe(cr, outra), nome .. ": sem sobreposição")
+		end
+		table.insert(caixas, cr)
+		soma += vol(r.tamanho)
+	end
+	util.perto(soma, vol(tam), nome .. ": volume conservado", 1e-6)
+	return faixas, pecas
+end
+
+-- elipse: degraus, a faixa do meio é a mais larga
+local perfil = R.perfilForma("elipse", 2.4, Cfg)
+util.igual(#perfil, 3, "elipse de 2,4: 3 degraus")
+util.perto(perfil[2][3], 1, "degrau do meio na largura toda")
+assert(perfil[1][3] < 1 and perfil[3][3] < 1, "degraus das pontas mais estreitos")
+util.igual(#R.perfilForma("elipse", 0.6, Cfg), 1, "furo pequeno: 1 degrau")
+util.igual(#R.perfilForma("elipse", 50, Cfg), Cfg.formas.elipse.linhasMax, "elipse grande: no máximo linhasMax")
+util.igual(#R.perfilForma("retangulo", 3, Cfg), 1, "retângulo: 1 faixa")
+
+local furoB = { largura = 2.4, altura = 2.4 }
+local fx = conferirFaixas(parede, 3, { 2, 1, 0 }, furoB, "elipse", false, "furo de espingarda no meio da parede")
+util.igual(#fx, 3, "furo de espingarda: 3 faixas")
+conferirFaixas(parede, 3, { -9.9, 4.9, 0 }, furoB, "elipse", false, "furo no canto de cima")
+conferirFaixas(parede, 3, { 0, -4.6, 0 }, { largura = 0.6, altura = 0.6 }, "elipse", false, "bala perto do chão")
+conferirFaixas({ 20, 1, 14 }, 2, { 3, 0, -2 }, furoB, "elipse", false, "furo na laje")
+-- vão do carro: base no chão da parede, silhueta de 4 faixas, a de cima mais estreita
+local carroB = { largura = 7, altura = 6.3 }
+local fc = conferirFaixas(parede, 3, { 1, 0, 0 }, carroB, "carro", false, "carro na parede", -5)
+util.igual(#fc, 4, "carro: 4 faixas")
+util.perto(fc[1].v0, -5, "carro: vão desce até o chão")
+assert(fc[4].u1 - fc[4].u0 < fc[2].u1 - fc[2].u0, "carro: teto mais estreito que a lataria")
+conferirFaixas({ 6, 10, 1 }, 3, { 0, 0, 0 }, carroB, "carro", false, "carro numa parede estreita", -5)
+conferirFaixas({ 20, 5, 1 }, 3, { 0, 0, 0 }, carroB, "carro", false, "carro numa parede baixa", -2.5)
+-- retângulo por faixas = mesma área do vão antigo
+local fr = conferirFaixas(parede, 3, { 0, 0, 0 }, larg, "retangulo", true, "retângulo por faixas")
+util.igual(#fr, 1, "retângulo: 1 faixa")
+util.perto(fr[1].v1 - fr[1].v0, 6.5, "retângulo: altura")
+util.igual(#R.recortarFaixas(parede, 3, {}), 1, "sem faixa: a peça inteira volta")
+
+-- furo de tiro
+util.perto(R.limiarFuro(360, "alvenaria", Cfg), 360 * Cfg.furo.fracao.alvenaria, "limiar do furo no tijolo")
+util.igual(R.limiarFuro(10, "vidro", Cfg), math.huge, "vidro não fura (estilhaça)")
+util.perto(R.tamanhoFuro(nil, Cfg), Cfg.furo.tamanho, "furo de uma bala")
+util.perto(R.tamanhoFuro(99, Cfg), Cfg.furo.max, "furo limitado")
+-- espingarda (8 x 12, todos na mesma peça) fura tijolo e concreto de 1 stud num tiro; pistola fura madeira num tiro
+local espingarda = R.danoEfetivo(96, "bala", "alvenaria", CfgMat)
+assert(espingarda >= R.limiarFuro(360, "alvenaria", Cfg), "espingarda fura tijolo num tiro")
+assert(espingarda >= R.limiarFuro(480, "alvenaria", Cfg), "espingarda fura concreto num tiro")
+assert(
+	R.danoEfetivo(25, "bala", "madeira", CfgMat) >= R.limiarFuro(120, "madeira", Cfg),
+	"pistola fura madeira num tiro"
+)
+assert(
+	R.danoEfetivo(25, "bala", "alvenaria", CfgMat) < R.limiarFuro(360, "alvenaria", Cfg),
+	"pistola não fura tijolo num tiro"
+)
+
+-- prop derrubável
+assert(not R.cai(0.4, 0, Cfg), "sapata fica")
+assert(R.cai(11, 0, Cfg), "poste cai")
+assert(R.bateuNoChao(20, 3, Cfg), "bateu no chão")
+assert(not R.bateuNoChao(20, 18, Cfg), "ainda caindo")
+assert(not R.bateuNoChao(2, 0, Cfg), "devagar demais para contar")
+
+-- carro mais forte: sedan a 40 st/s atravessa tijolo de 1 stud, a 20 não
+assert(
+	R.atravessa(R.danoEfetivo(R.danoImpactoCarro(1520, 40, Cfg), "impacto", "alvenaria", CfgMat), 360),
+	"sedan a 40 atravessa tijolo"
+)
+assert(
+	not R.atravessa(R.danoEfetivo(R.danoImpactoCarro(1520, 20, Cfg), "impacto", "alvenaria", CfgMat), 360),
+	"sedan a 20 não atravessa tijolo"
+)
+
 -- peça inteira
 assert(R.inteiraSeMenor({ 2, 2.5, 0.3 }, Cfg), "vidro pequeno")
 assert(R.inteiraSeMenor({ 2.5, 1, 1 }, Cfg), "no limite")
 assert(not R.inteiraSeMenor({ 2.6, 1, 1 }, Cfg), "acima do limite")
 
 -- carro
-util.perto(R.danoImpactoCarro(1520, 58, Cfg), 383.5, "sedan a 58 st/s", 3)
-util.perto(R.danoImpactoCarro(2200, 78, Cfg), 1004, "esportivo a fundo", 5)
+util.perto(R.danoImpactoCarro(1520, 58, Cfg), 767, "sedan a 58 st/s", 3)
+util.perto(R.danoImpactoCarro(2200, 78, Cfg), 2008, "esportivo a fundo", 5)
 assert(R.atravessa(380, 300), "atravessa madeira")
 assert(not R.atravessa(380, 480), "não atravessa concreto")
-util.perto(R.custoCarroceria(100, Cfg), 15, "custo da carroceria")
+util.perto(R.custoCarroceria(100, Cfg), 6, "custo da carroceria")
 util.igual(R.danoAtropelo(5, Cfg), 0, "atropelo abaixo da velocidade mínima")
 util.igual(R.danoAtropelo(Cfg.carro.atropelo.velMin, Cfg), 0, "atropelo na velocidade mínima")
 util.perto(R.danoAtropelo(58, Cfg), 80, "atropelo a 58 st/s")

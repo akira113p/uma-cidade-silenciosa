@@ -340,7 +340,8 @@ def attack(rig, p):
         q = p + atras
         e_e = rampa(q, 0.20, 0.42) * (1 - rampa(q, 0.45, 0.54))
         g = rampa(q, 0.42, 0.52) * (1 - rampa(q, 0.62, 0.98))
-        mp["alvo"] += Vector((-lado * 0.30 * e_e, -0.75 * e_e - 0.72 * g, 1.15 * e_e))
+        volta = rampa(q, 0.62, 0.98)  # garras voltam pelo ar (antes arrastavam 0,7 m no chão)
+        mp["alvo"] += Vector((-lado * 0.30 * e_e, -0.75 * e_e - 0.72 * g, 1.15 * e_e + 0.25 * math.sin(math.pi * volta) ** 0.5))
         mp["giro"] = rot(pitch=NEUTRO[k]["giro"] - 60 * e_e)
     return e
 
@@ -373,8 +374,57 @@ def death(rig, p):
     return e
 
 
+def acel(p, a, b):
+    x = max(0.0, min(1.0, (p - a) / (b - a)))
+    return x * x
+
+
+PULSO_S, ARROMBAR_S = 2.0, 0.9
+
+
+def pulso(rig, p):
+    # 2026-11-14 (agente D): encosta o corpo no chão (as patas abrem), fica sentindo a vibração e sobe. Evento "encostou" medido.
+    t = p * PULSO_S
+    e = estado_neutro(rig)
+    cai = rampa(t, 0.05, 0.62) ** 1.3 * (1 - rampa(t, 1.30, 1.95))
+    sente = rampa(t, 0.62, 0.8) * (1 - rampa(t, 1.2, 1.35))
+    e["mov"] = Vector((0, 0.04 * cai, -0.12 - 0.88 * cai + 0.015 * sente * math.sin(2 * math.pi * 3 * t)))
+    e["pitch"] = 4 * cai
+    e["dobra"] = 3 * cai + 2 * sente * math.sin(2 * math.pi * 3 * t)
+    e["pesc_p"] = 12 * cai
+    e["cab_p"] = 10 * cai
+    e["cab_r"] = 14 * sente * math.sin(2 * math.pi * 0.9 * (t - 0.6))
+    for k, m in MEMBROS.items():
+        e["membros"][k]["alvo"] += Vector((m["lado"] * 0.40 * cai, (-0.12 if m["frente"] else 0.12) * cai, 0.12 * math.sin(math.pi * cai)))
+    return e
+
+
+def arrombar(rig, p):
+    # golpe violento nas patas da frente: ergue alto, desce acelerando e crava no chão à frente (impacto 0,45 s), volta
+    t = p * ARROMBAR_S
+    e = estado_neutro(rig)
+    ergue = rampa(t, 0.0, 0.30) * (1 - acel(t, 0.32, 0.45))
+    bate = acel(t, 0.32, 0.45) * (1 - rampa(t, 0.55, 0.88))
+    e["mov"] = Vector((0, 0.18 * ergue - 0.30 * bate, -0.12 + 0.10 * ergue - 0.14 * bate))
+    e["pitch"] = -14 * ergue + 10 * bate
+    e["dobra"] = -10 * ergue + 10 * bate
+    e["pesc_p"] = -14 * ergue + 18 * bate
+    e["cab_p"] = -8 * ergue + 8 * bate
+    e["roll"] = 3 * math.sin(t * 60) * bate * (1 - rampa(t, 0.45, 0.6))  # tranco do impacto
+    for k in ("FL", "FR"):
+        mp = e["membros"][k]
+        lado = MEMBROS[k]["lado"]
+        volta = rampa(t, 0.55, 0.88)
+        mp["alvo"] += Vector((-lado * 0.15 * ergue, -0.70 * ergue - 0.75 * bate, 1.20 * ergue + 0.25 * math.sin(math.pi * volta) ** 0.5))
+        mp["giro"] = rot(pitch=NEUTRO[k]["giro"] - 70 * ergue + 10 * bate)
+    return e
+
+
 ACOES = [("Idle", 60, idle, True), ("Walk", PARAM["Walk"]["n"], walk, True), ("Run", PARAM["Run"]["n"], run, True),
-         ("Attack", 36, attack, False), ("Death", 48, death, False)]
+         ("Attack", 36, attack, False), ("Death", 48, death, False),
+         ("Pulso", round(PULSO_S * 24) + 1, pulso, False), ("Arrombar", round(ARROMBAR_S * 24) + 1, arrombar, False)]
+# eventos em fração do clipe (0..1), convertidos para s pelo quadro mais próximo: Attack = garras no fim do golpe (rampa 0,42..0,52)
+EVENTOS = {"Attack": {"impacto": 0.52}, "Arrombar": {"impacto": 0.45 / ARROMBAR_S}}
 
 
 def corrigir_e_coletar(rig, fn, n, ciclica):
@@ -436,7 +486,39 @@ def gravar(rig, nome, n, fn, ciclica):
     for pb in arm.pose.bones:
         pb.location = Vector()
         pb.rotation_quaternion = Quaternion()
-    return dict(acao=act.name, quadros=total, ciclica=ciclica, zmin_corrigido=round(pior, 4))
+    d = dict(acao=act.name, quadros=total, ciclica=ciclica, zmin_corrigido=round(pior, 4), duracao=round((total - 1) / 24, 4))
+    ev = {k: round(round(x * (n - 1)) / 24, 4) for k, x in EVENTOS.get(nome, {}).items()}
+    # corpo (sem as patas) e escorregão do ponto de contato de cada pata
+    corpo = [i for i in range(len(rig.vpesos)) if all(i not in set(l) for l in rig.vpe.values())]
+    v = 0.0
+    if nome in PARAM:
+        c = PARAM[nome]
+        v = 2 * c["passo"] / (c["duty"] * c["n"])
+        d["velocidade_nativa_m_s"] = round(v * 24, 4)
+    zc, desliz, enc = 9.0, 0.0, None
+    ant_p = None
+    for i in range(total):
+        G = Gs[i % len(Gs)]
+        P = [sum(((G[nn] @ co) * w for nn, w in ws), Vector()) for co, ws in rig.vpesos]
+        z = min(P[j].z for j in corpo)
+        zc = min(zc, z)
+        if enc is None and z < 0.012:
+            enc = i
+        if ant_p is not None:
+            for k, l in rig.vpe.items():
+                j = min(l, key=lambda q: ant_p[q].z)
+                if ant_p[j].z < 0.012 and P[j].z < 0.012:
+                    dd = math.hypot(P[j].x - ant_p[j].x, (P[j].y - ant_p[j].y) - v)
+                    if dd > desliz:
+                        d["pior_escorregao"] = [k, i]
+                    desliz = max(desliz, dd)
+        ant_p = P
+    if nome == "Pulso" and enc is not None:
+        ev["encostou"] = round(enc / 24, 4)
+    if ev:
+        d["eventos"] = ev
+    d["medidas"] = dict(zmin_corpo=round(zc, 4), escorregao_max_m_quadro=round(desliz, 4))
+    return d
 
 
 def main():
@@ -449,6 +531,8 @@ def main():
     print("##PESOS## ", ajustar_pesos(arm, m))
     rig = Rig(arm, m)
     r = [gravar(rig, *a) for a in ACOES]
+    with open(SAIDA.replace(".blend", ".json"), "w", encoding="utf-8") as fp:
+        json.dump(dict(nome="Rastejador", fps=24, acoes={a[0]: x for a, x in zip(ACOES, r)}), fp, ensure_ascii=False, indent=1)
     cena = bpy.context.scene
     cena.frame_start, cena.frame_end, cena.frame_current = 1, PARAM["Walk"]["n"] + 1, 1
     arm.animation_data.action = bpy.data.actions["Rastejador_Walk"]

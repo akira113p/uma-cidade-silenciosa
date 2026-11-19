@@ -163,31 +163,41 @@ Ambiente.db(): number
 Lê `workspace:GetAttribute("Clima")` e `Lighting.ClockTime` com `Regras/Som.condicao`. Atualiza os atributos
 `Condicao` e `AmbienteDb` do workspace a cada 1 s.
 
-### Ruido (P3)
+### Ruido (P3) — Som v2 (contrato completo em `docs/som.md`)
 ```lua
+export type Bandas = { grave: number, medio: number, agudo: number }      -- dB a 1 m, por banda
 export type EventoRuido = {
 	posicao: Vector3,
-	db: number,          -- emitido
-	tipo: string,        -- nome da ação (Config/Som.acoes) ou "passo"
+	db: number,                 -- = max(bandas): compatível com o número único de antes (HUD, Sons.tocar, Flores, Corcunda)
+	bandas: Bandas,
+	chao: number?,              -- dB da vibração pelo chão; nil = não toca o chão (voz, grito, tiro no ar)
+	tipo: string,               -- "passo", "detrito", "esbarrao", "itemCaiu", "respiracao", "arfar", "aterrissar" ou o nome de Config/Som.acoes
+	dominante: string?,         -- camada mais forte do passo ("pisada", "equipamento", "respiracao", "vegetacao"), subtipo do detrito ("vidro", "lata"...) ou classe do esbarrão/queda
+	modo: string?,              -- "deitado" | "agachado" | "andar" | "correr" nos passos e detritos (a regra do Pulso lê isto)
 	fonte: Player | Model | nil,
-	ambiente: number,    -- Ambiente.db() no momento
-	tempo: number,       -- os.clock()
+	ambiente: number,           -- ambiente médio (compat)
+	ambienteBandas: { grave: number, medio: number, agudo: number, chao: number },
+	tempo: number,              -- os.clock()
 }
-Ruido.emitir(posicao: Vector3, db: number, tipo: string, fonte: (Player | Model)?): ()
-Ruido.emitirAcao(acao: string, posicao: Vector3, fonte: (Player | Model)?): ()  -- db = Config/Som.acoes[acao]
-Ruido.aoRuido(callback: (EventoRuido) -> ()): ()                                -- Monstros registra aqui
+Ruido.emitirSom(ev: { posicao, bandas, chao?, tipo, dominante?, modo?, fonte? }): ()   -- a função principal
+Ruido.emitir(posicao: Vector3, db: number, tipo: string, fonte: (Player | Model)?): () -- bandas de Config/Som.perfisAcao[tipo] (sem entrada = plano, sem chão)
+Ruido.emitirAcao(acao: string, posicao: Vector3, fonte: (Player | Model)?): ()          -- db = Config/Som.acoes[acao]
+Ruido.aoRuido(callback: (EventoRuido) -> ()): ()                                         -- Monstros registra aqui
 ```
-`emitir` monta o evento, chama todos os callbacks (cada um em `task.spawn`), manda `MeuRuido` para a fonte se for
-`Player`, atualiza `UltimoRuido`, e no Studio manda `RuidoDebug` para todos. **Não** calcula paredes nem quem ouve
-(isso é de cada ouvinte).
+`emitirSom` monta o evento, chama todos os callbacks (cada um em `task.spawn`), manda `MeuRuido(db, ambiente, alcance, rotulo)` para a fonte
+se for `Player` (alcance = `Som.alcanceEvento` do ouvinte de referência; rótulo = chave de `Config/Som.medidor.rotulos`), atualiza `UltimoRuido`
+e, no Studio, manda `RuidoDebug(posicao, alcance, db, banda)` para todos. **Não** calcula paredes nem quem ouve: cada ouvinte decide
+(`Regras/Audicao`; no Monstros, `processarRuido`: audição por espécie, atenção do estado, paredes por banda, via chão sem raycast).
 
-Passos (interno do Ruido): laço a `Config/Som.hzAmostragem` por jogador vivo; velocidade horizontal do
-`HumanoidRootPart`; `Regras/Som.modoPasso(vel, Agachado, Correndo)`; acumulador `+= dt × passosPorSegundo[modo]`; a cada
-inteiro: superfície por `Humanoid.FloorMaterial` (`Air` = sem passo), `db = Som.emitido(modo, superficie)`,
-`Sons.tocar("Passo"..Superficie, hrp, {db = db})`, `Ruido.emitir(hrp.Position, db, "passo", jogador)`.
-Aterrissagem: `Humanoid.StateChanged` Freefall→Landed com a altura máxima da queda; emite `aterrissar` + som
-`Aterrissar` (a parte do dano de queda é da Vida, que escuta o mesmo evento por conta própria).
+Passos (interno do Ruido): laço a `Config/Som.hzAmostragem` por jogador vivo; `Regras/Som.modoPasso(vel, Agachado, Correndo, Deitado)`;
+acumulador `+= dt × passosPorSegundo[modo]`; a cada inteiro: superfície por `Humanoid.FloorMaterial` (`Air` = sem passo), camadas por
+`Regras/Passo.camadas` (pisada + equipamento por `Inventario.carga` + respiração por `Estamina` + vegetação por `Obstaculos`), composição por
+`Som.compor`, `Sons.tocar("Passo"..Superficie, hrp, {db})`, `emitirSom` com `tipo = "passo"` e `dominante`; depois `Detritos.aoPasso`. A 10 Hz
+`Obstaculos.amostrar` (esbarrão em móvel/prop, uma consulta espacial por jogador). Parado com estamina baixa: evento `"respiracao"` a cada 2 s.
+Aterrissagem: `Humanoid.StateChanged` Freefall→Landed com a altura máxima da queda; `Passo.aterrissagem` + som `Aterrissar` (a parte do dano de
+queda é da Vida, que escuta o mesmo evento por conta própria).
 Voz: evento `Voz` → `Ruido.emitir(cabeça, db, "voz", jogador)` sem som (a voz real já toca pelo chat de voz).
+Serviços do Som v2 fora da `ORDEM` do init (o Ruido os inicia): `Detritos`, `Obstaculos`, `Respiracao` (minigame de segurar a respiração, `docs/som.md` §13).
 
 ### Movimento (P2)
 Sem funções públicas. Escuta `Agachar`/`Correr`, escreve `Agachado`/`Correndo`, aplica `Humanoid.WalkSpeed`:

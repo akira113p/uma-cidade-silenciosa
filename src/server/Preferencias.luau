@@ -17,6 +17,9 @@ local INTERVALO_SALVAR = 1 -- s entre SalvarPreferencias do mesmo jogador
 local ESPERA_GRAVACAO = 6 -- s; o DataStore tem 6 s de intervalo entre gravações da mesma chave
 local TENTATIVAS_CARGA = 3
 
+-- Chaves que só o servidor grava (o cliente não as muda por SalvarPreferencias).
+local SOMENTE_SERVIDOR: { [string]: boolean } = { Pref_Personagem = true }
+
 local padrao: { [string]: any } = ConfigCamera.preferenciasPadrao
 local limites: { [string]: { number } } = ConfigCamera.limitesPreferencias
 
@@ -150,6 +153,8 @@ local function carregar(jogador: Player)
 		end
 	end
 	carregado[jogador] = true
+	-- Avisa o cliente e o servidor (seletor de personagem) que as preferências já chegaram, mesmo se a leitura falhou.
+	jogador:SetAttribute("PrefCarregadas", true)
 end
 
 local function aoSalvarPedido(jogador: Player, prefs: unknown)
@@ -159,7 +164,7 @@ local function aoSalvarPedido(jogador: Player, prefs: unknown)
 	local mudou = false
 	-- Só as chaves conhecidas são lidas; o resto da tabela do cliente é ignorado.
 	for chave in padrao do
-		local valor = validar(chave, (prefs :: { [string]: unknown })[chave])
+		local valor = if SOMENTE_SERVIDOR[chave] then nil else validar(chave, (prefs :: { [string]: unknown })[chave])
 		if valor ~= nil and jogador:GetAttribute(chave) ~= valor then
 			jogador:SetAttribute(chave, valor)
 			mudou = true
@@ -190,6 +195,19 @@ function Preferencias.obter(jogador: Player, chave: string): any
 		return padrao[chave]
 	end
 	return valor
+end
+
+-- Grava uma preferência vinda do servidor (ex.: Pref_Personagem). Valida como as demais e agenda o salvamento.
+function Preferencias.definir(jogador: Player, chave: string, valor: unknown): boolean
+	local v = validar(chave, valor)
+	if v == nil then
+		return false
+	end
+	if jogador:GetAttribute(chave) ~= v then
+		jogador:SetAttribute(chave, v)
+		agendarGravacao(jogador)
+	end
+	return true
 end
 
 function Preferencias.iniciar()

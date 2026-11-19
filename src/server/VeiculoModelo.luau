@@ -51,6 +51,9 @@ local FALTANDO = { "Capo", "PortaMalas", "PortaE", "PortaD", "ParaChoque" }
 local COR_TAMPA = Color3.fromRGB(170, 170, 175)
 local COR_VIDRO = Color3.fromRGB(150, 190, 205)
 local COR_VIDRO_QUEBRADO = Color3.fromRGB(210, 215, 220)
+local COR_FAROL_APAGADO = Color3.fromRGB(150, 156, 156)
+local COR_FAROL_ACESO = Color3.fromRGB(255, 240, 205)
+local FAROIS = { "Farol_E", "Farol_D" }
 local COR_QUEIMADO = Color3.fromRGB(30, 28, 26)
 local COR_BATIDO = Color3.fromRGB(32, 28, 26)
 
@@ -764,6 +767,40 @@ function VeiculoModelo.criar(estado: Estado, cf: CFrame): Model
 		prompt.Parent = tampa
 	end
 
+	-- faróis (Config/Veiculos.farol): bloco colado na frente + SpotLight (facho) + PointLight (chão em volta). Apagados ao nascer;
+	-- o atributo FarolLigado manda (VeiculoModelo.definirFarol). O bloco inclina `inclinacao` graus para o facho cair na estrada.
+	local cfFarol = Cfg.farol
+	for lado, nome in { [-1] = "Farol_E", [1] = "Farol_D" } do
+		local lampada = corpo(
+			nome,
+			Vector3.new(0.14 * sx, 0.07 * sy, 0.12),
+			Vector3.new(lado * cfFarol.lado * sx, cfFarol.altura * sy, -sz / 2 + 0.02),
+			COR_FAROL_APAGADO,
+			Enum.Material.Glass,
+			{ colide = false, rot = CFrame.Angles(math.rad(-cfFarol.inclinacao), 0, 0) }
+		)
+		lampada.CastShadow = false
+		local corLuz = cfFarol.cor
+		local facho = Instance.new("SpotLight")
+		facho.Name = "Facho"
+		facho.Face = Enum.NormalId.Front
+		facho.Angle = cfFarol.angulo
+		facho.Range = cfFarol.alcance
+		facho.Brightness = cfFarol.brilho
+		facho.Color = Color3.fromRGB(corLuz[1], corLuz[2], corLuz[3])
+		facho.Shadows = false
+		facho.Enabled = false
+		facho.Parent = lampada
+		local chao = Instance.new("PointLight")
+		chao.Name = "Preenchimento"
+		chao.Range = cfFarol.preenchimento.alcance
+		chao.Brightness = cfFarol.preenchimento.brilho
+		chao.Color = facho.Color
+		chao.Shadows = false
+		chao.Enabled = false
+		chao.Parent = lampada
+	end
+
 	local moldeRoda = molde("Roda")
 	local malhaRoda = if moldeRoda then moldeRoda:FindFirstChildWhichIsA("MeshPart") else nil
 	local texturaRoda = if type(Malhas.roda) == "table" and type(Malhas.roda.textura) == "string"
@@ -788,6 +825,7 @@ function VeiculoModelo.criar(estado: Estado, cf: CFrame): Model
 	modelo:SetAttribute("Combustivel", VeiculoModelo.arredondarLitros(estado.combustivel))
 	modelo:SetAttribute("SemCombustivel", estado.combustivel <= 0)
 	modelo:SetAttribute("Abastecendo", false)
+	modelo:SetAttribute("FarolLigado", false)
 	modelo:SetAttribute("CorBase", cor)
 	modelo:SetAttribute("AnguloDirecao", ANGULO_DIRECAO)
 	modelo:SetAttribute("RaioRoda", raio)
@@ -829,6 +867,34 @@ local function malhaDe(modelo: Model, nome: string): BasePart?
 		return m
 	end
 	return nil
+end
+
+-- Reflete FarolLigado (e Queimado) nos dois faróis: bloco neon aceso + luzes ligadas. Queimado: faróis somem e nada acende.
+local function atualizarFarol(modelo: Model)
+	local queimado = modelo:GetAttribute("Queimado") == true
+	local ligado = modelo:GetAttribute("FarolLigado") == true and not queimado
+	for _, nome in FAROIS do
+		local p = modelo:FindFirstChild(nome)
+		if p and p:IsA("BasePart") then
+			p:SetAttribute("TranspBase", if queimado then 1 else 0)
+			p.Transparency = if queimado then 1 else 0
+			p.Material = if ligado then Enum.Material.Neon else Enum.Material.Glass
+			p.Color = if ligado then COR_FAROL_ACESO else COR_FAROL_APAGADO
+			for _, filho in p:GetChildren() do
+				if filho:IsA("Light") then
+					filho.Enabled = ligado
+				end
+			end
+		end
+	end
+end
+
+-- Liga/apaga os faróis. Devolve o estado final (carro queimado não acende).
+function VeiculoModelo.definirFarol(modelo: Model, ligado: boolean): boolean
+	local final = ligado and modelo:GetAttribute("Queimado") ~= true
+	modelo:SetAttribute("FarolLigado", final)
+	atualizarFarol(modelo)
+	return final
 end
 
 -- Reflete o estado no modelo (atributos, aparência, suspensão). Idempotente.
@@ -944,6 +1010,7 @@ function VeiculoModelo.aplicar(modelo: Model, estado: Estado)
 	if mv then
 		mv.Transparency = if queimado then 1 else 0
 	end
+	atualizarFarol(modelo)
 end
 
 -- Pose de carro ESTACIONADO (ancorado): a mola só age com física, então o estado precisa aparecer na pose.

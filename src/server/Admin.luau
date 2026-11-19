@@ -120,7 +120,7 @@ acoes.visual = function(jogador, _)
 	if Aparencia and jogador.Character then
 		-- limpa os blocos antigos para montar de novo (útil depois de mudar Config/Aparencia)
 		for _, x in jogador.Character:GetDescendants() do
-			if x.Name == "Bloco" and x:IsA("Part") then
+			if x.Name == "Bloco" and x:IsA("BasePart") then -- Part (blocos) ou MeshPart (personagens com malha)
 				x.Parent.Transparency = 0
 				x:Destroy()
 			end

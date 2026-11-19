@@ -196,3 +196,25 @@ Tecla O, seções "Carros" e "Monstros" (`client/Admin.luau`). O cliente só ped
 - Números: ver "Medidas" abaixo.
 
 Medidas (Studio, 2026-11-04): abertura decide 241 vagas (de 241 props em Props+Construcoes) em 16,8 s (antes ~35 s criando 202 carros; ~23 mil instâncias). 174 operacionais, 67 destruidos/queimados (25 tombados), 0 presos, 16 não couberam (3 ainda sobrepostos com a caixa a 0,7), 0 props de carro sobrando. Logo após a abertura: 6 carros / 685 instâncias; com o jogador a >450 studs de tudo: 0 instâncias. Teleporte a posto, garagem e ferro-velho: carros aparecem em <6 s, flutuação máxima 0,00 (limite 0,1), operacionais com 4 pneus ok e motor 60-100; ao se afastar, os não mexidos somem. Teste de direção (motores ligados pelo servidor, dono de rede nil): sedan do posto andou 103 studs em 5 s. Um van de garagem marcado operacional não se mexeu (parede/mureta a ~6 studs dos dois lados): o teste de preso usa 6 studs e só enxerga bloqueio dos dois sentidos.
+
+
+## Freio de mão, farol e condução dinâmica (2026-11-14)
+Escrito sem Studio (a sessão não era a dona): `checar` das regras e testes Lune verdes, **nunca rodado em Play**. Afinar tudo no playtest.
+- **Freio de mão = SEGURAR Shift** (`Config/Veiculos.teclas.freioMao`; botão "Freio" de segurar no toque). Só no cliente (`client/Direcao`): trava as
+  rodas traseiras (`Motor_TE/TD` em 0 com torque x `torqueFreio`), baixa o atrito das `Roda_TE/TD` para `freioMaoAtritoTraseiro` (0,35) e exagera o giro-alvo
+  (`freioMaoGuinada` 1,4). Sem pedal o comando das rodas cai a 45% do freio normal; com pedal as da frente seguem tracionando (power-slide). `Controles` não pede
+  "Correr" ao servidor com o personagem sentado. HUD: indicador FREIO DE MÃO (vermelho) e dica de teclas.
+- **Derrapar faz barulho**: o servidor mede o deslize lateral do carro do motorista (10 Hz, `Regra.derrapando`, `Config/Veiculos.derrapagem`) e emite a ação `carroDerrapar`
+  (78 dB em `Config/Som.acoes`, também em `PresetsMonstro.veiculo.tiposDeSom`: os monstros ouvem). **Sem som de pneu** (não há id de áudio): só o ruído de jogo.
+- **Farol = L** (evento `Farol`, só o motorista, Limite 0,25 s). `VeiculoModelo.criar` põe `Farol_E/Farol_D` (bloco de vidro/neon colado na frente, inclinado 6 graus) com
+  `SpotLight` + `PointLight` cada; o atributo `FarolLigado` do modelo manda (replica a todos, os outros jogadores veem o facho). Queimado não acende; não gasta gasolina nem
+  precisa do motor ligado; fica aceso quando o motorista sai. Brilho/ângulo/alcance em `Config/Veiculos.farol` (PROVISÓRIO: Range do Roblox corta em 60).
+- **Condução mais ágil** (`Direcao.PADRAO`): 0-máx em 3,2 s (era 4,5), freio 0,7 s (0,9), rolar 7 s (9), volante 34 graus a 260 °/s (era 32 a 150). Ajudas só no cliente dono da física
+  e só com o carro no chão (raio para baixo) acima de 4 studs/s: corta parte do deslize lateral (`aderenciaLateral` 4,5/s; 0,6/s com o freio de mão) e faz a rotação do carro
+  seguir o ângulo das rodas (`Regra.guinadaAlvo`, bicicleta com o entre-eixos medido nos `Susp_*`); contra-esterço automático (`Regra.contraVolante`) quando desliza.
+  O anti-trapaça do servidor (1,3 x VelMax) não muda: as ajudas não somam velocidade.
+- **Primeira pessoa no carro** (`client/Cabine`): vidros somem só para quem está dentro (`LocalTransparencyModifier`; o tiro ainda acerta), painel mais baixo e colunas A
+  mais finas, FOV +8 graus (`camera.fovExtra`) que abre até +10 com a velocidade, e o horizonte inclina com o deslize (teto 4 graus, respeita Pref_Tremor). A névoa NÃO foi mexida
+  (o servidor controla `Lighting.Fog*` e vários filtros dependem dela): se ainda faltar visão, o próximo passo é afrouxar a névoa dentro do carro.
+- A confirmar no Studio: o atrito local da roda (`CustomPhysicalProperties` escrito pelo dono da física) realmente solta a traseira; se não, trocar por `LinearVelocity`/impulso.
+  Valores mais prováveis de precisar de ajuste: `freioMaoAtritoTraseiro`, `aderenciaLateral`, `ajudaGuinada`, `farol.brilho`.

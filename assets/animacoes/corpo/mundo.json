@@ -1,0 +1,67 @@
+{
+  "grupo": "corpo/mundo",
+  "rig": "R15",
+  "poses": {
+    "neutro": {
+      "Root": [0, 0, 0, 0, 0, 0], "Waist": [0, 0, 0], "Neck": [0, 0, 0],
+      "RightShoulder": [0, 0, 0], "RightElbow": [0, 0, 0], "RightWrist": [0, 0, 0],
+      "LeftShoulder": [0, 0, 0], "LeftElbow": [0, 0, 0], "LeftWrist": [0, 0, 0],
+      "RightHip": [0, 0, 0], "RightKnee": [0, 0, 0], "RightAnkle": [0, 0, 0],
+      "LeftHip": [0, 0, 0], "LeftKnee": [0, 0, 0], "LeftAnkle": [0, 0, 0]
+    },
+    "agachado": {
+      "Root": [0, 0, 0, 0, -0.8, 0], "Waist": [-50, 0, 0], "Neck": [28, 0, 0],
+      "RightShoulder": [59, -4, 0], "RightElbow": [10, 0, 0], "RightWrist": [0, 0, 0],
+      "LeftShoulder": [30, 8, 0], "LeftElbow": [22, 0, 0], "LeftWrist": [0, 0, 0],
+      "RightHip": [55, 0, 0], "RightKnee": [-100, 0, 0], "RightAnkle": [45, 0, 0],
+      "LeftHip": [55, 0, 0], "LeftKnee": [-100, 0, 0], "LeftAnkle": [45, 0, 0]
+    },
+    "alcance": {
+      "Waist": [-6, 0, 0],
+      "RightShoulder": [85, -8, 0], "RightElbow": [18, 0, 0], "RightWrist": [-10, 0, 0]
+    },
+    "mangueira": {
+      "Waist": [-3, 0, 0],
+      "RightShoulder": [38, -6, 0], "RightElbow": [62, 0, 0], "RightWrist": [-20, 0, 0],
+      "LeftShoulder": [20, 4, 0], "LeftElbow": [40, 0, 0], "LeftWrist": [0, 0, 0]
+    }
+  },
+  "clipes": {
+    "Pegar": {
+      "duracao": 0.9, "loop": false, "prioridade": "Action3",
+      "quadros": [
+        { "t": 0.0, "de": "neutro" },
+        { "t": 0.32, "de": "agachado", "easing": "Cubic-InOut" },
+        { "t": 0.42, "de": "agachado", "juntas": { "RightWrist": [-22, 0, 0] }, "marcadores": ["Pegou"], "easing": "Cubic-Out" },
+        { "t": 0.5, "de": "agachado", "juntas": { "RightWrist": [-22, 0, 0] } },
+        { "t": 0.9, "de": "neutro", "easing": "Cubic-InOut" }
+      ]
+    },
+    "Largar": {
+      "duracao": 0.5, "loop": false, "prioridade": "Action3",
+      "quadros": [
+        { "t": 0.0, "de": "neutro" },
+        { "t": 0.14, "de": "neutro", "juntas": { "RightShoulder": [-20, 0, 0], "RightElbow": [20, 0, 0], "Waist": [2, 0, 0] }, "easing": "Cubic-Out" },
+        { "t": 0.26, "de": "neutro", "juntas": { "RightShoulder": [50, -6, 0], "RightElbow": [18, 0, 0], "RightWrist": [-10, 0, 0], "Waist": [-12, 0, 0] }, "marcadores": ["Soltou"], "easing": "Cubic-Out" },
+        { "t": 0.5, "de": "neutro", "easing": "Cubic-InOut" }
+      ]
+    },
+    "Interagir": {
+      "duracao": 0.7, "loop": false, "prioridade": "Action3",
+      "quadros": [
+        { "t": 0.0, "de": "neutro" },
+        { "t": 0.22, "de": "neutro", "juntas": { "Waist": [-6, 0, 0], "RightShoulder": [85, -8, 0], "RightElbow": [18, 0, 0], "RightWrist": [-10, 0, 0] }, "marcadores": ["Alcancou"], "easing": "Cubic-Out" },
+        { "t": 0.36, "de": "neutro", "juntas": { "Waist": [-6, 0, 0], "RightShoulder": [85, -8, 0], "RightElbow": [18, 0, 0], "RightWrist": [-10, 0, 0] } },
+        { "t": 0.7, "de": "neutro", "easing": "Cubic-InOut" }
+      ]
+    },
+    "Abastecer": {
+      "duracao": 2.0, "loop": true, "prioridade": "Action2",
+      "quadros": [
+        { "t": 0.0, "de": "mangueira" },
+        { "t": 1.0, "de": "mangueira", "juntas": { "Waist": [-4, 0, 0], "RightShoulder": [36, -6, 0], "RightElbow": [64, 0, 0] }, "easing": "Cubic-InOut" },
+        { "t": 2.0, "de": "mangueira", "easing": "Cubic-InOut" }
+      ]
+    }
+  }
+}

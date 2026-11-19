@@ -1,11 +1,10 @@
 --!strict
 -- MonstroMovimento: degraus, salto e "travado" do Rastejador (docs/rastejador.md §5.2). O Humanoid sobe sozinho até
--- Config/Rastejador.degrau.andar (medido 1,45 studs); acima disso a sonda decide entre saltar e obstáculo (parede).
+-- preset.degrau.andar (d.preset = Config/PresetsMonstro[especie.preset]; Rastejador: 2,7 studs); acima disso a sonda decide entre saltar e obstáculo (parede).
 -- Estado por monstro em d.cap (criado pelo Monstros). Sonda só roda para quem Monstros mandou (ativo e perto de jogador).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Cfg = require(Shared.Config.Rastejador) :: any
 local Regras = require(Shared.Regras.Rastejador)
 
 local MonstroMovimento = {}
@@ -45,6 +44,7 @@ local function pe(d: any): number -- altura do pé (chão sob o corpo)
 end
 
 function MonstroMovimento.saltar(d: any, altura: number)
+	local Cfg = d.preset
 	local h: Humanoid = d.humanoid
 	local estado = h:GetState()
 	if estado == Enum.HumanoidStateType.Jumping or estado == Enum.HumanoidStateType.Freefall then
@@ -57,12 +57,14 @@ end
 
 -- Waypoint do caminho com Action == Jump: salta a altura medida entre o pé e o waypoint.
 function MonstroMovimento.saltarPara(d: any, destino: Vector3)
+	local Cfg = d.preset
 	MonstroMovimento.saltar(d, math.max(destino.Y - pe(d), Cfg.degrau.andar))
 end
 
 -- Sonda de degrau (10 Hz, chamada pelo laço de 5 Hz: a distância da sonda cobre o que ele anda no intervalo).
 -- Devolve "andar" | "saltar" | "parede" | nil (sem obstáculo acima do que se sobe andando).
 function MonstroMovimento.sondar(d: any, agora: number): string?
+	local Cfg = d.preset
 	local cap = d.cap
 	if agora < (cap.proxSonda or 0) then
 		return nil
@@ -118,6 +120,7 @@ end
 -- Travado (não andou `travadoMinimo` em `travadoCada` com MoveDirection > 0): 1ª salta, 2ª recalcula o caminho,
 -- 3ª sinaliza parede (Arrombar vê `cap.forcarParede`) e escolhe outro ponto de vagar. Devolve o passo tomado.
 function MonstroMovimento.travado(d: any, agora: number): string
+	local Cfg = d.preset
 	local cap = d.cap
 	cap.travados = (cap.travados or 0) + 1
 	local n = cap.travados

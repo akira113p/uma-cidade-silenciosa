@@ -375,6 +375,28 @@ O agente do Rastejador está mexendo em `Monstros.luau`, `MonstroArrombar.luau`,
 6. Carro: só cai no laço com motorista e velocidade ≥ `velMin`; sem varredura quando parado; atropelo com intervalo.
 7. Piso, cofre, móveis e peças não listadas continuam indestrutíveis. Decisões fora do contrato foram para as pendências.
 
+## 11. Destruição v2 (2026-11-16)
+Pedido do usuário: o monstro quebrando parede estava bom, mas tiro e carro quase não quebravam; quer quebrar mais fácil e mais realista: poste cai no chão e faz barulho, o vão
+do carro na lateral da casa tem forma de carro, tiro de espingarda faz furo na casa. Diagnóstico: o tiro só abria vão quando a peça **inteira** chegava a 0 (espingarda em tijolo: ~10 tiros
+para um furo de 1,2); `varrerCarro` comparava a energia **sem** o multiplicador global e a energia era baixa (sedan só vencia madeira); poste não era destrutível.
+
+- **Vão por faixas** (`Regras.faixas`, `recortarFaixas`, `perfilForma`, `caixaFaixas`): o vão é uma pilha de retângulos de baixo para cima; retalhos = tira de baixo, colunas à esquerda
+  e à direita (fundidas quando a borda é igual) e tira de cima. Formas (`Config/Destruicao.formas`, `formaPorTipo`): `elipse` (degraus de ~0,8, até 5; bala e explosão, centrada no ponto),
+  `carro` (silhueta de frente; `info.base/topo` em Y de mundo; pé a menos de `carro.soleira` do chão da parede desce até o chão), `retangulo` (o resto; garra e golpes, do chão para cima,
+  igual a antes). Todo recorte usa as faixas.
+- **Furo de tiro** (`Config/Destruicao.furo`): em Part bloco maior que `pecaInteira`, classe que não estilhaça inteira. A peça leva só `danoGlobal` (30%) do dano; o resto soma numa
+  marca local (`raio` 0,9, até 12 marcas por peça em `estado.marcas`); passou de `vidaMax × fracao[classe]`, abre furo em elipse no ponto (retalhos herdam a fração de dano atual, não 50%).
+  `Armas.aplicar` manda o ponto médio dos chumbos que acertaram a peça e `largura = 2 × raio do espalhamento + margemChumbo`. Furo não dispara `aoQuebrar`. Vidro continua estilhaçando inteiro.
+- **Vão passável** (`vaoPassavel`): só entra em `vaoUtil` o vão que encosta no chão da peça e tem ≥ 2 × 4 studs (antes todo recorte de parede entrava, inclusive furo de bala no alto).
+- **Carro:** `escalaEnergia` 3e-4 (era 1,5e-4), `recuoCarroceria` 0,06 (era 0,15), checagem de atravessar com `Regras.danoEfetivo` (com o multiplicador), vão `forma = "carro"`.
+- **Props derrubáveis** (`Config/Destruicao.derrubaveis`: postes, semáforo, placas, caixa de correio, telefone público): vida do Model inteiro (papel `derrubavel`). Ao quebrar, as peças com centro
+  acima de `base + alturaBase` são soldadas na maior, presas ao chão por `BallSocketConstraint` (anexo em `workspace.Terrain` no pé dela), desancoradas (dono da rede = servidor) e giradas
+  para `info.direcao` (carro: direção do movimento; explosão: para fora; tiro: direção do tiro). Ao bater no chão (`Regras.bateuNoChao`: topo vinha ≥ 10 st/s e caiu a < 45%), som `PosteCai`,
+  ruído `posteCai` (82 dB, `Config/Som`) e poeira; parado, volta a `Anchored` deitado. Tombado fica `travada` (só escurece).
+- **Explosão:** vão em elipse 5×5 centrado no ponto (era retângulo 4×7 do chão). `Info` ganhou `forma`, `base`, `topo`, `direcao`.
+- **Limites** subiram para 1500 vãos / 15000 peças extras (furos contam).
+- **Estado:** `checar.ps1` verde (testes novos em `tests/Destruicao.spec.luau`: volume conservado nas formas, perfis, limiar do furo, carro, derrubar). **Sem teste no Studio.**
+
 ## Estado
 2026-11-04: Fases A, B e C feitas e testadas no Studio (place `11042026_1`, mapa com 182 construções, Play, servidor e cliente). `pwsh scripts/checar.ps1` verde nos
 arquivos desta feature (a suíte `Rastejador.spec` ficou vermelha em 21:54 por edição concorrente do agente do Rastejador no `Config/Rastejador` — degrau 2x — e não por aqui).

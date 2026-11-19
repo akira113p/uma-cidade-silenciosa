@@ -118,6 +118,9 @@ Se der problema, apagar o resíduo (nunca peça do mapa) e rodar a checagem de n
 - **Física:** a 6000 studs a precisão de ponto flutuante ainda é boa; não passar de ~10000 (mudaria o resultado de medidas finas como velocidade/impacto).
 
 ## Armadilhas
+- Personagem pelo MCP: o 1º `LoadCharacter` só vem do seletor; no Client, `Rede.evento("EscolherPersonagem"):FireServer(1)`. A câmera fica `Fixed`
+  porque o MCP repõe o `CameraType` depois de cada `execute_luau` ("Resetting ... back to Fixed"): rodar `workspace.CurrentCamera.CameraType = Custom`
+  num `execute_luau` próprio no Client e esperar ~1 s antes de capturar a tela (2026-11-15, teste do ViewmodelGB).
 - `execute_luau` roda em outra VM: `require` de módulo do jogo dá cópia nova (ver Armadilhas em `codigo-roblox`). Usar `ServerStorage.Teste:Invoke` e atributos.
 - `PivotTo` logo no `CharacterAdded` é desfeito (motor e `Spawn.luau`): esperar o personagem no workspace e 1 s.
 - Destruição, arrombar e ruído com parede cabem no void: monte a parede em `ZonaTeste.Construcoes` (peça solta direto em `ZonaTeste` NÃO conta). Teste que precise de um prédio gerado de verdade (interiores, loot, bomba de combustível) não cabe: não improvisar um place novo, falar com o usuário.

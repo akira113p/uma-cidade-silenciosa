@@ -1,0 +1,155 @@
+{
+  "carro_Entrar.rbxm": {
+    "sha256": "dcade33fe2387f87f2a03da11aa9eee6dd3296238ee49f80d646c255b6582efc",
+    "assetId": 105957414634476,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "carro_MotoristaIdle.rbxm": {
+    "sha256": "53d0ac464626f32710a20603df0c93b811e2568e2de44819281fbd3e82370470",
+    "assetId": 82157575239971,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "carro_MotoristaViraDireita.rbxm": {
+    "sha256": "4346459bae6498c165a111993a0f05db296e1d9f2190a443bc2e8e696459eb9e",
+    "assetId": 88725112894183,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "carro_MotoristaViraEsquerda.rbxm": {
+    "sha256": "6cf31d9f33114e76fde0b5ac84d259f93ad6ee6042e83cc7d39ddf1b60dbd0da",
+    "assetId": 107684992408177,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "carro_PassageiroIdle.rbxm": {
+    "sha256": "7a3d83ed5d298f073a9c4d993a258b7c460ab00fd7d7ec8ef379c5eba40deb66",
+    "assetId": 125293882304440,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "carro_Sair.rbxm": {
+    "sha256": "d345463e7a004d2d4cd56aa6d1377474563a7cc32d370d73e12fd76907059be5",
+    "assetId": 102102958392532,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "mao_SegurarGalao.rbxm": {
+    "sha256": "393aecf4a3fa33f36b02caa397e7324eb78a944f607ed4112c51292fc2cc3d52",
+    "assetId": 71396281737303,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "mao_SegurarUmaMao.rbxm": {
+    "sha256": "4149da3acee04e8be290f2818b4d23220f321e45268bb7981ac550e1d609f7f0",
+    "assetId": 89482842607320,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "mao_SegurarUmaMaoEsq.rbxm": {
+    "sha256": "eb2711cca93877824f735dbe1fb4e6810860218c4357a31fa03c1d2d5cc9283e",
+    "assetId": 138292347218518,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "mao_Usar.rbxm": {
+    "sha256": "51127ba593943c2a3a9a3b659f0f7fd1f99d349c0280970189efa2a8f759f2df",
+    "assetId": 79175639857338,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "mundo_Abastecer.rbxm": {
+    "sha256": "c2a0cd89ec16f7e33b7fcfcab7b2349b1c871f23cd866404c800cde38faeb9dc",
+    "assetId": 85169409949535,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "mundo_Interagir.rbxm": {
+    "sha256": "03540b5ba7f3c0d181b13088148aee678b4efef3759aa9596dc4e2593e878a2e",
+    "assetId": 120339092005356,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "mundo_Largar.rbxm": {
+    "sha256": "83c7683e30e31c2b4a16789fa5e8b23b9c64a1f36c928db97ea9dc3e7f49f97d",
+    "assetId": 77716262859812,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "mundo_Pegar.rbxm": {
+    "sha256": "36de367113195f5facb131a7f5005199481f238f1adf38a74911b420b23b6578",
+    "assetId": 125455917650158,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "vida_Aterrissagem.rbxm": {
+    "sha256": "87c880beaa7d4408f30a23591e17968b91d11820b6cfe4e8872d013964e3d428",
+    "assetId": 122696861302495,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "vida_Morte.rbxm": {
+    "sha256": "c5c024ef727db166b0354242f25a6ae4c4b4acbfd7da7c2690a6815d3a5c6921",
+    "assetId": 95926709065507,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "vida_Queda.rbxm": {
+    "sha256": "e2f6f0c0aed0b8bee7202d9fa54ecadb0254eed22a7c0d6fe1aaad937b65f24c",
+    "assetId": 75298434963647,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  }
+}

@@ -38,6 +38,7 @@ type Dado = {
 	vAnterior: Vector3?,
 	excesso: number, -- s acima de 1.3 x VelMax
 	proxRuido: number,
+	proxDerrapagem: number, -- os.clock a partir do qual a próxima derrapagem pode fazer ruído
 	ultimaBatida: number,
 	somMotor: Sound?,
 	ocupado: boolean, -- tem alguém sentado em qualquer banco
@@ -532,6 +533,15 @@ local function atualizarOcupado(d: Dado, agora: number, tickSom: boolean)
 		end
 	end
 
+	-- derrapagem (freio de mão): pneu cantando é barulho, e barulho atrai monstro
+	if d.motorista and agora >= d.proxDerrapagem then
+		local lateral = plano:Dot(chassi.CFrame.RightVector)
+		if Regra.derrapando(velocidade, lateral, Cfg) then
+			d.proxDerrapagem = agora + Cfg.derrapagem.intervalo
+			Ruido.emitirAcao("carroDerrapar", chassi.Position, d.motorista)
+		end
+	end
+
 	if d.motorista then
 		if velMax > 0 and velocidade > velMax * TOLERANCIA_VEL then
 			d.excesso += PASSO
@@ -666,6 +676,7 @@ local function ativar(modelo: Model, estado: Estado): Dado
 		vAnterior = nil,
 		excesso = 0,
 		proxRuido = 0,
+		proxDerrapagem = 0,
 		ultimaBatida = -math.huge,
 		somMotor = nil,
 		ocupado = false,
@@ -1437,6 +1448,13 @@ function Veiculos.iniciar()
 		else
 			tentarLigar(d, jogador)
 		end
+	end)
+	Rede.evento("Farol").OnServerEvent:Connect(function(jogador: Player)
+		local d = porMotorista[jogador]
+		if not d or not Limite.ok(jogador, "Farol", 0.25) then
+			return
+		end
+		VeiculoModelo.definirFarol(d.modelo, d.modelo:GetAttribute("FarolLigado") ~= true)
 	end)
 	Rede.evento("Buzina").OnServerEvent:Connect(function(jogador: Player)
 		local d = porMotorista[jogador]

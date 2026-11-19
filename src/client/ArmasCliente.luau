@@ -25,6 +25,7 @@ local ArmasSinais = require(script.Parent.ArmasSinais)
 local ArmasCliente = {}
 
 local jogador = Players.LocalPlayer
+local mirandoLocal = false -- botão direito segurado com arma de fogo (pedido já mandado ao servidor)
 local FOLGA_LOCAL = 0.02 -- s: espera um pouco além da cadência para o servidor nunca rejeitar por jitter
 local FOLGA_QUADRO = 0.034 -- s: atraso de até 2 quadros ainda conta como "no ritmo" (não perde cadência por arredondar)
 local JANELA_CLIQUE = 0.25 -- s: clique de arma semiautomática feito um pouco antes da cadência vale quando ela liberar
@@ -35,6 +36,7 @@ local FOLGA_FIM_RECARGA = 0.35 -- s além da duração para dar a recarga por en
 local FIM_NORMAL = 0.2 -- s: Recarregando falso mais cedo que (duração - isto) conta como recarga cancelada
 local DISTANCIA_MIRA = 500 -- studs: ponto visado na 3ª pessoa quando o raio não acerta nada
 local LIMIAR_ANDAR = 1 -- studs/s horizontais para a mira abrir como "andando"
+local DURACAO_CHECAR = 1.3 -- s da animação de checar a munição (o HUD mostra as frases no meio dela)
 local COR_ACERTO = Color3.fromRGB(255, 255, 255)
 local COR_CABECA = Color3.fromRGB(255, 70, 60)
 
@@ -52,6 +54,10 @@ local recargaId = ""
 local recargaInicio = 0
 local recargaDuracao = 0
 local recargaConfirmada = false -- o servidor já mostrou Recarregando = true
+local recargaFoiRapida = false -- já usou a recarga rápida nesta recarga (só uma)
+local recargaAtrapalhou = false -- já atrapalhou a recarga nesta recarga (só uma)
+local engatilhandoAte = 0 -- os.clock() até a mão ficar livre de engatilhar/destravar (previsão; o servidor manda)
+local checandoAte = 0 -- os.clock() até acabar a animação de checar a munição
 
 local mira: Frame
 local marcador: Frame
@@ -79,6 +85,15 @@ local function podeAgir(): boolean
 		and jogador:GetAttribute("Morto") ~= true
 		and jogador:GetAttribute("Usando") ~= true
 		and not Mouse.menuAberto()
+end
+
+-- Atributo booleano do servidor (Engatilhada, Travada, Engatilhando); nil = sem informação (não bloqueia o gatilho).
+local function atributoBool(nome: string): boolean?
+	local v = jogador:GetAttribute(nome)
+	if type(v) == "boolean" then
+		return v
+	end
+	return nil
 end
 
 -- Pente que o cliente acredita ter. nil = sem informação do servidor (não bloqueia o gatilho).
@@ -141,17 +156,47 @@ local function finalizarRecarga(cancelada: boolean)
 	ArmasSinais.disparar("recargaFim", recargaId, cancelada)
 end
 
+-- R de novo DURANTE a recarga de pente: dentro da janela = recarga rápida; fora (uma vez) = atrapalha. O servidor decide pela
+-- hora do clique; aqui só se prevê a duração nova para a recarga não parecer "cancelada" quando acabar antes/depois.
+local function cliqueNaRecarga(arma: any, id: string)
+	if not recarregandoLocal then
+		return
+	end
+	local rapida = CfgArmas.recargaRapida
+	local decorrido = os.clock() - recargaInicio
+	local acao = Regras.cliqueNaRecarga(arma, rapida, decorrido, recargaDuracao, recargaAtrapalhou, recargaFoiRapida)
+	if acao == "ignorar" then
+		return
+	end
+	recargaDuracao = Regras.duracaoAposClique(acao, rapida, decorrido, recargaDuracao)
+	if acao == "rapida" then
+		recargaFoiRapida = true
+		ArmasSinais.disparar("recargaRapida", id, recargaDuracao)
+	else
+		recargaAtrapalhou = true
+		ArmasSinais.disparar("recargaFalhou", id, recargaDuracao)
+	end
+	Rede.evento("Recarregar"):FireServer()
+end
+
 local function recarregar()
 	local arma = armaAtual()
 	local id = jogador:GetAttribute("ArmaEquipada")
-	if not ehFogo(arma) or type(id) ~= "string" or not podeAgir() or ArmasCliente.recarregando() then
+	if not ehFogo(arma) or type(id) ~= "string" or not podeAgir() then
 		return
+	end
+	if ArmasCliente.recarregando() then
+		cliqueNaRecarga(arma, id)
+		return
+	end
+	if os.clock() < engatilhandoAte or atributoBool("Engatilhando") == true then
+		return -- a mão está ocupada engatilhando/destravando
 	end
 	local pente = penteAtual()
 	local reserva = jogador:GetAttribute("Reserva")
 	local nPente = pente or 0
 	local nReserva = if type(reserva) == "number" then reserva else math.huge
-	if nPente >= arma.pente or nReserva < 1 then
+	if not Regras.podeRecarregar(arma, nPente, nReserva, atributoBool("Engatilhada"), atributoBool("Travada")) then
 		return -- cheio ou sem munição: o servidor também recusaria (e avisaria)
 	end
 	local duracao = Regras.tempoRecarga(arma, nPente, nReserva)
@@ -160,12 +205,65 @@ local function recarregar()
 	end
 	recarregandoLocal = true
 	recargaConfirmada = false
+	recargaFoiRapida = false
+	recargaAtrapalhou = false
 	recargaId = id
 	recargaInicio = os.clock()
 	recargaDuracao = duracao
 	segurando = false
+	checandoAte = 0
 	ArmasSinais.disparar("recarregou", id, duracao)
 	Rede.evento("Recarregar"):FireServer()
+end
+
+-- Engatilhar / destravar (Q): bomba precisa a cada tiro; arma de pente depois de pane ou de recarga vazia. A mão fica ocupada
+-- `tempo` s. O servidor valida e conta o tempo; o cliente só prevê para o gatilho não "tentar" no meio.
+local function engatilhar()
+	local arma = armaAtual()
+	local id = jogador:GetAttribute("ArmaEquipada")
+	if not ehFogo(arma) or type(id) ~= "string" or not podeAgir() or not Regras.usaEngatilhar(arma) then
+		return
+	end
+	if ArmasCliente.recarregando() or os.clock() < engatilhandoAte then
+		return
+	end
+	local engatilhada = atributoBool("Engatilhada")
+	local acao, tempo = Regras.engatilhar(
+		arma,
+		penteAtual() or 0,
+		if engatilhada == nil then true else engatilhada,
+		atributoBool("Travada") == true,
+		CfgArmas.pane
+	)
+	if acao == "nada" then
+		return
+	end
+	if acao == "vazio" then
+		ArmasSinais.disparar("vazio", id)
+		Rede.evento("Engatilhar"):FireServer() -- o servidor toca o clique
+		return
+	end
+	engatilhandoAte = os.clock() + tempo
+	segurando = false
+	checandoAte = 0
+	ArmasSinais.disparar("engatilhou", id, tempo, acao == "destravar")
+	Rede.evento("Engatilhar"):FireServer()
+end
+
+-- Checar a munição (Z): o jogador "olha" o pente; o HUD (HudMunicao) mostra uma frase em vez de um contador numérico.
+local function checarMunicao()
+	local arma = armaAtual()
+	local id = jogador:GetAttribute("ArmaEquipada")
+	if not ehFogo(arma) or type(id) ~= "string" or not podeAgir() then
+		return
+	end
+	local agora = os.clock()
+	if ArmasCliente.recarregando() or agora < engatilhandoAte or agora < checandoAte then
+		return
+	end
+	checandoAte = agora + DURACAO_CHECAR
+	segurando = false
+	ArmasSinais.disparar("checou", id, DURACAO_CHECAR)
 end
 
 -- Disparo / golpe --------------------------------------------------------------------------------------------------
@@ -185,6 +283,10 @@ local function tentar(): string
 	local fogo = ehFogo(arma)
 	local pente: number? = nil
 	if fogo then
+		-- mão ocupada engatilhando/destravando: nem clique
+		if agora < engatilhandoAte or atributoBool("Engatilhando") == true then
+			return "bloqueado"
+		end
 		pente = penteAtual()
 		if ArmasCliente.recarregando() then
 			-- Tubo: atirar interrompe a recarga e mantém o que já entrou (docs/armas.md §7.2). Pente: nega.
@@ -193,6 +295,21 @@ local function tentar(): string
 			else
 				return "bloqueado"
 			end
+		end
+		-- arma travada ou bomba desengatilhada: só o clique (o servidor também recusaria; aqui nem pede)
+		local bloqueio = Regras.bloqueioDeTiro(arma, atributoBool("Engatilhada"), atributoBool("Travada"), false)
+		if bloqueio ~= nil and not (pente ~= nil and pente <= 0) then
+			if agora - ultimoVazio >= INTERVALO_VAZIO then
+				ultimoVazio = agora
+				ArmasSinais.disparar("vazio", id)
+				ArmasSinais.disparar("bloqueado", id, bloqueio)
+				if arma.somVazio then
+					pcall(function()
+						SonsLocal.tocar(arma.somVazio)
+					end)
+				end
+			end
+			return "bloqueado"
 		end
 		if pente ~= nil and pente <= 0 then
 			if agora - ultimoVazio >= INTERVALO_VAZIO then
@@ -223,6 +340,7 @@ local function tentar(): string
 			penteLocal = pente - 1
 		end
 		ultimoTiro = agora
+		checandoAte = 0
 		bloom = Regras.bloomAposTiro(arma, bloom)
 		ArmasSinais.disparar("disparou", id, origem, direcao)
 		local coice = arma.coice
@@ -458,7 +576,27 @@ local function aoMudarArma()
 	bloom = 0
 	indiceGolpe = 1
 	segurando = false
+	if mirandoLocal then
+		mirandoLocal = false
+		Rede.evento("Mirar"):FireServer(false) -- o servidor também tira a mira ao trocar de arma
+	end
+	engatilhandoAte = 0 -- o servidor também zera ao equipar
+	checandoAte = 0
 	ArmasSinais.disparar("equipou", novo)
+end
+
+-- Mira (botão direito segurado, só arma de fogo): o servidor grava Player.Mirando e fecha o espalhamento; a Camera e o
+-- ViewmodelGB leem o atributo (zoom e arma no centro). Docs: docs/armas.md §14.
+local function mirar(ligado: boolean)
+	local arma = armaAtual()
+	if ligado and not (arma and arma.tipo == "fogo") then
+		return
+	end
+	if ligado == mirandoLocal then
+		return
+	end
+	mirandoLocal = ligado
+	Rede.evento("Mirar"):FireServer(ligado)
 end
 
 local function piscarAcerto(_alvoEhJogador: boolean, parte: string?)
@@ -565,6 +703,8 @@ function ArmasCliente.iniciar()
 
 	local teclasRecarga = (CfgMovimento.teclas :: any).recarregar or { "R" }
 	Teclas.ligar("recarregar", teclasRecarga, recarregar)
+	Teclas.ligar("engatilhar", (CfgMovimento.teclas :: any).engatilhar or { "Q" }, engatilhar)
+	Teclas.ligar("checarMunicao", (CfgMovimento.teclas :: any).checarMunicao or { "Z" }, checarMunicao)
 
 	UserInputService.InputBegan:Connect(function(entrada, processado)
 		if processado then
@@ -572,11 +712,15 @@ function ArmasCliente.iniciar()
 		end
 		if entrada.UserInputType == Enum.UserInputType.MouseButton1 and not Mouse.menuAberto() then
 			comecar()
+		elseif entrada.UserInputType == Enum.UserInputType.MouseButton2 and not Mouse.menuAberto() then
+			mirar(true)
 		end
 	end)
 	UserInputService.InputEnded:Connect(function(entrada)
 		if entrada.UserInputType == Enum.UserInputType.MouseButton1 then
 			segurando = false
+		elseif entrada.UserInputType == Enum.UserInputType.MouseButton2 then
+			mirar(false)
 		end
 	end)
 

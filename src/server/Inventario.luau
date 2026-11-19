@@ -219,6 +219,22 @@ function Inventario.trocar(jogador: Player, deId: string, paraId: string): boole
 	return true
 end
 
+-- Carga em kg: Σ peso × qtd dos slots (Config/Itens: `peso` do item, `pesoPadrao` se faltar). Só lê o estado, sem custo de rede.
+-- Entra na camada de equipamento do passo (docs/som.md §4.3).
+function Inventario.carga(jogador: Player): number
+	local e = estados[jogador]
+	if not e then
+		return 0
+	end
+	local total = 0
+	for _, pilha in Regras.ocupados(e.inv) do
+		local def = Itens.itens[pilha.id]
+		local peso = if def and type(def.peso) == "number" then def.peso else Itens.pesoPadrao
+		total += peso * pilha.qtd
+	end
+	return total
+end
+
 function Inventario.aoMudar(callback: (jogador: Player) -> ())
 	table.insert(ouvintes, callback)
 end
@@ -265,8 +281,8 @@ local function usar(jogador: Player, slot: number)
 	end
 	local id = pilha.id
 	local def = Itens.itens[id]
-	if def and def.tipo == "recipiente" then
-		-- galão/garrafa: o mesmo gesto de usar item segura/guarda na mão (docs/combustivel.md §6.5). Fica fora de
+	if def and (def.tipo == "recipiente" or def.tipo == "municao") then
+		-- munição também (só segurar na mão); galão/garrafa: o mesmo gesto de usar item segura/guarda na mão (docs/combustivel.md §6.5). Fica fora de
 		-- TIPOS_USAVEIS de propósito: não é consumo, não passa por aplicarUso.
 		local Combustivel = servico("Combustivel")
 		if Combustivel then
@@ -306,6 +322,7 @@ local function usar(jogador: Player, slot: number)
 			if e.uso ~= ficha or not atual or not p or p.id ~= id or not personagemVivo(jogador) then
 				if e.uso == ficha and jogador.Parent then
 					jogador:SetAttribute("Usando", false)
+					naMao(jogador, nil)
 				end
 				return
 			end
@@ -314,6 +331,7 @@ local function usar(jogador: Player, slot: number)
 		if e.uso == ficha and jogador.Parent then
 			e.uso += 1
 			jogador:SetAttribute("Usando", false)
+			naMao(jogador, nil) -- terminou de comer/beber/curar: o item some da mão
 		end
 	end)
 end
@@ -394,7 +412,7 @@ local function aoMorrer(jogador: Player, _causa: string, posicao: Vector3)
 	e.precisaKit = true
 	local ItensChao = servico("ItensChao")
 	if ItensChao and #conteudo > 0 then
-		ItensChao.espalhar(posicao, conteudo)
+		ItensChao.espalhar(posicao, conteudo, jogador) -- `jogador` = fonte do som dos itens que caem (docs/som.md §5.4)
 	end
 	mudou(jogador)
 end

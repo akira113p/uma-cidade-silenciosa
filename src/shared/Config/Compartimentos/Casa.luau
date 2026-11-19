@@ -29,8 +29,8 @@ return {
 				{ id = "barra", peso = 20, qtd = { 1, 2 } },
 				{ id = "agua", peso = 10, qtd = { 1, 1 } },
 				{ id = "faca", peso = 8, qtd = { 1, 1 } },
-				{ id = "pistola", peso = 2, qtd = { 1, 1 } },
-				{ id = "municaoPistola", peso = 6, qtd = { 4, 8 } },
+				{ id = "tt33", peso = 2, qtd = { 1, 1 } },
+				{ id = "municaoPistola", peso = 6, qtd = { 17, 17 } },
 			},
 		},
 		banheiro_casa = {

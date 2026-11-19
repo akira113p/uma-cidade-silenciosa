@@ -4,7 +4,10 @@
     "$className": "DataModel",
     "ReplicatedStorage": {
       "Shared": {
-        "$path": "src/shared"
+        "$path": "src/shared",
+        "AnimacoesDados": {
+          "$path": "assets/animacoes"
+        }
       }
     },
     "ServerScriptService": {
@@ -36,13 +39,12 @@
     "Players": {
       "$properties": {
         "RespawnTime": 10,
-        "CharacterAutoLoads": true
+        "CharacterAutoLoads": false
       }
     },
     "Lighting": {
       "$properties": {
-        "Technology": "Voxel",
-        "LightingStyle": "Soft",
+        "LightingStyle": "Realistic",
         "Ambient": [0.18, 0.18, 0.2],
         "OutdoorAmbient": [0.32, 0.32, 0.36],
         "Brightness": 1.2,

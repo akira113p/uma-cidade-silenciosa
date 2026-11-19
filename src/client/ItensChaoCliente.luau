@@ -266,12 +266,14 @@ function ItensChaoCliente.iniciar()
 		end
 	end
 	if #codigos > 0 then
-		ContextActionService:BindAction("PegarDoChao", function(_, estado)
+		-- Prioridade acima do High: Direcao liga o E (sair do carro) por Teclas.ligar, que é High + Sink e vale a pé também;
+		-- com prioridade padrão o E nunca chegava aqui (bug "não consigo pegar item com E", 2026-11-16).
+		ContextActionService:BindActionAtPriority("PegarDoChao", function(_, estado)
 			if estado == Enum.UserInputState.Begin and not UserInputService:GetFocusedTextBox() then
 				pegar()
 			end
 			return Enum.ContextActionResult.Pass
-		end, false, table.unpack(codigos))
+		end, false, Enum.ContextActionPriority.High.Value + 1, table.unpack(codigos))
 	end
 
 	botao.Activated:Connect(pegar)

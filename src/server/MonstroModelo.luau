@@ -8,7 +8,6 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Malhas = require(Shared.Config.MonstrosMalhas) :: any
-local CfgRast = require(Shared.Config.Rastejador) :: any
 local Regras = require(Shared.Regras.Rastejador)
 
 local MonstroModelo = {}
@@ -35,7 +34,7 @@ local function pastaMoldes(): Folder
 	return pasta :: Folder
 end
 
-local function montar(id: string, cfg: any): Model?
+local function montar(id: string, cfg: any, CfgRast: any): Model?
 	local ok, carregado = pcall(function()
 		return InsertService:LoadAsset(cfg.modelo)
 	end)
@@ -52,7 +51,7 @@ local function montar(id: string, cfg: any): Model?
 	local esperada = CfgRast.altura.jogadorStuds / CfgRast.altura.jogadorMetros * CfgRast.altura.metros
 	if math.abs(malha.Size.Y - esperada) > esperada * 0.03 then
 		warn(
-			("[MonstroModelo] altura da malha %.3f != %.3f do Config/Rastejador: reexportar (exportar_rastejador.py --altura)"):format(
+			("[MonstroModelo] altura da malha %.3f != %.3f do preset: reexportar (exportar_rastejador.py --altura)"):format(
 				malha.Size.Y,
 				esperada
 			)
@@ -97,7 +96,7 @@ local function montar(id: string, cfg: any): Model?
 end
 
 -- Carrega o molde da espécie (uma vez). true = há molde pronto. Chamar de uma thread que pode esperar (LoadAsset).
-function MonstroModelo.preparar(id: string): boolean
+function MonstroModelo.preparar(id: string, CfgRast: any): boolean
 	if moldes[id] then
 		return true
 	end
@@ -110,7 +109,7 @@ function MonstroModelo.preparar(id: string): boolean
 		warn("[MonstroModelo] sem assetId do modelo para " .. id .. ": usando boneco de blocos")
 		return false
 	end
-	local molde = montar(id, cfg)
+	local molde = montar(id, cfg, CfgRast)
 	if not molde then
 		return false
 	end
@@ -149,12 +148,45 @@ local function carregarPistas(modelo: Model, id: string): Pista?
 	return p
 end
 
--- Toca `acao` (Idle/Walk/Run/Attack/Death). Ciclos: velocidade de reprodução = velocidade real ÷ nativa (Regras.velocidadeAnim).
+-- Clipe de reserva quando o monstro não tem o clipe pedido (clipe novo ainda não enviado: a habilidade funciona igual, só anima menos).
+local CLIPE_RESERVA = {
+	WallSlam = "Attack",
+	Scream = "Idle",
+	Pulso = "Idle",
+	Arrombar = "Attack",
+	Sonar = "Idle",
+	Atordoado = "Idle",
+	Empurrao = "Attack",
+	AbrirPorta = "Idle",
+	Emboscada = "Idle",
+	Imitar = "Idle",
+	GolpeDuplo = "Attack",
+	Arrancada = "Run",
+	Lancar = "Attack",
+	Rugido = "Idle",
+	Cauda = "Attack",
+	Florescer = "Idle",
+	ArrancarFachada = "Attack",
+}
+-- Clipes em ciclo (tocam a velocidade pela do corpo ou em laço); os outros são golpes/ações: tocam uma vez e reiniciam.
+local CICLICOS = { Idle = true, Walk = true, Run = true, Emboscada = true, Arrancada = true }
+
+-- Toca `acao` (Idle/Walk/Run/Attack/Death, mais WallSlam e Scream do Wrapper). Ciclos: velocidade de reprodução = velocidade real ÷ nativa (Regras.velocidadeAnim).
 -- Attack reinicia quando `reiniciar` (novo golpe). Death congela no último quadro (o corpo fica na pose final).
-function MonstroModelo.tocar(modelo: Model, id: string, acao: string, velocidade: number, reiniciar: boolean?)
+function MonstroModelo.tocar(
+	modelo: Model,
+	id: string,
+	acao: string,
+	velocidade: number,
+	reiniciar: boolean?,
+	CfgRast: any
+)
 	local p = pistas[modelo] or carregarPistas(modelo, id)
 	if not p then
 		return
+	end
+	if not p.tracks[acao] and CLIPE_RESERVA[acao] then
+		acao = CLIPE_RESERVA[acao]
 	end
 	local track = p.tracks[acao]
 	if not track then
@@ -178,13 +210,23 @@ function MonstroModelo.tocar(modelo: Model, id: string, acao: string, velocidade
 				track:AdjustSpeed(0) -- congela no último quadro
 			end
 		end)
-	elseif acao == "Attack" then
+	elseif not CICLICOS[acao] then
 		track:Play(0.08, 1, 1)
 		if reiniciar then
 			track.TimePosition = 0
 		end
 	else
 		track:Play(0.15, 1, Regras.velocidadeAnim(acao, velocidade, CfgRast))
+	end
+end
+
+-- Para todos os clipes do modelo (morte sem clipe: o corpo tomba por Tween na pose em que estava).
+function MonstroModelo.parar(modelo: Model)
+	local p = pistas[modelo]
+	if p then
+		for _, t in p.tracks do
+			t:Stop(0)
+		end
 	end
 end
 

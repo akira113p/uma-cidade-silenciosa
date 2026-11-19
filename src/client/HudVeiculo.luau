@@ -73,7 +73,7 @@ end
 
 local function nomeTecla(lista: any, padrao: string): string
 	if type(lista) == "table" and type(lista[1]) == "string" then
-		return lista[1]
+		return (string.gsub(lista[1], "^Left", "")) -- "LeftShift" vira "Shift"
 	end
 	return padrao
 end
@@ -164,7 +164,7 @@ function HudVeiculo.iniciar()
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(1, 1),
 		Position = UDim2.new(1, -12, 1, -12),
-		Size = UDim2.fromOffset(232, 198),
+		Size = UDim2.fromOffset(232, 236),
 	}, tela)
 	contorno(painel)
 
@@ -287,10 +287,30 @@ function HudVeiculo.iniciar()
 		TextSize = 14,
 	})
 
+	-- indicadores: farol (aceso = verde) e freio de mão (puxado = vermelho)
+	local indicadorFarol = texto(painel, {
+		Name = "IndicadorFarol",
+		Position = UDim2.fromOffset(8, 170),
+		Size = UDim2.fromOffset(100, 16),
+		TextSize = 14,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Text = "FAROL",
+		TextColor3 = COR_MUDO,
+	})
+	local indicadorFreio = texto(painel, {
+		Name = "IndicadorFreio",
+		Position = UDim2.fromOffset(112, 170),
+		Size = UDim2.fromOffset(112, 16),
+		TextSize = 14,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		Text = "FREIO DE MÃO",
+		TextColor3 = COR_MUDO,
+	})
+
 	local dica = texto(painel, {
 		Name = "Dica",
-		Position = UDim2.fromOffset(8, 168),
-		Size = UDim2.fromOffset(216, 28),
+		Position = UDim2.fromOffset(8, 188),
+		Size = UDim2.fromOffset(216, 46),
 		TextSize = 14,
 		TextWrapped = true,
 		TextYAlignment = Enum.TextYAlignment.Top,
@@ -298,10 +318,12 @@ function HudVeiculo.iniciar()
 	})
 	local textoBanco = string.format("%s trocar de banco", nomeTecla(teclas.trocarBanco, "F"))
 	local textoDica = string.format(
-		"%s sair   %s ligar   %s buzina\n%s",
+		"%s sair   %s ligar   %s buzina\n%s farol   %s (segurar) freio de mão\n%s",
 		nomeTecla(teclas.sair, "E"),
 		nomeTecla(teclas.ligar, "G"),
 		nomeTecla(teclas.buzina, "H"),
+		nomeTecla(teclas.farol, "L"),
+		nomeTecla(teclas.freioMao, "Shift"),
 		textoBanco
 	)
 	local textoDicaPassageiro = string.format("%s sair\n%s", nomeTecla(teclas.sair, "E"), textoBanco)
@@ -328,12 +350,21 @@ function HudVeiculo.iniciar()
 			string.format("Motor  %d%s", math.floor(motor + 0.5), if fracao <= 0 then "  quebrado" else "")
 		situacao.Text = if ligado then "Ligado" else "Desligado"
 		situacao.TextColor3 = if ligado then COR_OK else COR_AVISO
+		indicadorFarol.TextColor3 = if modeloAtual:GetAttribute("FarolLigado") == true then COR_OK else COR_MUDO
+		indicadorFreio.TextColor3 = if est.freioMao then COR_RUIM else COR_MUDO
 		if not est.motorista then
 			dica.Text = textoDicaPassageiro
 		elseif ligado then
 			dica.Text = textoDica
 		else
-			dica.Text = "Aperte " .. nomeTecla(teclas.ligar, "G") .. " para ligar\n" .. textoBanco
+			dica.Text = "Aperte "
+				.. nomeTecla(teclas.ligar, "G")
+				.. " para ligar\n"
+				.. nomeTecla(teclas.farol, "L")
+				.. " farol   "
+				.. nomeTecla(teclas.freioMao, "Shift")
+				.. " freio de mão\n"
+				.. textoBanco
 		end
 
 		local atualGas, tanque, vazio = ler(modeloAtual)

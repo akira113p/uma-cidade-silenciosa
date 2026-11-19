@@ -17,17 +17,22 @@ local ORDEM = {
 	"Mangueira", -- depois de InventarioUI: usa o mesmo remote Inventario para saber se há recipiente vazio
 	-- Armas: quem MOSTRA (viewmodel, efeitos, HUD) liga antes de quem ATUA (ArmasCliente), para ouvir o primeiro sinal.
 	"ArmasViewmodel",
+	"ViewmodelGB", -- 1ª pessoa das armas do Gold Bright (o ArmasViewmodel cede a vez a ele)
 	"EfeitosArma",
 	"HudMunicao",
 	"ArmasCliente",
 	"ArmasTerceira", -- corpo animado em 3ª pessoa e mira dos outros; escuta os sinais de ArmasCliente
+	"AnimacaoCorpo", -- clipes de carro, mão, mundo e vida (corpo/*.json) em todos os personagens
 	"Lanterna",
 	"Admin",
 	"Aparencia",
+	"SeletorPersonagem", -- depois de Mouse (pede o cursor) e Aparencia; HudVida abre pelo botão da tela de morte
 	"Direcao",
 	"Cabine",
 	"HudVeiculo",
 	"ItensChaoCliente", -- depois de Mouse (menu aberto) e Direcao (dentro do carro), que ele consulta
+	"MonstroSonar", -- onda do sonar do Wrapper (usa SonsLocal)
+	"MonstroEfeitos", -- HUD Derrubado, Tremor e névoa verde das flores (usa Camera)
 }
 
 local modulos = {}

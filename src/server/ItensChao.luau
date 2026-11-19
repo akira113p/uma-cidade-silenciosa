@@ -12,6 +12,8 @@ local ItemModelo = require(Shared:WaitForChild("ItemModelo"))
 local Itens = require(Shared:WaitForChild("Config"):WaitForChild("Itens"))
 local CfgArmas = require(Shared.Config:WaitForChild("Armas"))
 local Cfg = require(Shared.Config:WaitForChild("ItensChao"))
+local CfgSom = require(Shared.Config:WaitForChild("Som"))
+local Som = require(Shared:WaitForChild("Regras"):WaitForChild("Som"))
 local Arremesso = require(Shared:WaitForChild("Regras"):WaitForChild("Arremesso"))
 local RegrasChao = require(Shared.Regras:WaitForChild("ItensChao"))
 local RegrasLoot = require(Shared.Regras:WaitForChild("Loot"))
@@ -45,6 +47,7 @@ type Voo = {
 	final: CFrame,
 	eixo: Vector3,
 	giro: number, -- rad/s no início; zera até o pouso
+	aoPousar: (() -> ())?, -- som da queda (docs/som.md §5.4)
 }
 export type Opcoes = { largado: boolean?, ponto: Instance?, pente: number? }
 
@@ -272,6 +275,31 @@ function ItensChao.criarEm(posicao: Vector3, id: string, qtd: number, opcoes: Op
 	return modelo
 end
 
+-- Som da queda (docs/som.md §5.4) -------------------------------------------------------------------------------------
+
+-- Item que pousa faz barulho onde cai (distração): nível da classe + 10·log10(altura/alturaRef). `fonte` = quem largou/jogou.
+local function somDeQueda(id: string, posicao: Vector3, altura: number, fonte: Player?)
+	if not CfgSom.queda.ligado then
+		return
+	end
+	local Ruido = servico("Ruido")
+	if not Ruido then
+		return
+	end
+	local def = Itens.itens[id]
+	local classe = (def and def.classeQueda) or (def and CfgSom.queda.porTipo[def.tipo]) or CfgSom.queda.padrao
+	local nivel, perfil = Som.nivelQueda(classe, altura)
+	local c = Som.compor({ { nome = "itemCaiu", nivel = nivel, perfil = perfil } })
+	Ruido.emitirSom({
+		posicao = posicao,
+		bandas = c.bandas,
+		chao = c.chao,
+		tipo = "itemCaiu",
+		dominante = classe,
+		fonte = fonte,
+	})
+end
+
 -- Arremesso -----------------------------------------------------------------------------------------------------
 
 local function animar(dt: number)
@@ -286,6 +314,9 @@ local function animar(dt: number)
 		if v.t >= v.duracao then
 			v.modelo:PivotTo(v.final)
 			table.remove(voando, i)
+			if v.aoPousar then
+				task.spawn(v.aoPousar)
+			end
 			continue
 		end
 		local f = v.t / v.passo
@@ -306,7 +337,15 @@ local function animar(dt: number)
 end
 
 -- Lança o modelo (já com pai, registrado) de `origem` com `velocidade`.
-local function arremessar(modelo: Model, id: string, origem: Vector3, velocidade: Vector3)
+-- `fonte` (opcional): quem lançou; `somAoPousar` liga o som da queda (a morte limita quantos itens fazem som).
+local function arremessar(
+	modelo: Model,
+	id: string,
+	origem: Vector3,
+	velocidade: Vector3,
+	fonte: Player?,
+	somAoPousar: boolean?
+)
 	local a = Cfg.arremesso
 	local res = Arremesso.simular(tabela(origem), tabela(velocidade), workspace.Gravity, a.passo, a.maxPassos, raio)
 	local pontos: { Vector3 } = {}
@@ -328,8 +367,22 @@ local function arremessar(modelo: Model, id: string, origem: Vector3, velocidade
 	end
 	local final, altura = poseFinal(id, fim)
 	local duracao = (#pontos - 1) * a.passo
+	local aoPousar: (() -> ())? = nil
+	if somAoPousar then
+		local topo = fim.Y
+		for _, p in pontos do
+			topo = math.max(topo, p.Y)
+		end
+		local alturaQueda = topo - fim.Y
+		aoPousar = function()
+			somDeQueda(id, fim, alturaQueda, fonte)
+		end
+	end
 	if duracao <= 0 then
 		modelo:PivotTo(final)
+		if aoPousar then
+			task.spawn(aoPousar)
+		end
 		return
 	end
 	local eixo = Vector3.new(aleatorio:NextNumber(-1, 1), aleatorio:NextNumber(-1, 1), aleatorio:NextNumber(-1, 1))
@@ -347,6 +400,7 @@ local function arremessar(modelo: Model, id: string, origem: Vector3, velocidade
 		final = final,
 		eixo = eixo.Unit,
 		giro = aleatorio:NextNumber(-a.giroMax, a.giroMax),
+		aoPousar = aoPousar,
 	})
 	modelo:PivotTo(CFrame.new(pontos[1]) * final.Rotation)
 	if not conexao then
@@ -360,7 +414,16 @@ local function saida(base: Vector3, ideal: Vector3): Vector3
 	return if acerto then acerto.Position + acerto.Normal * 0.3 else ideal
 end
 
-local function lancar(id: string, qtd: number, base: Vector3, origem: Vector3, velocidade: Vector3, pente: number?)
+local function lancar(
+	id: string,
+	qtd: number,
+	base: Vector3,
+	origem: Vector3,
+	velocidade: Vector3,
+	pente: number?,
+	fonte: Player?,
+	somAoPousar: boolean?
+)
 	if Itens.itens[id] == nil or qtd < 1 then
 		warn("[ItensChao] lançar: item inválido " .. tostring(id) .. " x" .. tostring(qtd))
 		return
@@ -373,7 +436,7 @@ local function lancar(id: string, qtd: number, base: Vector3, origem: Vector3, v
 	modelo:PivotTo(CFrame.new(inicio))
 	modelo.Parent = pasta()
 	aplicarLimite()
-	arremessar(modelo, id, inicio, velocidade)
+	arremessar(modelo, id, inicio, velocidade, fonte, somAoPousar)
 end
 
 -- Chamado por Inventario.largar. `pente` (opcional): balas no pente da arma de fogo que sai, guardadas no item.
@@ -386,17 +449,27 @@ function ItensChao.largar(jogador: Player, id: string, qtd: number, pente: numbe
 	frente = if frente.Magnitude > 0.01 then frente.Unit else Vector3.zAxis
 	local base = hrp.Position + Vector3.new(0, ALTURA_LARGAR, 0)
 	local a = Cfg.arremesso
-	lancar(id, qtd, base, base + frente * FRENTE_LARGAR, frente * a.frente + Vector3.new(0, a.cima, 0), pente)
+	lancar(
+		id,
+		qtd,
+		base,
+		base + frente * FRENTE_LARGAR,
+		frente * a.frente + Vector3.new(0, a.cima, 0),
+		pente,
+		jogador,
+		true
+	)
 end
 
--- Morte: um item por entrada, em leque. `itens` = { {id, qtd, pente?} }.
-function ItensChao.espalhar(posicao: Vector3, itens: { { id: string, qtd: number, pente: number? } })
+-- Morte: um item por entrada, em leque. `itens` = { {id, qtd, pente?} }. `fonte` (opcional) = quem morreu: os primeiros
+-- Config/Som.queda.maxPorMorte itens fazem o som da queda (docs/som.md §5.4).
+function ItensChao.espalhar(posicao: Vector3, itens: { { id: string, qtd: number, pente: number? } }, fonte: Player?)
 	local velocidades = RegrasChao.velocidadesEspalhar(#itens, rng, Cfg.espalhar)
 	local base = posicao + Vector3.new(0, 1, 0)
 	for i, item in itens do
 		local v = velocidades[i]
 		if v then
-			lancar(item.id, item.qtd, posicao, base, v3(v), item.pente)
+			lancar(item.id, item.qtd, posicao, base, v3(v), item.pente, fonte, i <= CfgSom.queda.maxPorMorte)
 		end
 	end
 end

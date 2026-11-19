@@ -2,8 +2,11 @@
 -- Atributos que este módulo escreve (o resto do jogo só lê):
 --   Player.LanternaSlot (number?)       slot do inventário com a lanterna equipada; nil = guardada
 --   Character.LanternaLigada (boolean)  luz acesa; o cliente do dono e dos outros jogadores desenham a luz a partir dele
+--   Character.LanternaFalhaTipo/T/Semente  falha em curso ("piscar" | "apagar" | "ligar"; T = GetServerTimeNow do início; Semente por
+--     ÚLTIMO: o cliente reage a ela). Todos derivam o mesmo padrão da semente (Regras/Lanterna.padraoFalha). "apagar" termina com
+--     LanternaLigada = false (o jogador liga de novo com F).
 -- A lanterna é silenciosa: não chama Ruido nem atrai monstros. É independente da arma (Armas.ArmaEquipada).
--- O corpo da lanterna na mão esquerda é do ItemNaMao (fonte "lanterna"); a luz continua sendo desenhada no cliente.
+-- O corpo da lanterna fica no peito (server/LanternaPeito); a luz e a animação de ligar são desenhadas no cliente.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -15,6 +18,7 @@ local CfgItens = require(Shared.Config:WaitForChild("Itens"))
 local Limite = require(script.Parent.Limite)
 local Inventario = require(script.Parent.Inventario)
 local Vida = require(script.Parent.Vida)
+local Regras = require(Shared:WaitForChild("Regras"):WaitForChild("Lanterna"))
 
 local Lanterna = {}
 
@@ -36,27 +40,70 @@ local function ehLanterna(jogador: Player, slot: number): boolean
 	return item ~= nil and item.tipo == "lanterna"
 end
 
+local rng = Random.new()
+local proximaFalha: { [Player]: number } = {} -- os.clock() da próxima falha, só enquanto acesa
+
+local function agendar(jogador: Player, depois: number)
+	proximaFalha[jogador] = os.clock() + depois + Regras.proximaFalha(Cfg.falha, rng:NextNumber())
+end
+
+-- Dispara uma falha no personagem (todos os clientes leem os atributos). "apagar" apaga ao fim do padrão.
+local function falhar(jogador: Player, tipo: string)
+	local personagem = jogador.Character
+	if not personagem then
+		return
+	end
+	local semente = rng:NextInteger(1, 2147483646)
+	local padrao = Regras.padraoFalha(semente, tipo)
+	personagem:SetAttribute("LanternaFalhaTipo", tipo)
+	personagem:SetAttribute("LanternaFalhaT", workspace:GetServerTimeNow())
+	personagem:SetAttribute("LanternaFalhaSemente", semente) -- por último
+	if tipo == "apagar" then
+		task.delay(padrao.duracao, function()
+			if jogador.Character == personagem and personagem:GetAttribute("LanternaFalhaSemente") == semente then
+				personagem:SetAttribute("LanternaLigada", false)
+				Rede.evento("Aviso"):FireClient(jogador, Cfg.falha.aviso)
+			end
+		end)
+	end
+	agendar(jogador, padrao.duracao)
+end
+
 local function apagar(jogador: Player)
+	proximaFalha[jogador] = nil
 	local personagem = jogador.Character
 	if personagem and personagem:GetAttribute("LanternaLigada") ~= false then
 		personagem:SetAttribute("LanternaLigada", false)
 	end
 end
 
--- ItemNaMao carregado na hora: se o módulo falhar, a lanterna funciona sem o modelo na mão.
-local function naMao(jogador: Player, id: string?)
-	local ok, N = pcall(require, script.Parent.ItemNaMao)
-	if ok then
-		N.definir(jogador, "lanterna", id)
-	else
-		warn("[Lanterna] ItemNaMao indisponível: " .. tostring(N))
+-- 2026-11-16: a lanterna equipada fica PRESA NO PEITO (server/LanternaPeito), não mais na mão esquerda: as duas mãos ficam livres
+-- para qualquer arma. Carregado na hora: se o módulo falhar, a lanterna funciona sem o modelo.
+local function peito(jogador: Player, vestir: boolean)
+	local ok, P = pcall(require, script.Parent.LanternaPeito)
+	if not ok then
+		warn("[Lanterna] LanternaPeito indisponível: " .. tostring(P))
+		return
 	end
+	local personagem = jogador.Character
+	if not personagem then
+		return
+	end
+	if vestir then
+		task.spawn(P.vestir, personagem) -- a 1ª vez carrega o asset (yield)
+	else
+		P.tirar(personagem)
+	end
+end
+
+local function atualizarModelo(jogador: Player)
+	peito(jogador, type(jogador:GetAttribute("LanternaSlot")) == "number")
 end
 
 local function desequipar(jogador: Player)
 	jogador:SetAttribute("LanternaSlot", nil)
 	apagar(jogador)
-	naMao(jogador, nil)
+	peito(jogador, false)
 end
 
 -- Liga ou apaga. Só acende com a lanterna equipada e o jogador vivo.
@@ -71,6 +118,11 @@ function Lanterna.definir(jogador: Player, ligada: boolean): boolean
 		return false
 	end
 	personagem:SetAttribute("LanternaLigada", true)
+	if rng:NextNumber() < Cfg.falha.chanceFalharAoLigar then
+		falhar(jogador, "ligar")
+	else
+		agendar(jogador, 0)
+	end
 	return true
 end
 
@@ -87,8 +139,7 @@ function Lanterna.alternar(jogador: Player, slot: number): (boolean, string?)
 		return true, nil
 	end
 	jogador:SetAttribute("LanternaSlot", slot)
-	local entrada = Inventario.slot(jogador, slot)
-	naMao(jogador, if entrada then entrada.id else nil)
+	atualizarModelo(jogador)
 	if Cfg.ligarAoEquipar then
 		Lanterna.definir(jogador, true)
 	else
@@ -115,6 +166,26 @@ function Lanterna.iniciar()
 		aoEntrar(jogador)
 	end
 	Players.PlayerAdded:Connect(aoEntrar)
+
+	-- falhas ocasionais enquanto acesa (4 Hz basta: os intervalos são de dezenas de segundos)
+	task.spawn(function()
+		while true do
+			task.wait(0.25)
+			local agora = os.clock()
+			for jogador, quando in proximaFalha do
+				if jogador.Parent == nil then
+					proximaFalha[jogador] = nil
+				elseif agora >= quando then
+					local personagem = jogador.Character
+					if personagem and personagem:GetAttribute("LanternaLigada") == true then
+						falhar(jogador, Regras.tipoFalha(Cfg.falha, rng:NextNumber()))
+					else
+						proximaFalha[jogador] = nil
+					end
+				end
+			end
+		end
+	end)
 
 	Inventario.aoMudar(conferirSlot)
 	Vida.aoMorrer(desequipar)

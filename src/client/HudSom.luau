@@ -1,5 +1,5 @@
--- HudSom: medidor de decibéis no canto inferior direito (barra 0..120 dB, marca do ambiente, último ruído próprio).
--- Dono: P3. Contrato: docs/arquitetura.md §P3 e docs/calculos.md §1.6.
+-- HudSom: medidor de decibéis no canto inferior direito (barra 0..120 dB, marca do ambiente, último ruído próprio e um rótulo curto
+-- do que o fez: passo, equipamento, respiração, mato, vidro!, lata!, esbarrão!, item caiu). Dono: P3. Contrato: docs/arquitetura.md §P3 e docs/som.md §7.3.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -10,9 +10,27 @@ local CfgSom = require(Shared:WaitForChild("Config"):WaitForChild("Som"))
 
 local HudSom = {}
 
+-- minigame de segurar a respiração (docs/som.md §13): o cliente dele é outro módulo, ligado por aqui porque o init do cliente não o lista
+local function iniciarRespiracao()
+	local arquivo = script.Parent:FindFirstChild("RespiracaoMinigame")
+	if not arquivo then
+		return
+	end
+	local ok, modulo = pcall(require, arquivo)
+	if ok and modulo and modulo.iniciar then
+		local ok2, erro = pcall(modulo.iniciar)
+		if not ok2 then
+			warn("[HudSom] erro ao iniciar RespiracaoMinigame: " .. tostring(erro))
+		end
+	elseif not ok then
+		warn("[HudSom] erro ao carregar RespiracaoMinigame: " .. tostring(modulo))
+	end
+end
+
 local DB_MAXIMO = 120
 local DECAIMENTO = 1 -- s para a barra esvaziar
 local LARGURA = 220
+local ALTURA = 92
 local COR_VERDE = Color3.fromRGB(96, 168, 96)
 local COR_AMARELA = Color3.fromRGB(214, 184, 64)
 local COR_VERMELHA = Color3.fromRGB(204, 64, 52)
@@ -61,7 +79,7 @@ function HudSom.iniciar()
 	caixa.Name = "Caixa"
 	caixa.AnchorPoint = Vector2.new(1, 1)
 	caixa.Position = UDim2.new(1, -16, 1, -16)
-	caixa.Size = UDim2.fromOffset(LARGURA, 72)
+	caixa.Size = UDim2.fromOffset(LARGURA, ALTURA)
 	caixa.BackgroundColor3 = COR_FUNDO
 	caixa.BackgroundTransparency = 0.35
 	caixa.BorderSizePixel = 0
@@ -73,6 +91,7 @@ function HudSom.iniciar()
 		rotulo(caixa, "ambiente 20 dB", 14, UDim2.fromOffset(96, 4), UDim2.fromOffset(LARGURA - 104, 22))
 	ambienteTexto.TextXAlignment = Enum.TextXAlignment.Right
 	local alcanceTexto = rotulo(caixa, "alcance 0 studs", 14, UDim2.fromOffset(8, 48), UDim2.new(1, -16, 0, 20))
+	local quemTexto = rotulo(caixa, "", 14, UDim2.fromOffset(8, 68), UDim2.new(1, -16, 0, 20)) -- o que fez o último ruído
 
 	local fundoBarra = Instance.new("Frame")
 	fundoBarra.Name = "Barra"
@@ -112,25 +131,30 @@ function HudSom.iniciar()
 		end
 	end)
 
-	Rede.evento("MeuRuido").OnClientEvent:Connect(function(db: number, ambiente: number, alcance: number)
-		if type(db) ~= "number" or type(ambiente) ~= "number" then
-			return
-		end
-		ultimoDb = db
-		ultimoTempo = os.clock()
-		ultimoAlcance = if type(alcance) == "number" then alcance else 0
-		corAtual = corPara(db, ambiente)
-		mostrarAmbiente(ambiente)
-		valor.Text = string.format("%d dB", math.floor(db + 0.5))
-		alcanceTexto.Text = string.format("alcance %d studs", math.floor(ultimoAlcance + 0.5))
-	end)
+	Rede.evento("MeuRuido").OnClientEvent
+		:Connect(function(db: number, ambiente: number, alcance: number, chave: string?)
+			if type(db) ~= "number" or type(ambiente) ~= "number" then
+				return
+			end
+			quemTexto.Text = if type(chave) == "string" then CfgSom.medidor.rotulos[chave] or "" else ""
+			ultimoDb = db
+			ultimoTempo = os.clock()
+			ultimoAlcance = if type(alcance) == "number" then alcance else 0
+			corAtual = corPara(db, ambiente)
+			mostrarAmbiente(ambiente)
+			valor.Text = string.format("%d dB", math.floor(db + 0.5))
+			alcanceTexto.Text = string.format("alcance %d studs", math.floor(ultimoAlcance + 0.5))
+		end)
 
 	RunService.RenderStepped:Connect(function()
 		local fracao = math.clamp(1 - (os.clock() - ultimoTempo) / DECAIMENTO, 0, 1)
 		enchimento.Size = UDim2.fromScale(math.clamp(ultimoDb / DB_MAXIMO, 0, 1) * fracao, 1)
 		enchimento.BackgroundColor3 = corAtual
 		valor.TextTransparency = 0.5 * (1 - fracao)
+		quemTexto.TextTransparency = 0.5 * (1 - fracao)
 	end)
+
+	iniciarRespiracao()
 end
 
 return HudSom

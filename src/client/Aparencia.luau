@@ -10,6 +10,7 @@ local Cfg = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Confi
 local Aparencia = {}
 
 local jogador = Players.LocalPlayer
+local BRACOS = { "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand" }
 
 local function esconder(cabeca: Instance, escondido: boolean)
 	if cabeca:IsA("BasePart") then
@@ -35,6 +36,18 @@ function Aparencia.iniciar()
 		for _, cabeca in CollectionService:GetTagged(Cfg.etiquetaCabeca) do
 			if cabeca:IsDescendantOf(personagem) then
 				esconder(cabeca, perto)
+			end
+		end
+		-- braços do próprio corpo (blocos/malhas filhos das peças R15): na 1ª pessoa quem mostra os braços é o viewmodel;
+		-- sem isso a malha do braço real aparece pendurada na frente da câmera.
+		for _, nome in BRACOS do
+			local peca = personagem:FindFirstChild(nome)
+			if peca then
+				for _, d in peca:GetDescendants() do
+					if d:IsA("BasePart") then
+						d.LocalTransparencyModifier = if perto then 1 else 0
+					end
+				end
 			end
 		end
 	end)

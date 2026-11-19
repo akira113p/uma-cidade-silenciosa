@@ -150,8 +150,10 @@ do
 end
 
 -- tempo de recarga
-util.perto(Armas.tempoRecarga(A.pistola, 0, 50), 1.9, "pente: tempo fixo")
-util.perto(Armas.tempoRecarga(A.lancaFoguetes, 0, 2), 3.8, "lançador: tempo fixo")
+-- pente com bala na câmara (tática): tempo fixo; pente VAZIO inclui engatilhar de novo (docs/armas.md §13.3)
+util.perto(Armas.tempoRecarga(A.pistola, 5, 50), 1.9, "pente: tempo fixo")
+util.perto(Armas.tempoRecarga(A.pistola, 0, 50), 1.9 + A.pistola.tempoEngatilhar, "pente vazio: tempo + engatilhar")
+util.perto(Armas.tempoRecarga(A.lancaFoguetes, 0, 2), 3.8, "lançador: tempo fixo (sem engatilhar)")
 util.perto(Armas.tempoRecarga(A.escopeta, 5, 20), 0, "tubo cheio: 0")
 util.perto(Armas.tempoRecarga(A.escopeta, 4, 20), 0.5 + 0.55 + 0.4, "tubo faltando 1")
 util.perto(Armas.tempoRecarga(A.escopeta, 2, 20), 0.5 + 3 * 0.55 + 0.4, "tubo faltando 3")
@@ -232,7 +234,7 @@ for id, arma in A do
 		end
 	end
 end
-assert(contagem == 11, "11 armas em Config/Armas, vieram " .. contagem)
+assert(contagem == 20, "20 armas em Config/Armas (11 + 9 do Gold Bright), vieram " .. contagem)
 -- toda munição de Itens é usada por alguma arma
 for id, item in Itens.itens do
 	if item.tipo == "municao" then

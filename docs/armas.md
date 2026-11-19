@@ -1,4 +1,4 @@
-# Armas: arquitetura (11 armas, modelos, animações 1ª e 3ª pessoa, balanceamento)
+﻿# Armas: arquitetura (11 armas, modelos, animações 1ª e 3ª pessoa, balanceamento)
 
 Pedido do usuário (2026-11-05): implementar todos os itens que já temos (modelos em `modelos 3d/_ps2`), com animações e
 balanceamento, para **primeira e terceira pessoa**. Papéis: Opus escreve esta arquitetura e o balanceamento
@@ -10,8 +10,8 @@ Nunca rodar `gerar_mapa.luau --final`. Nunca ler/mostrar `.env`.
 ## 0. Decisões do usuário (tomadas em 2026-11-05)
 
 1. **Pente + recarga** (tecla R, animação, som, munição reserva no inventário).
-2. **Calibres**: 9mm (`municaoPistola`, id mantido), 5,56 (`municao556`), 5,45 (`municao545`, o AK-74 é 5,45x39, não 7,62),
-   calibre 12 (`municaoCalibre12`), foguete (`municaoFoguete`) = **5 tipos**. O usuário disse "6 calibres" mas a lista
+2. **Calibres**: 9mm (`municaoPistola`, id mantido), 5,56 (`municaoRifle`), 5,45 (`municaoRifle`, o AK-74 é 5,45x39, não 7,62),
+   calibre 12 (`municaoEscopeta`), foguete (`municaoMissil`) = **5 tipos**. O usuário disse "6 calibres" mas a lista
    mostrada tinha 5 nomes; a conta não fecha: anotado em pendências para confirmar se falta um (ex.: .45 para a `pistola`).
 3. **Lança-foguetes**: explosão com dano em área **e** destrói construção (`Destruicao.explosao`).
 4. **Props** (Barril, Máquina de vendas, Pombo): **fora desta rodada**.
@@ -315,6 +315,80 @@ Sem candidato → reaproveitar o mais parecido (anotar em pendências).
 `pwsh scripts/checar.ps1` verde; rojo serve (`default.project.json`, porta 34872) + playtest no Studio: dar cada arma (`ServerStorage.Teste:Invoke("arma", id)`),
 atirar nos monstros, recarregar (pente/tubo), esvaziar, trocar de arma no meio da recarga, morrer com a arma (bolsa preserva o pente), foguete contra
 parede (vão) e contra carro, 1ª e 3ª pessoa (V), outro cliente vendo a pose; sem erro no console. Números aprovados pelo usuário deixam de ser PROVISÓRIO.
+
+## 13. Pane, engatilhar, recarga rápida e HUD de checagem (Gold Bright, 2026-11-14)
+
+Pedido do usuário: usar no nosso jogo a mecânica de tiro do Gold Bright (pane, engatilhar, recarga, ver munição). Comportamento tirado
+do jogo em `pesquisa/gold-bright-armas.md`; **código reescrito do zero em Luau**, nada copiado. Números por arma continuam os nossos
+(`Config/Armas.luau`); só as regras e as taxas de pane vieram do jogo de referência. **Escrito e testado só no Lune** (rojo build,
+tests, selene, stylua verdes); **nunca rodou no Studio** (ver §13.7).
+
+### 13.1 Decisões do usuário (2026-11-14)
+1. Pane **5% por tiro em arma semi, 1,25% em arma auto**, no máximo **uma por pente**, nunca na última bala, só arma de pente.
+2. Pistola, Beretta, AR-15, M5 e AK = **de pente** (engatilham sozinhas, podem travar). Escopeta e M1912 = **de bomba** (engatilhar
+   na mão **a cada tiro**, nunca travam). Lança-foguetes = sem engatilhar nem pane.
+3. **Recarga rápida com risco de falha** e o **pente velho cai no chão com as balas que tinha**: sim.
+4. **HUD só a nova**: some o contador "pente / reserva"; entra a **checagem de munição** (tecla `Z`) com frases. O inventário (Tab) ainda mostra a reserva.
+5. **Munição achada no mapa = 1 pente inteiro** por sorteio (17 / 30 / 6 / 1), não balas soltas.
+6. Números por arma: os nossos (não foi baixado o AssetRipper).
+
+### 13.2 Pane
+`Regras/Armas.luau`: `travou(cfg, pane, travadaNestePente, penteDepois, sorteio)` = `sorteio > 1 - chance`, com `chance` = `pane.chanceSemi`
+(0,05) ou `pane.chanceAuto` (0,0125) pelo `modo` da arma. O servidor sorteia **depois** de gastar a bala (o tiro sai): `atacarFogo`
+chama `Regra.travou`, e se travou grava `e.travada` e `e.travadaNestePente`, toca o clique e avisa "A arma travou! Engatilhe (Q)".
+Travada = o gatilho só faz clique (servidor e cliente recusam), a arma fica desengatilhada. Sai da pane **engatilhando** (`Q`, leva
+`pane.tempoDestravar` = 0,9 s) ou **recarregando** (o pente novo zera `travadaNestePente`). Equipar zera o estado (§13.6).
+
+### 13.3 Engatilhar (tecla `Q`) e recarga
+- Estado por jogador no servidor (`Estado`): `engatilhada`, `travada`, `travadaNestePente`, `engatilhandoAte`. Atributos do Player
+  (cliente lê): `Engatilhada`, `Travada`, `Engatilhando`, junto de `Pente`, `Reserva`, `Recarregando`.
+- Depois do tiro: pente = continua engatilhada (salvo pane); **bomba = desengatilhada**; lançador = sempre pronto.
+- `Regra.engatilhar(cfg, pente, engatilhada, travada, pane)` → `"vazio"` (sem balas: só o clique), `"nada"`, `"destravar"` ou `"engatilhar"`
+  mais o tempo (`cfg.tempoEngatilhar`). Durante o tempo a mão está ocupada: sem tiro e sem recarga. Engatilhar **não gasta bala**.
+- Recarga de pente: **tática** (+1): com a arma engatilhada, sem pane e com pelo menos 1 bala, o pente enche até `pente + 1`
+  (`Regra.capacidadeRecarga`). Recarga **vazia** inclui engatilhar de novo (`tempoRecarga` soma `tempoEngatilhar`). Fim da recarga:
+  pente novo, sem pane, engatilhada. Recarga de tubo (escopetas): o bombeio final (`fim`) engatilha; se for interrompida antes, a bomba continua desengatilhada.
+- Escopetas: `cadencia` caiu para 0,40 (escopeta) e 0,36 (M1912) e o ciclo total (cadência + `tempoEngatilhar` 0,55 / 0,35) fica em
+  ~0,95 s / ~0,7 s, igual ao de antes (a tabela do §2 vale pelo ciclo).
+
+### 13.4 Recarga rápida (R de novo durante a recarga de pente)
+`Config/Armas.recargaRapida = { janelaDe 0,3, janelaAte 0,7, fator 0,6, minimoApos 0,15, penalidade 0,5 }` (frações/segundos da recarga).
+**Interpretação minha** do Gold Bright (que tem janela + "falha", mas cujos tempos ficam nos assets): R de novo com o relógio da recarga dentro da
+janela = **rápida**: a recarga termina em `fator` da duração, o pente velho cai no chão (item de munição com `balas - 1` se havia bala na câmara,
+senão todas) e o pente novo vem cheio da reserva. **Fora** da janela, **uma vez só**, = **falha**: a recarga ganha `penalidade` s e o servidor avisa
+"Recarga atrapalhada". Só arma de pente; tubo ignora. O servidor decide pela hora do clique (`cliqueNaRecarga`); o cliente só prevê a duração nova.
+
+### 13.5 HUD de munição (nova) e checagem
+`client/HudMunicao.luau` reescrita: **sem número**. Tecla `Z` (`ArmasCliente.checarMunicao`, 1,3 s, sinal `checou`): a arma gira (molas do
+viewmodel) e o HUD mostra 3,5 s duas frases: `Regras.frasePente` ("Vazio." / "Só restam algumas balas." / "Menos da metade." / "Mais ou menos metade."
+/ "Quase cheio." / "Cheio.") e `Regras.fraseReserva` ("Reserva: N pentes", em meios pentes). Lançador: "Carregado." e "Reserva: N.". Aviso fixo na tela:
+"ARMA TRAVADA [Q]" e "ENGATILHE [Q]"; "Sem balas." por 1,6 s no gatilho vazio. Atirar, recarregar ou engatilhar esconde as frases. Teclas em
+`Config/Movimento.teclas` (`engatilhar = Q`, `checarMunicao = Z`).
+
+### 13.6 Munição = um pente inteiro
+`Config/Itens`: `municaoPistola` 17, `municaoRifle` 30, `municaoEscopeta` 6, `municaoMissil` 1 (campo `pente`); toda `qtd` de loot dessas munições
+(Itens, Casa, Comercial) é `{pente, pente}`; `pilha` do slot = 2 pentes (34 / 60 / 12 / 2). O inventário continua contando **balas**, então a recarga
+continua fungível (pente de 15 da Beretta usa 15 de uma unidade de 17). `tests/ArmasPane.spec` falha se loot e `pente` do item se separarem.
+Estado de pane/engatilhada **não** é guardado por slot: equipar zera, então trocar de arma e voltar também destrava a pane. Se virar abuso, guardar por slot.
+
+### 13.7 Não testado e pendências (também em `docs/pendencias-integracao.md`, "Armas")
+- **Nada disto rodou no Studio** (sessão sem o Studio). Testar na ZonaTeste: pane (forçar `Config.pane.chanceSemi = 1`), bomba, recarga rápida/falha, pente no chão, HUD.
+- O clipe `Fire` das escopetas (0,7 s) ainda tem o **bombear embutido**; com o engatilhar na mão o certo é um clipe só de recuo e outro de bombear.
+  O teste `ArmasAnimDados` força `cadencia >= 0,35`. Precisa regerar animações (Open Cloud bloqueado).
+- Sem animação de 3ª pessoa nova para engatilhar/checar (`ArmasTerceira` não escuta `engatilhou`/`checou`): na 1ª pessoa são só impulsos de mola.
+- Sons: reusam `Bombear`, `CliqueVazio`, `RecargaPenteEntra`; falta um som próprio de pane.
+- Frases, janela e `fator` da recarga rápida, `tempoDestravar` e `tempoEngatilhar` são chutes meus (a referência tem outros tempos nos assets).
+
+## 14. Mira básica (botão direito, 2026-11-15)
+
+Pedido do usuário: "faz uma mira básica". Segurar o **botão direito** com arma de fogo na mão.
+- Cliente (`ArmasCliente.mirar`): manda `Rede.Mirar(true/false)` ao apertar/soltar; trocar de arma manda `false`.
+- Servidor (`server/Armas`): valida (boolean, `Limite` 0,05 s, arma de fogo equipada, vivo) e grava `Player.Mirando`; trocar de arma ou morrer zera.
+  No tiro, `Mirando` e não correndo = espalhamento x `Config/Armas.mira.multEspalhamento` (0,5).
+- Câmera (`client/Camera`): FOV x `Config/Armas.mira.fov` (0,82) com `Mirando` e sem correr (mesma suavização do FOV de corrida).
+- Viewmodel do Gold Bright (`client/ViewmodelGB`): desliza até a boca do cano (repouso) ficar no centro da tela, `Config/ArmasVista.gb.mira.abaixo`
+  abaixo da linha de visada e `frente` mais perto; sway x `mira.sway`. Não usa a mira de ferro/luneta de verdade do original (`aimingPosition`).
+- Viewmodel de blocos/rig R15 (`ArmasViewmodel`): só o zoom e o espalhamento (sem pose de mira). PROVISÓRIO até o playtest.
 
 ## Estado (2026-11-05)
 - **Pronto e verde em `checar.ps1` (nada testado no Studio ainda):** A1 regras/itens/sons/rede, A2 servidor (`Armas`, `Foguete`, pente no inventário), A5 cliente

@@ -1,6 +1,6 @@
 """Converte as animacoes do Blender (anim_blender.json) em Bone.Transform do Roblox -> anim_roblox.json.
 
-Uso (da raiz):  python ferramentas/modelos/gerar_anim_rastejador.py
+Uso (da raiz):  python ferramentas/modelos/gerar_anim_rastejador.py [--nome rastejador|wrapper]
 Entradas em modelos 3d/rastejador/: manifesto.json, anim_blender.json (exportar_rastejador.py) e rest_roblox_bruto.txt
 (uma linha por osso: "Nome|x,y,z,r00,r01,r02,r10,r11,r12,r20,r21,r22" = CFrame do osso (Bone.TransformedWorldCFrame sem Transform)
 relativo ao MeshPart, medido no Studio depois de importar o FBX enviado; ver docs/rastejador.md §3.2).
@@ -14,12 +14,14 @@ Nao depende de os eixos dos ossos baterem com os do Blender.
 
 import json
 import math
+import sys
 from pathlib import Path
 
 import numpy as np
 
 RAIZ = Path(__file__).resolve().parents[2]
-PASTA = RAIZ / "modelos 3d" / "rastejador"
+NOME = sys.argv[sys.argv.index("--nome") + 1] if "--nome" in sys.argv else "rastejador"  # pasta em modelos 3d/
+PASTA = RAIZ / "modelos 3d" / NOME
 MAX_QUADROS = 30  # keyframes por acao (contrato): passo uniforme = ceil(quadros / MAX)
 
 
@@ -80,6 +82,13 @@ def main():
         rr[nome] = mat4(np.array(v[3:12]).reshape(3, 3), v[:3])
 
     ossos = man["ossos"]
+    ausentes = [n for n in ossos if n not in rr]
+    if ausentes:  # ossos auxiliares (IK) que o FBX nao leva ao Roblox
+        print("ignorando ossos sem equivalente no Roblox:", ausentes)
+        ossos = {n: o for n, o in ossos.items() if n in rr}
+        for o in ossos.values():
+            if o["pai"] not in ossos:
+                o["pai"] = None
     rest_b = {n: np.array(o["matrix_local"]) for n, o in ossos.items()}
     ordem = []  # pais antes dos filhos
     def visita(n):
@@ -90,6 +99,13 @@ def main():
     for n in ossos:
         visita(n)
 
+    # O centro do MeshPart no Roblox e o centro da caixa da malha, que nao precisa estar em x=y=0 no Blender (MonstroPS1 com os
+    # bracos baixados: 0,151 stud em x, medido 2026-11-14). Acha o deslocamento pelos ossos raiz e corrige o Tf.
+    raizes = [n for n in ossos if not ossos[n]["pai"]]
+    desl = np.mean([rr[n][:3, 3] - (Tf @ rest_b[n])[:3, 3] for n in raizes], axis=0)
+    Tf[:3, 3] += desl
+    Tfi = np.linalg.inv(Tf)
+    print("deslocamento do centro do MeshPart (studs):", np.round(desl, 4))
     # verificacao: o repouso Blender passado ao Roblox tem a mesma posicao do medido?
     erro_pos = max(np.linalg.norm((Tf @ rest_b[n])[:3, 3] - rr[n][:3, 3]) for n in ossos)
 
@@ -100,6 +116,12 @@ def main():
         idx = list(range(0, total, passo))
         if idx[-1] != total - 1:
             idx.append(total - 1)
+        # quadros dos eventos (impacto, soltar...) entram sempre: o pico do golpe nao some na decimacao
+        for t in (man.get("eventos") or {}).get(nome, {}).values():
+            q = min(max(int(round(t * a["fps"])), 0), total - 1)
+            if q not in idx:
+                idx.append(q)
+        idx.sort()
         frames = []
         for i in idx:
             f = a["frames"][i]

@@ -167,4 +167,53 @@ for _, tabela in { "casa", "loja", "posto" } do
 	assert(achou, "lanterna na tabela " .. tabela)
 end
 
+-- Falhas (2026-11-17): padrão determinístico por semente, faixas do Gold Bright, final certo por tipo --------------------
+for _, tipo in { "piscar", "apagar", "ligar" } do
+	for semente = 1, 200 do
+		local p = Lanterna.padraoFalha(semente, tipo)
+		local q = Lanterna.padraoFalha(semente, tipo)
+		util.igual(#p.t, #q.t, tipo .. ": mesma semente, mesmo padrão")
+		util.igual(p.duracao, q.duracao, tipo .. ": duração igual")
+		assert(#p.t == #p.f and #p.t >= 3, tipo .. ": degraus")
+		for i = 1, #p.t do
+			assert(p.f[i] >= 0 and p.f[i] <= 1, tipo .. ": fator em 0..1")
+			assert(i == 1 or p.t[i] >= p.t[i - 1], tipo .. ": tempos crescentes")
+		end
+		assert(p.duracao > 0.1 and p.duracao < 4, tipo .. ": duração curta (" .. p.duracao .. ")")
+		util.igual(Lanterna.fatorFalha(p, p.duracao + 5), if tipo == "apagar" then 0 else 1, tipo .. ": fator final")
+		util.igual(Lanterna.fatorFalha(p, -1), 1, tipo .. ": antes de começar vale 1")
+	end
+end
+do
+	local p = Lanterna.padraoFalha(7, "piscar")
+	util.igual(Lanterna.fatorFalha(p, 0), p.f[1], "fator no instante 0 = primeiro degrau")
+	util.igual(Lanterna.fatorFalha(p, 0 / 0), 1, "NaN vale 1")
+	local diferente = false
+	for semente = 1, 20 do
+		if #Lanterna.padraoFalha(semente, "piscar").t ~= #p.t then
+			diferente = true
+		end
+	end
+	assert(diferente, "sementes diferentes dão padrões diferentes")
+end
+local f = cfg.falha
+assert(f.intervalo[1] > 0 and f.intervalo[1] <= f.intervalo[2], "intervalo de falha válido")
+assert(f.chanceApagar > 0 and f.chanceApagar < 1, "chance de apagar entre 0 e 1")
+util.igual(Lanterna.proximaFalha(f, 0), f.intervalo[1], "próxima falha no mínimo")
+util.igual(Lanterna.proximaFalha(f, 1), f.intervalo[2], "próxima falha no máximo")
+util.igual(Lanterna.tipoFalha(f, 0), "apagar", "sorteio baixo apaga")
+util.igual(Lanterna.tipoFalha(f, 0.999), "piscar", "sorteio alto pisca")
+assert(type(cfg.suja) == "table", "lente suja: lista de camadas (pode ser vazia)")
+assert(cfg.cookie.raioImagem > 0 and cfg.cookie.raioImagem <= 0.5, "cookie: raio dentro da imagem")
+
+-- fatorDistancia: perto escurece, longe e "nada à frente" ficam no máximo, nunca abaixo do mínimo
+local comp = cfg.primeira.compensacao
+util.igual(Lanterna.fatorDistancia(nil, comp), 1, "sem superfície = brilho cheio")
+util.igual(Lanterna.fatorDistancia(comp.distRef * 3, comp), 1, "longe = brilho cheio")
+util.igual(Lanterna.fatorDistancia(0, comp), comp.minimo, "colado = mínimo")
+assert(
+	Lanterna.fatorDistancia(comp.distRef * 0.4, comp) < Lanterna.fatorDistancia(comp.distRef * 0.8, comp),
+	"cresce com a distância"
+)
+
 print("Lanterna.spec ok")

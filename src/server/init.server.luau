@@ -26,12 +26,16 @@ local ORDEM = {
 	"Veiculos",
 	"Combustivel", -- depois de Veiculos e Inventario (usa Veiculos.encher e Inventario.trocar)
 	"Destruicao",
+	"Portas", -- depois de Destruicao (ouve aoQuebrar); monta as portas em segundo plano
 	"Monstros",
 	"Armas",
+	"ArmasGB", -- moldes do viewmodel do Gold Bright (LoadAsset -> ReplicatedStorage.ArmasGB)
 	"Foguete",
 	"Lanterna",
+	"LanternaPeito", -- carrega o modelo da lanterna de peito (Config/LanternaMalha)
 	"Admin",
 	"Aparencia",
+	"Personagem", -- por último: depois de Spawn (RespawnLocation pronto) e Aparencia (ouve o CharacterAdded); o 1º LoadCharacter só vem do pedido do jogador
 }
 
 local modulos = {}

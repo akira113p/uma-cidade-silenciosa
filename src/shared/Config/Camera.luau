@@ -8,6 +8,8 @@ return {
 		correr = { amplitude = 0.25, inclinacao = 2.0, fov = 78 },
 	},
 	transicaoFov = 0.3, -- s
+	alturaOlhosDeitado = -1.7, -- deitado: olhos perto do chão
+	frenteDeitado = -1.9, -- deitado: a câmera vai para a frente (onde a cabeça fica), -Z = frente
 	alturaOlhosAgachado = -0.2, -- offset Y extra da câmera agachado (o quadril já desce em Config/Movimento.agachado)
 
 	aterrissagem = { divisorVelocidade = 50, maximo = 0.6, duracao = 0.25 },
@@ -38,6 +40,7 @@ return {
 		Pref_FBandasForca = 100,
 		Pref_FVhs = true,
 		Pref_FVhsForca = 100,
+		Pref_Personagem = 1, -- n do personagem em Config/Personagens (só o servidor grava: server/Personagem.luau)
 	},
 	limitesPreferencias = {
 		Pref_Intensidade = { 0, 100 },
@@ -49,5 +52,6 @@ return {
 		Pref_FScanSuaveForca = { 0, 100 },
 		Pref_FBandasForca = { 0, 100 },
 		Pref_FVhsForca = { 0, 100 },
+		Pref_Personagem = { 1, 99 },
 	},
 }

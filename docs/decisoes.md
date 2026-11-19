@@ -1,4 +1,4 @@
-# Decisões
+﻿# Decisões
 
 ## 2026-11-03 · Filtro mais leve, névoa de dia mais longa e lanterna
 - Decisão: o grão fica "bem de leve" (referência: Silent Hill 1, grão discreto), porque o filtro causou dor de cabeça no
@@ -170,3 +170,49 @@ Chuva no vidro e limpadores ficam para depois. Contrato: `docs/veiculos-modelos.
 4. **Itens no mapa**: nascem nos 880 pontos Loot já existentes (`workspace.Mapa.Pontos`), cada um com 35% de chance, usando a `Tabela` do ponto. Pegado, volta (sorteio novo) após 15 min.
    Móveis com compartimento continuam como estão.
 Contrato: `docs/itens-no-mundo.md`.
+
+## 2026-11-06: seletor de personagem e animações sem upload
+Pedido do usuário; detalhes e contrato em `docs/personagens.md`. Substitui a decisão de 2026-11-01/02 de que todo jogador usa o mesmo corpo em blocos.
+1. **Seletor ao entrar** (e na tela de morte): o jogador escolhe um personagem; **não muda atributo nenhum** (vida, velocidade, dano). Todos usam o corpo R15 atual
+   (hitbox, física e juntas de animação), só o visual muda. O personagem atual (suéter amarelo) vira `padrao`.
+2. **Elenco inicial**: padrao, office_worker e survivor_woman (psx-people-free, CC BY 4.0, crédito no seletor). Villager man/woman e male_casual ficam FORA até o usuário
+   confirmar a origem e a licença (a pasta não traz). `ps1 character` não serve (sem rig). Sem malha enviada, cada um aparece em blocos com paleta própria.
+3. **Malhas**: 15 MeshParts por personagem (uma por peça R15), escala uniforme do conjunto e posição por `centroMontagem`, sem esticar peça a peça. **Nada foi enviado**
+   (Open Cloud 403 "User is moderated"; não se contorna). Quando a conta liberar: enviar os FBX, medir o pivô, preencher `Config/PersonagensMalhas` com `gerar_config_personagens.py`.
+4. **Animações não dependem de upload**: o jogo monta a `KeyframeSequence` dos JSON em runtime (`shared/Animacao`) e a registra; cada cliente toca no corpo de todos que vê.
+   Clipes novos para carro, pegar/largar/interagir/abastecer, item na mão e queda; **agachar continua procedural** (`Movimento.luau`); carro e mão usam Action2, ações de uma vez Action3.
+5. **Primeira pessoa**: os braços são um rig R15 mínimo preso à câmera tocando os MESMOS clipes da 3ª pessoa; o caminho antigo (poses + IK) fica como plano B.
+6. **Morte animada desligada por padrão** (`Config/AnimacoesCorpo.morteAnimada = false`): ligar só depois de ver o clipe tocar no Studio, senão o corpo ficaria rígido em pé.
+
+## 2026-11-14: Corcunda, MonstroPS1 e Florescida nascem no mapa; Esfolado fora
+Decisões do usuário; pipeline em `docs/preset-monstro.md`, números em `src/shared/Config/PresetsMonstro.luau`.
+1. **Moderação:** a Roblox recusou a textura do Esfolado (sangue; asset 114820256827682) e a conta levou aviso. **Nada do Esfolado nesta rodada**: continua espécie de blocos, sem `malha`, sem assets.
+   Corcunda e Florescida sobem só a textura `_atlas_seguro.png` (sem vermelho); MonstroPS1 usa a original já aprovada.
+2. **Nascem no mapa:** Corcunda (nível 1), MonstroPS1 (espécie nova, nível 1) e Florescida (números de nível 2, mas nasce apesar de `nivelAtivoMaximo = 1`
+   por opção da espécie, `nascerSempre = true`, o inverso do `semNascer` do Wrapper; `nivelAtivoMaximo` não sobe).
+3. **Capacidades:** Florescida `{ degrau, arrombar, veiculo }`; Corcunda e MonstroPS1 só `{ degrau }`. Cada um com `malha = true` e `preset` em `Config/PresetsMonstro`.
+4. **Alturas PROVISÓRIAS (não decididas):** Corcunda 2,0 m, MonstroPS1 2,0 m, Florescida 2,2 m; jogador 1,8 m = 5,234 studs.
+
+## 2026-11-14: Habilidades dos monstros (pedidos do usuário nas fichas)
+Contrato em `docs/monstros/logica.md` §0; código em `server/MonstroHabilidades` + `server/Habilidades/<Especie>`, números em `PresetsMonstro.<preset>.habilidades`.
+1. **Rastejador:** arrombar mais forte (dano 60 para 150, intervalo 1,2 para 0,9 s, vão 1,6 para 2,2 e 9 para 11 de altura, clipe `Arrombar`), Pulso no chão e Busca dentro da casa. O Wrapper NÃO herda os números novos de vão.
+2. **Wrapper:** sem grito; sonar com onda visível (raio 45, 30 studs/s), a linha de visão decide quem é detectado; detectado, ele investe na posição onde a onda bateu. Bater na parede no lunge deixa-o atordoado 2 s. Monstro não machuca monstro.
+3. **Corcunda:** enxerga um pouco (cone 70, alcance 14), empurrão que derruba, abre/fecha porta (com barulho, nunca bate nem arromba), emboscada e imitação (falas em inglês só de fonte CC0; monstros ignoram o ruído `imitacao`).
+4. **MonstroPS1:** lança lâminas (dano 8, erro de até 9 graus), arrancada com faíscas, golpe duplo 1 a cada 3, corta madeira e vidro (tipo de dano `lamina`, que o agente B cria em Materiais).
+5. **Florescida:** caça a 60 studs/s (a frase "mais rápida que carro normal" vale mais que "50 km/h", que dariam 40 studs/s); não entra na zona `cidade`; um por servidor (admin até 2); fachada no lugar do arrombar; flores-sentinela (máx. 12 por Florescida).
+6. **Interpretações do Opus mantidas:** a cabeça do Wrapper para a onda é a 0,8 da altura a partir do chão (o contrato dizia "hrp + 0,8 altura", que sairia acima do corpo).
+7. **Corte de comportamento já existente:** `capacidades.arrombar` e `capacidades.veiculo` agora são respeitadas (antes Corcunda e MonstroPS1 herdavam o arrombar do Rastejador por engano).
+
+## 2026-11-14: Armas do Gold Bright (pane, engatilhar, recarga, HUD de checagem)
+Decisões do usuário; contrato em `docs/armas.md` §13, comportamento de referência em `pesquisa/gold-bright-armas.md`.
+1. **Pane** 5% semi / 1,25% auto, uma por pente, só arma de pente; **escopetas de bomba** engatilham na mão a cada tiro (`Q`); lançador sem nenhum dos dois.
+2. **Recarga rápida com risco de falha** e **pente caindo no chão** com as balas que tinha: sim (janela e tempos são chutes do Opus/Sonnet, a calibrar no playtest).
+3. **HUD só a nova** (checagem de munição `Z`, frases, sem contador numérico).
+4. **Munição achada no mapa = 1 pente inteiro** (17 / 30 / 6 / 1); pilha do slot = 2 pentes.
+5. **Números das armas continuam os nossos** (sem AssetRipper). Código reescrito em Luau, sem copiar código nem assets do jogo de referência.
+6. **Pendentes:** lanterna, animação de comer com a lata e tela vermelha de pouca vida (pedidos do usuário, ainda não feitos).
+
+## 2026-11-15: Assets do Gold Bright no jogo (braços, armas, animações em 1ª pessoa)
+1. **Importar os assets do Gold Bright como armas NOVAS** (não substituem as 11 nossas): TT-33, OTs-20, MP5, PP-91, SR-3M, OTs-48K, RMB-93, TOZ-34, cano de chumbo.
+2. **Aceita a licença GPLv3+** do Gold Bright (código e assets): publicar o place com esses assets obriga o jogo a ser GPLv3+ com o código-fonte aberto.
+3. Contrato e estado: `docs/gold-bright-import.md`. Isto revoga o "sem copiar assets do jogo de referência" do item 5 da decisão de 2026-11-14 (só para estes assets).

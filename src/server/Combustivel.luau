@@ -33,7 +33,9 @@ local DB_PADRAO = { abastecer = 50, encher = 45, despejar = 40 } -- só se Confi
 local BASE_TAMANHO = Vector3.new(2.4, 0.35, 1.8)
 local BASE_ALTURA_CENTRO = 0.175
 local CORPO_TAMANHO = Vector3.new(2.0, 4.85, 1.5)
-local BOCAL_LOCAL = Vector3.new(1.15, 3.0, -0.5)
+-- 2026-11-14: o bocal ficava na lateral (x 1,15, fora do corpo de ±1,0) e em cima (y 3,0); agora DENTRO do corpo, mais baixo,
+-- para a mangueira sair da própria bomba (o corpo opaco esconde o trecho de dentro).
+local BOCAL_LOCAL = Vector3.new(0.5, 1.8, -0.3)
 local ESTATICAS_LOCAL = { Vector3.new(1.15, 1.95, -0.5), Vector3.new(1.15, 0.9, -0.1) } -- mangueira e bico do mapa
 
 type Estatica = { peca: BasePart, transparencia: number }
@@ -624,6 +626,43 @@ local function aoTampa(jogador: Player, tampa: BasePart)
 	aviso(jogador, "Sem mangueira nem recipiente cheio")
 end
 
+-- Botão "Carregar carro" (evento CarregarCarro): com a mangueira na mão, pluga na tampa mais próxima do jogador dentro de
+-- `alcanceCarregar` (sem precisar mirar o prompt da tampa, que é pequeno); já plugada, o mesmo botão desplugar.
+local function aoCarregar(jogador: Player)
+	if not Limite.ok(jogador, "CarregarCarro", 0.3) then
+		return
+	end
+	local m = mangueiras[jogador]
+	local _, raiz = vivo(jogador)
+	if not (m and raiz) then
+		return
+	end
+	if m.estado == "plugada" then
+		desplugar(m)
+		return
+	end
+	local alcance = Cfg.mangueira.alcanceCarregar * FOLGA
+	local melhor: BasePart? = nil
+	local menor = alcance
+	for _, p in CollectionService:GetTagged("Tampa") do
+		if p:IsA("BasePart") and p:IsDescendantOf(workspace) then
+			local d = (raiz.Position - p.Position).Magnitude
+			if d <= menor then
+				melhor, menor = p, d
+			end
+		end
+	end
+	if not melhor then
+		aviso(jogador, "Chegue perto da tampa do carro")
+		return
+	end
+	local carro = carroDe(melhor)
+	if not carro then
+		return
+	end
+	plugar(m, carro, melhor)
+end
+
 local function ligarTampa(tampa: Instance)
 	if not tampa:IsA("BasePart") or tampasLigadas[tampa] then
 		return
@@ -720,8 +759,11 @@ local function montarBomba(modelo: Model, numero: number): Bomba?
 	local corpo: BasePart? = nil
 	for _, d in modelo:GetDescendants() do
 		if d:IsA("BasePart") then
-			if not base and tamanhoPerto(d.Size, BASE_TAMANHO) then
-				base = d
+			if tamanhoPerto(d.Size, BASE_TAMANHO) then
+				-- o capô do topo (2,4 x 0,30 x 1,8) também cabe na tolerância: a base certa é sempre a MAIS BAIXA
+				if not base or d.Position.Y < base.Position.Y then
+					base = d
+				end
 			elseif not corpo and tamanhoPerto(d.Size, CORPO_TAMANHO) then
 				corpo = d
 			end
@@ -915,7 +957,7 @@ function Combustivel.segurarRecipiente(jogador: Player, slot: number)
 	end
 	local p = Inventario.slot(jogador, slot)
 	local def = p and CfgItens.itens[p.id]
-	if not (p and def and def.tipo == "recipiente") then
+	if not (p and def and (def.tipo == "recipiente" or def.tipo == "municao")) then
 		return
 	end
 	if armado(jogador) then
@@ -1050,6 +1092,8 @@ function Combustivel.iniciar()
 			limparTudo(jogador)
 		end)
 	end
+
+	Rede.evento("CarregarCarro").OnServerEvent:Connect(aoCarregar)
 
 	for _, tampa in CollectionService:GetTagged("Tampa") do
 		ligarTampa(tampa)

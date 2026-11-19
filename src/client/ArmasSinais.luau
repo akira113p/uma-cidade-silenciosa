@@ -15,6 +15,11 @@ local ouvintes: { [string]: { Ouvinte } } = {}
 --   "recarregou"  (armaId: string, duracao: number)                     início da recarga (duração total em s)
 --   "recargaFim"  (armaId: string, cancelada: boolean)
 --   "equipou"     (armaId: string?)                                     nil = desarmou
+--   "engatilhou"  (armaId: string, tempo: number, destravar: boolean)   Q aceito localmente: bombear/engatilhar ou destravar a pane
+--   "bloqueado"   (armaId: string, motivo: string)                      gatilho recusado: "travada" | "desengatilhada" (junto de "vazio")
+--   "checou"      (armaId: string, duracao: number)                     Z: animação de checar a munição; HudMunicao mostra as frases
+--   "recargaRapida" (armaId: string, duracaoNova: number)               R de novo na janela certa: a recarga termina antes
+--   "recargaFalhou" (armaId: string, duracaoNova: number)               R de novo fora da janela: a recarga demora mais
 function ArmasSinais.ouvir(nome: string, fn: Ouvinte): () -> ()
 	local lista = ouvintes[nome]
 	if not lista then

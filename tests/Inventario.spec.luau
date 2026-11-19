@@ -44,14 +44,15 @@ util.igual(Inventario.contar(depois, "faca"), 8, "nada entrou")
 local _, sobraBarra = Inventario.adicionar(cheio, "enlatado", 1, itens, padrao)
 util.igual(sobraBarra, 1, "outro item também sobra")
 
--- sobra parcial: 1 posição livre de pilha 30 (munição) recebe 30 de 45
+-- sobra parcial: 1 posição livre de pilha cheia de munição (2 pentes) recebe a pilha e sobram 15 (o tamanho vem de Config/Itens)
+local pilhaMunicao = itens.municaoPistola.pilha
 local quase = inv
 for _ = 1, 7 do
 	quase = Inventario.adicionar(quase, "faca", 1, itens, padrao)
 end
-local munido, sobraMun = Inventario.adicionar(quase, "municaoPistola", 45, itens, padrao)
+local munido, sobraMun = Inventario.adicionar(quase, "municaoPistola", pilhaMunicao + 15, itens, padrao)
 util.igual(sobraMun, 15, "sobra parcial")
-util.igual(Inventario.contar(munido, "municaoPistola"), 30, "entrou uma pilha")
+util.igual(Inventario.contar(munido, "municaoPistola"), pilhaMunicao, "entrou uma pilha")
 
 -- espaço
 util.igual(Inventario.espaco(inv, "enlatado", itens, padrao), 24, "espaço vazio: 8 x 3")

@@ -121,6 +121,59 @@ local falhou: { [string]: boolean } = {}
 local carregando: { [string]: boolean } = {}
 local avisou: { [string]: boolean } = {}
 
+-- Armas sem malha enviada que ganham um modelo de peças em vez do bloco único. Origem = empunhadura, ponta para -Z.
+local PARTES_BLOCOS: { [string]: { { nome: string, tam: { number }, pos: { number }, cor: Color3, material: Enum.Material } } } =
+	{
+		faca = {
+			{
+				nome = "Cabo",
+				tam = { 0.07, 0.1, 0.26 },
+				pos = { 0, -0.03, 0 },
+				cor = Color3.fromRGB(50, 45, 42),
+				material = Enum.Material.Wood,
+			},
+			{
+				nome = "Guarda",
+				tam = { 0.06, 0.17, 0.04 },
+				pos = { 0, -0.03, -0.15 },
+				cor = Color3.fromRGB(95, 98, 102),
+				material = Enum.Material.Metal,
+			},
+			{
+				nome = "Lamina",
+				tam = { 0.03, 0.14, 0.42 },
+				pos = { 0, -0.02, -0.38 },
+				cor = Color3.fromRGB(160, 165, 170),
+				material = Enum.Material.Metal,
+			},
+			{
+				nome = "Ponta",
+				tam = { 0.03, 0.08, 0.15 },
+				pos = { 0, -0.035, -0.66 },
+				cor = Color3.fromRGB(160, 165, 170),
+				material = Enum.Material.Metal,
+			},
+		},
+	}
+
+-- Ajuste visual por arma (só malha): escala = fator de tamanho; recuo = fração do comprimento que a malha avança (-Z) para a mão
+-- segurar perto da ponta de trás em vez do meio.
+local AJUSTE: { [string]: { escala: number, recuo: number, apoio: Vector3? } } = {
+	peDeCabra = { escala = 1.6, recuo = 0.3 },
+	-- apoio = deslocamento do ApoioEsquerdo (studs): a mão da frente segura por baixo do tubo, não por cima
+	lancaFoguetes = { escala = 1, recuo = 0, apoio = Vector3.new(0, -0.15, 0) },
+}
+
+local function escalaDe(id: string): number
+	local a = AJUSTE[id]
+	return if a then a.escala else 1
+end
+
+local function deslocamentoDe(id: string, comprimento: number): Vector3
+	local a = AJUSTE[id]
+	return if a then Vector3.new(0, 0, -a.recuo * comprimento * a.escala) else Vector3.zero
+end
+
 local function v3(t: { number }): Vector3
 	return Vector3.new(t[1], t[2], t[3])
 end
@@ -145,8 +198,27 @@ local function aviso(id: string, texto: string)
 	end
 end
 
+-- Armas do Gold Bright (Config/ArmasGB): a malha delas só existe no viewmodel de 1ª pessoa (client/ViewmodelGB). Na 3ª pessoa,
+-- no chão do plano B e no viewmodel de blocos usam o modelo de uma arma nossa da mesma classe. Trocar quando houver malha própria.
+local APELIDO: { [string]: string } = {
+	tt33 = "pistola",
+	ots20 = "beretta",
+	mp5 = "carabinaM5",
+	pp91 = "carabinaM5",
+	sr3m = "ak74",
+	ots48k = "ar15",
+	rmb93 = "escopeta",
+	toz34 = "escopetaM1912",
+	canoChumbo = "peDeCabra",
+}
+
+local function base(id: string): string
+	return APELIDO[id] or id
+end
+
 -- Baixa (yield) os moldes de uma arma. Seguro de chamar várias vezes e em paralelo.
 function ArmaModelo.carregar(id: string)
+	id = base(id)
 	if moldes[id] or falhou[id] then
 		return
 	end
@@ -178,7 +250,7 @@ function ArmaModelo.carregar(id: string)
 		end
 		local molde = mp :: MeshPart
 		molde.Name = p.nome
-		molde.Size = vx(p.tamanho) -- reescala a malha para o tamanho do manifesto (independe do fator de importação)
+		molde.Size = vx(p.tamanho) * escalaDe(id) -- reescala a malha para o tamanho do manifesto (independe do fator de importação)
 		if p.textura then
 			molde.TextureID = p.textura
 		end
@@ -217,14 +289,15 @@ function ArmaModelo.precarregar(ids: { string }?)
 end
 
 function ArmaModelo.pronta(id: string): boolean
-	return moldes[id] ~= nil
+	return moldes[base(id)] ~= nil
 end
 
 -- Comprimento da arma em studs (0 se desconhecida).
 function ArmaModelo.comprimento(id: string): number
+	id = base(id)
 	local cfg = Malhas[id]
 	if cfg then
-		return cfg.comprimento
+		return cfg.comprimento * escalaDe(id)
 	end
 	local p = PROVISORIO[id]
 	return p and p.tamanho[3] or 0
@@ -249,6 +322,7 @@ end
 function ArmaModelo.criar(id: string, opcoes: Opcoes?): Model
 	local modelo = Instance.new("Model")
 	modelo.Name = id
+	id = base(id)
 	local cabo = Instance.new("Part")
 	cabo.Name = "Cabo"
 	cabo.Size = Vector3.one * DIMENSAO_CABO
@@ -263,11 +337,16 @@ function ArmaModelo.criar(id: string, opcoes: Opcoes?): Model
 		for _, p in cfg.partes do
 			local m = molde[p.nome]
 			if m then
-				soldar(cabo, m:Clone(), vx(p.posicao))
+				soldar(cabo, m:Clone(), vx(p.posicao) * escalaDe(id) + deslocamentoDe(id, cfg.comprimento))
 			end
 		end
 		for nome, pos in cfg.ancoras do
-			anexo(cabo, nome, vx(pos))
+			local extra = if nome == "ApoioEsquerdo"
+					and AJUSTE[id]
+					and AJUSTE[id].apoio
+				then AJUSTE[id].apoio :: Vector3
+				else Vector3.zero
+			anexo(cabo, nome, vx(pos) * escalaDe(id) + deslocamentoDe(id, cfg.comprimento) + extra)
 		end
 		return modelo
 	end
@@ -282,6 +361,22 @@ function ArmaModelo.criar(id: string, opcoes: Opcoes?): Model
 	end
 	if not prov then
 		aviso(id, "arma desconhecida; bloco mínimo")
+		return modelo
+	end
+	local feitas = PARTES_BLOCOS[id]
+	if feitas then
+		for _, d in feitas do
+			local peca = Instance.new("Part")
+			peca.Name = d.nome
+			peca.Size = v3(d.tam)
+			peca.Color = d.cor
+			peca.Material = d.material
+			inerte(peca)
+			soldar(cabo, peca, v3(d.pos))
+		end
+		for nome, pos in prov.ancoras do
+			anexo(cabo, nome, v3(pos))
+		end
 		return modelo
 	end
 	local bloco = Instance.new("Part")

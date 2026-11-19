@@ -346,6 +346,37 @@ function Veiculo.acertar(e: Estado, peca: string, dano: number, rng: () -> numbe
 	return e, res
 end
 
+-- Condução dinâmica (usada pelo client/Direcao; puro para testar) ------------------------------------------------------
+
+-- Taxa de giro (rad/s em torno de Y, esquerda positivo) que um carro de entre-eixos `entreEixos` teria com as rodas em
+-- `anguloGraus` (direita positivo) andando a `velFrente` (studs/s, ré negativa). `fator` > 1 exagera o giro (freio de mão).
+function Veiculo.guinadaAlvo(
+	anguloGraus: number,
+	velFrente: number,
+	entreEixos: number,
+	fator: number,
+	maximo: number
+): number
+	local giro = -math.tan(math.rad(anguloGraus)) * velFrente / math.max(entreEixos, 1) * fator
+	return math.clamp(giro, -maximo, maximo)
+end
+
+-- Correção automática do volante quando o carro desliza de lado: `deslize` = velocidade lateral (studs/s, direita positivo).
+-- Vira para o lado da deriva (contra-esterço); abaixo de `limiar` não faz nada e a correção cresce a partir dele.
+function Veiculo.contraVolante(deslize: number, limiar: number, ganho: number, maximoGraus: number): number
+	local excesso = math.abs(deslize) - limiar
+	if excesso <= 0 then
+		return 0
+	end
+	return math.sign(deslize) * math.min(excesso * ganho, maximoGraus)
+end
+
+-- Está derrapando de forma audível? (o servidor emite ruído de pneu): rápido o bastante e com deslize lateral grande.
+function Veiculo.derrapando(velocidade: number, deslizeLateral: number, cfg: any): boolean
+	local d = cfg.derrapagem
+	return velocidade >= d.velMin and math.abs(deslizeLateral) >= d.deslizeMin
+end
+
 function Veiculo.danoOcupante(deltaV: number, cfg: any): number
 	local d = cfg.batida.danoOcupante
 	if deltaV < cfg.batida.limiarDeltaV then

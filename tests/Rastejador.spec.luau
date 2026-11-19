@@ -1,4 +1,4 @@
-local Cfg = require("../src/shared/Config/Rastejador")
+local Cfg = require("../src/shared/Config/PresetsMonstro").quadrupedeArrombador
 local R = require("../src/shared/Regras/Rastejador")
 local util = require("./util")
 

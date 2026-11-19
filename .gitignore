@@ -19,3 +19,6 @@ __pycache__/
 *.blend1
 *.rbxl
 *.rbxlx
+
+# Pacote de terceiros (nao redistribuir)
+PsxFlashLights.zip

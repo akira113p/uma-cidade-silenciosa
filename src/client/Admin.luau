@@ -411,16 +411,51 @@ local function construir(): ScreenGui
 	end
 	destacarQuantidade()
 
+	local novas: { [string]: boolean } = {}
+	for _, id in CfgAdmin.armasNovas do
+		novas[id] = true
+	end
+	for _, id in CfgAdmin.armasGoldBright do
+		novas[id] = true
+	end
 	local itens = secao(lista, 102, 122)
 	local ids = {}
 	for id in CfgItens.itens do
-		table.insert(ids, id)
+		if not novas[id] then
+			table.insert(ids, id)
+		end
 	end
 	table.sort(ids)
 	for i, id in ids do
 		botao(itens, CfgItens.itens[id].nome, i, function()
 			pedir("dar", { id = id, qtd = quantidade })
 		end)
+	end
+
+	-- Armas novas: separadas da lista geral, abaixo dela. Arma = 1; munição = 1 pente inteiro (ignora a quantidade escolhida acima).
+	rotulo(lista, "Armas novas (pane, engatilhar Q, checar munição Z)", 110)
+	local secaoNovas = secao(lista, 111, 150)
+	for i, id in CfgAdmin.armasNovas do
+		local item = CfgItens.itens[id]
+		if item then
+			local qtd = if item.tipo == "municao" then (item.pente or 1) else 1
+			local texto = if item.tipo == "municao" then string.format("%s (1 pente)", item.nome) else item.nome
+			botao(secaoNovas, texto, i, function()
+				pedir("dar", { id = id, qtd = qtd })
+			end)
+		end
+	end
+
+	-- Gold Bright: seção própria, abaixo das armas novas (viewmodel e animações do jogo original; mira no botão direito).
+	rotulo(lista, "Gold Bright (botão direito mira, Q engatilha, Z checa, R recarrega)", 120)
+	local secaoGB = secao(lista, 121, 150)
+	for i, id in CfgAdmin.armasGoldBright do
+		local item = CfgItens.itens[id]
+		if item then
+			botao(secaoGB, item.nome, i, function()
+				pedir("dar", { id = id, qtd = 1 })
+			end)
+		end
 	end
 
 	return gui

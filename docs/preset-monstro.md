@@ -69,3 +69,13 @@ O preset funciona hoje só para uma espécie. Para reaproveitar de verdade:
 - Parede dura descartada por `golpesMax` baixo deixava o monstro parado em prédio de concreto (causa medida em 2026-11-05).
 - Reprodução do clipe a 1x com velocidade de IA muito maior que a do ciclo faz o pé patinar; medir `nativas` e subir o passo no Blender se passar de 3x.
 - Mais de uma sessão no Studio: um Play alheio foi parado por engano em 2026-11-05; sempre `list_roblox_studios` e confirmar de quem é.
+
+## 7. Corcunda, MonstroPS1 e Florescida (2026-11-14)
+Refeitos no Blender (`refazer_monstros.py`: `<Nome>_v2.blend/.json`, 5 clipes, 30 fps). Perfis em `exportar_rastejador.py` (`perfil_v2`; `TEXTURA_SEGURA` = Corcunda, Florescida; **Esfolado sem perfil**, moderação).
+Comandos por monstro (`--nome corcunda|monstrops1|florescida`): `exportar_rastejador.py --altura <studs>` (5,816 / 5,816 / 6,3971) -> `derivar_repouso_roblox.py` (repouso DERIVADO do manifesto, ver abaixo)
+-> `gerar_anim_rastejador.py` -> `lune run ferramentas/modelos/montar_anim_rbxm.luau aninhado <nome>` -> `enviar_monstros.py --nome <nome> --imagem [--animacoes]` -> `gerar_config_monstros.py`.
+- **`--imagem`** (novo): o PNG sobe como `Image`, então o `assetId` já é o id da imagem (grava `imagemId`); dispensa converter Decal no Studio.
+- **Repouso derivado:** `rest_roblox_bruto.txt` saiu de `derivar_repouso_roblox.py` (regra verificada contra o medido do Rastejador e do Wrapper, erro < 0,005 studs). **Não foi medido no Studio** nestes três: conferir ao importar.
+- Presets `corcunda`, `monstroPS1`, `florescida` (derivados do `quadrupedeArrombador`): `nativas` = `velocidade_nativa_m_s` x `escala_blender_para_fbx` (MEDIDO dos clipes), `golpe.atrasoImpacto` = 0,483 s (clipe).
+  Velocidades = `Config/Monstros.niveis` do nível. Degrau, `raioFolga`, veículo: PROVISÓRIOS.
+- Espécie: `nascerSempre = true` (Florescida) faz nascer com `nivel > nivelAtivoMaximo`.

@@ -1,7 +1,12 @@
 """Exporta o Rastejador (Rastejador_anim_opus.blend) para FBX com esqueleto + manifesto + animacoes em dados.
 
 Uso (da raiz):
-  blender.exe -b --factory-startup -P ferramentas/modelos/exportar_rastejador.py -- --altura 2.908 [--saida "modelos 3d/rastejador"]
+  blender.exe -b --factory-startup -P ferramentas/modelos/exportar_rastejador.py -- --altura 2.908 [--nome rastejador|wrapper|corcunda|monstrops1|florescida] [--saida "modelos 3d/rastejador"]
+
+--nome escolhe o perfil (PERFIS abaixo: entrada .blend, textura, rig, malha, ossos do corpo, nomes dos clipes). Padrao: rastejador.
+Wrapper: desde 2026-11-14 le modelos 3d/wrapper/Wrapper_anim.blend (animar_wrapper.py sobre o MonsterPSX.blend): Idle, Walk, Run, Attack,
+WallSlam, Sonar, Atordoado, Death (sem Scream). Frente = -Y.
+"dados" do perfil = JSON do script de animacao: ciclica, eventos (s) e velocidade nativa por clipe -> manifesto (eventos, nativas_blend).
 
 --altura = altura final em studs (a importacao do Roblox e 1:1 com as unidades do .fbx, medido). Para 1 m com jogador de 1,8 m:
 studs = jogadorStuds / 1,8 (Config/Rastejador) = 2.908.
@@ -25,11 +30,54 @@ import bpy
 from mathutils import Vector
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__) if "__file__" in globals() else ".", "..", ".."))
-ENTRADA = os.path.join(REPO, "modelos 3d", "_ps2", "Rastejador", "Rastejador_anim_opus.blend")
-TEXTURA = os.path.join(REPO, "modelos 3d", "_ps2", "Rastejador", "Monster_1.png")
-MALHA = "monster_monster_1_0"
-RIG = "Rastejador_Rig"
-CORPO = ("Hips", "Spine", "Chest", "Neck", "Head")
+PERFIS = {
+    "rastejador": dict(
+        entrada=os.path.join(REPO, "modelos 3d", "_ps2", "Rastejador", "Rastejador_anim_opus.blend"),
+        textura=os.path.join(REPO, "modelos 3d", "_ps2", "Rastejador", "Monster_1.png"),
+        malha="monster_monster_1_0",
+        rig="Rastejador_Rig",
+        corpo=("Hips", "Spine", "Chest", "Neck", "Head"),
+        acoes=None,  # todas, tirando o prefixo "Rastejador_"
+        prefixo_acao="Rastejador_",
+        dados=os.path.join(REPO, "modelos 3d", "_ps2", "Rastejador", "Rastejador_anim_opus.json"),
+    ),
+    # 2026-11-14 (agente D): clipes refeitos por animar_wrapper.py (sem Scream; com Sonar, Atordoado, Death).
+    "wrapper": dict(
+        entrada=os.path.join(REPO, "modelos 3d", "wrapper", "Wrapper_anim.blend"),
+        textura=os.path.join(REPO, "modelos 3d", "wrapper", "MonsterPSX_Diffuse.png"),
+        malha="MonsterPSX",
+        rig="MonsterPSX_Rig",
+        corpo=("hips", "spine", "chest", "torso", "neck", "head"),
+        acoes=None,
+        prefixo_acao="Wrapper_",
+        dados=os.path.join(REPO, "modelos 3d", "wrapper", "Wrapper_anim.json"),
+    ),
+}
+
+
+# Moderacao (2026-11-14): a Roblox recusou a textura do Esfolado (sangue). Corcunda e Florescida sobem so a versao "_seguro" (sem vermelho).
+# Esfolado fora desta rodada: sem perfil.
+TEXTURA_SEGURA = ("Corcunda", "Florescida")
+
+
+def perfil_v2(nome):
+    """Monstros refeitos por refazer_monstros.py: modelos 3d/_ps2/<Nome>/<Nome>_v2.blend (malha <Nome>, rig <Nome>_Rig, ciclos <Nome>_Idle...)."""
+    pasta = os.path.join(REPO, "modelos 3d", "_ps2", nome)
+    return dict(
+        entrada=os.path.join(pasta, nome + "_v2.blend"),
+        textura=os.path.join(pasta, nome + ("_atlas_seguro.png" if nome in TEXTURA_SEGURA else "_atlas.png")),
+        malha=nome,
+        rig=nome + "_Rig",
+        corpo=("Hips", "Spine", "Chest", "Neck", "Head"),
+        acoes=None,
+        prefixo_acao=nome + "_",
+        prefixo_anim=nome + "_",  # prefixo do .rbxm/Animation (gerar_config_monstros, montar_anim_rbxm)
+        dados=os.path.join(pasta, nome + "_v2.json"),
+    )
+
+
+for _n in ("Corcunda", "MonstroPS1", "Florescida"):
+    PERFIS[_n.lower()] = perfil_v2(_n)
 
 
 def arg(nome, padrao):
@@ -51,11 +99,18 @@ def v3(v):
 
 def main():
     altura = float(arg("--altura", "2.908"))
-    saida = os.path.abspath(arg("--saida", os.path.join(REPO, "modelos 3d", "rastejador")))
+    nome_monstro = arg("--nome", "rastejador")
+    perfil = PERFIS[nome_monstro]
+    CORPO = perfil["corpo"]
+    saida = os.path.abspath(arg("--saida", os.path.join(REPO, "modelos 3d", nome_monstro)))
     os.makedirs(saida, exist_ok=True)
-    bpy.ops.wm.open_mainfile(filepath=ENTRADA)
-    arm = bpy.data.objects[RIG]
-    malha = bpy.data.objects[MALHA]
+    bpy.ops.wm.open_mainfile(filepath=perfil["entrada"])
+    arm = bpy.data.objects[perfil["rig"]]
+    if perfil["malha"]:
+        malha = bpy.data.objects[perfil["malha"]]
+    else:
+        malhas = [o for o in bpy.data.objects if o.type == "MESH" and len(o.data.vertices) > 0]
+        malha = max(malhas, key=lambda o: len(o.data.vertices))
     arm.data.pose_position = "REST"
 
     # dados de repouso (antes de qualquer mudanca)
@@ -77,11 +132,22 @@ def main():
             matrix_local=[[round(x, 6) for x in row] for row in b.matrix_local],
         )
 
+    # dados do script de animacao: ciclica, eventos (s) e velocidade nativa (m/s do .blend) por clipe
+    dados = {}
+    if perfil.get("dados") and os.path.exists(perfil["dados"]):
+        with open(perfil["dados"], encoding="utf-8") as f:
+            dados = json.load(f).get("acoes", {})
+
     # animacoes em dados (basis de cada pose bone, a cada quadro gravado)
     fps = bpy.context.scene.render.fps
     acoes = {}
     for a in bpy.data.actions:
-        nome = a.name.replace("Rastejador_", "")
+        if perfil["acoes"] is None:
+            nome = a.name.replace(perfil["prefixo_acao"], "")
+        else:
+            nome = next((v for k, v in perfil["acoes"].items() if a.name.startswith(k)), None)
+            if nome is None:
+                continue  # take que o jogo nao usa
         q0, q1 = int(a.frame_range[0]), int(a.frame_range[1])
         quadros = []
         for f in range(q0, q1 + 1):
@@ -97,7 +163,8 @@ def main():
                         quat[fc.array_index] = fc.evaluate(f)
                 osso[b.name] = dict(loc=[round(x, 6) for x in loc], quat=[round(x, 6) for x in quat])
             quadros.append(osso)
-        acoes[nome] = dict(fps=fps, quadros=len(quadros), ciclica=nome in ("Idle", "Walk", "Run"), frames=quadros)
+        ciclica = dados.get(nome, {}).get("ciclica", nome in ("Idle", "Walk", "Run"))
+        acoes[nome] = dict(fps=fps, quadros=len(quadros), ciclica=ciclica, frames=quadros)
 
     # no maximo 4 influencias por vertice (limite do Roblox); so na copia em memoria
     for o in bpy.context.view_layer.objects:
@@ -122,7 +189,7 @@ def main():
         eb.head = eb.head * escala
         eb.tail = eb.tail * escala
     bpy.ops.object.mode_set(mode="OBJECT")
-    fbx = os.path.join(saida, "rastejador.fbx")
+    fbx = os.path.join(saida, nome_monstro + ".fbx")
     bpy.ops.export_scene.fbx(
         filepath=fbx,
         use_selection=True,
@@ -137,12 +204,15 @@ def main():
         path_mode="STRIP",
         mesh_smooth_type="FACE",
     )
-    shutil.copyfile(TEXTURA, os.path.join(saida, "Monster_1.png"))
+    textura = os.path.basename(perfil["textura"])
+    if os.path.abspath(perfil["textura"]) != os.path.abspath(os.path.join(saida, textura)):
+        shutil.copyfile(perfil["textura"], os.path.join(saida, textura))
 
     tris = sum(len(p.vertices) - 2 for p in malha.data.polygons)
     manifesto = dict(
-        arquivo="rastejador.fbx",
-        textura="Monster_1.png",
+        arquivo=nome_monstro + ".fbx",
+        prefixo_anim=perfil.get("prefixo_anim"),
+        textura=textura,
         escala_blender_para_fbx=round(escala, 6),
         altura_fbx=altura,
         altura_blend=round(altura_blend, 5),
@@ -153,6 +223,8 @@ def main():
         corpo_blend=dict(min=v3(cmn), max=v3(cmx), tamanho=v3(cmx - cmn)),
         ossos=ossos,
         acoes={k: dict(fps=v["fps"], quadros=v["quadros"], ciclica=v["ciclica"]) for k, v in acoes.items()},
+        eventos={k: d["eventos"] for k, d in dados.items() if d.get("eventos") and k in acoes},
+        nativas_blend={k: d["velocidade_nativa_m_s"] for k, d in dados.items() if d.get("velocidade_nativa_m_s") and k in acoes},
     )
     with open(os.path.join(saida, "manifesto.json"), "w", encoding="utf-8") as f:
         json.dump(manifesto, f, indent=1, ensure_ascii=False)

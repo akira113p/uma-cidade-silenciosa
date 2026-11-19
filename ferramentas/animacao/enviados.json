@@ -1,0 +1,254 @@
+{
+  "contundente_Equip.rbxm": {
+    "sha256": "c1428ddbf1c0b3769f21102fdd31de59dc9d3234b1fd973f4a446ab7dca3b0c8",
+    "assetId": 137085179338467,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "contundente_Golpe.rbxm": {
+    "sha256": "e30d6c7e047decb06341b513d6ca734fe7df988a358dbb1fcaee9b8dd0d8f349",
+    "assetId": 126532690633723,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "contundente_Idle.rbxm": {
+    "sha256": "5a0049bf8eb0a6ca58e90e0abacd49f32cda4b1c2db05ce6d92a45a16ec207f1",
+    "assetId": 96132612869599,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "escopeta_Equip.rbxm": {
+    "sha256": "6d936fd111640e22dfc552e455adea4f8df4b03a350b945e24c8026e62525eb7",
+    "assetId": 117234970026723,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "escopeta_Fire.rbxm": {
+    "sha256": "ce1c24df45948562af111744a824db8a699eec04fbd602121d1b0c4311b8181c",
+    "assetId": 120742801259082,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "escopeta_Idle.rbxm": {
+    "sha256": "70feb82b008fb2dae63abb8250a9622f13906e90bc34784d33e9979f5e1b8a5f",
+    "assetId": 99887362462082,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "escopeta_RecargaCartucho.rbxm": {
+    "sha256": "d800087753257928f5a59cab26b8a59f92f251eece834a24358461f147d3abba",
+    "assetId": 80902485742783,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "escopeta_RecargaFim.rbxm": {
+    "sha256": "9ff8ca84791fef14e554c2f08123e124808a998ba902d3af32aec042f5b26be7",
+    "assetId": 102309318926643,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "escopeta_RecargaInicio.rbxm": {
+    "sha256": "042106c49714c1b04bbfa098e9ae34ea0964e9ee9bcfe503f017732fddb4b1bd",
+    "assetId": 135483812803237,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "faca_Equip.rbxm": {
+    "sha256": "a8a9dd5e0c876640909d7dea6f23ae6585ff4c48077ea4e08d1b5df3edb1c9f8",
+    "assetId": 110454742289828,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "faca_Golpe1.rbxm": {
+    "sha256": "cf5de82a45706487a543bc796857981cddf39a28211ecf882367309b904a2076",
+    "assetId": 114257853122331,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "faca_Golpe2.rbxm": {
+    "sha256": "257e0b4949e75d1356caf485ef9acd26fed6ab44e180a72f15ebc0001b40e3f9",
+    "assetId": 118060518579409,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "faca_Idle.rbxm": {
+    "sha256": "f3c5620e5e412578046adf2c96d096cd65da5567e70ca8c1a6ee01a7f185217f",
+    "assetId": 101871924144134,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "fuzil_Equip.rbxm": {
+    "sha256": "70cfd5b366b5b14306bc5db434b9f450ed6cbb5db59c3b959ca7336608f26d15",
+    "assetId": 97241711765436,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "fuzil_Fire.rbxm": {
+    "sha256": "a14fbcf10370c6e5c17f500db6ea50161355bb6e37e9a93ae340a7609a7846ea",
+    "assetId": 82288537979970,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "fuzil_Idle.rbxm": {
+    "sha256": "dbb7f401a51f665c6f0f6367ae6378bf605e26529c16041c2654e2fd884f99a6",
+    "assetId": 139485065440064,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "fuzil_Reload.rbxm": {
+    "sha256": "59cb5dec834cfe43b3380acb37eb80d351943859dd49c7b6b204736f0947b08c",
+    "assetId": 124439465626808,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "lancador_Equip.rbxm": {
+    "sha256": "b365aba2a82ead6ecc0f88731fd7efb1e05f600dde09c088151911597e09f397",
+    "assetId": 125374873284508,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "lancador_Fire.rbxm": {
+    "sha256": "ea461b312ad6799affa4fce255a363021178b58b8a7f8d946df7d8776ee1f704",
+    "assetId": 106670382730504,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "lancador_Idle.rbxm": {
+    "sha256": "15747376886c736217ad12111ff07a11543561c76351435996a767a7e50a2198",
+    "assetId": 109890057933498,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "lancador_Reload.rbxm": {
+    "sha256": "0867a84f7839247b86535d102f43ff5828e66dd63390857136e6cfce4dc79d3e",
+    "assetId": 84734512190551,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "machado_Equip.rbxm": {
+    "sha256": "c6fceb6067c832727be11c3652ae030eea9d0c55c5c38cafe2c0e0b8d4f7412d",
+    "assetId": 98592872201515,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "machado_Golpe.rbxm": {
+    "sha256": "1d2f6afcc3852da9989f4720861b864b60ede5cf20f9559f9599320aabd37967",
+    "assetId": 127650366223085,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "machado_Idle.rbxm": {
+    "sha256": "fe69f91b749d251bd2a5c50f1f95df9165cb88679567d17dd5bc131c5f3de964",
+    "assetId": 129723604495884,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "pistola_Equip.rbxm": {
+    "sha256": "28a4ed8b8703f066bba1ca37734eba4a241636ee50cdd119c561cf7909dc6ead",
+    "assetId": 106703958622086,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "pistola_Fire.rbxm": {
+    "sha256": "cd7c6d7ff0f9982ece9e4cd5eed0a687d070c6654c0abe3c887dc7ed139f0d66",
+    "assetId": 73541804621761,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "pistola_Idle.rbxm": {
+    "sha256": "8736a86a31d4a2bed1e93cc940480bb990e14e3796800c9ce91292dc0c29a4c0",
+    "assetId": 111732734924259,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  },
+  "pistola_Reload.rbxm": {
+    "sha256": "0fd9465eee1136d2e4bd1271dc2aad4a6f210d7ad10bdd1cc9f5df1336157166",
+    "assetId": 135608394360996,
+    "tipo": "Animation",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Approved"
+    }
+  }
+}

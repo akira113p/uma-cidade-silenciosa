@@ -71,12 +71,12 @@ def chamar(req):
         raise RuntimeError("HTTP %d: %s" % (e.code, e.read().decode("utf-8", "replace")[:500]))
 
 
-def enviar(caminho, chave, criador):
+def enviar(caminho, chave, criador, descricao="Veiculo do jogo Uma Cidade Silenciosa", nome=None):
     tipo_asset, tipo_mime = TIPOS_ARQUIVO[caminho.suffix.lower()]
     pedido = {
         "assetType": tipo_asset,
-        "displayName": ("Cidade " + caminho.stem)[:50],
-        "description": "Veiculo do jogo Uma Cidade Silenciosa",
+        "displayName": (nome or "Cidade " + caminho.stem)[:50],
+        "description": descricao,
         "creationContext": {"creator": {"userId": str(criador)}},
     }
     ctype, corpo = multipart({"request": json.dumps(pedido)}, caminho.name, tipo_mime, caminho.read_bytes())

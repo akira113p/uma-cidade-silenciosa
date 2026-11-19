@@ -1,4 +1,4 @@
-
+﻿
 ## P7 · Armas e PvP
 
 - **P6 (Inventario) / ArmaSlot**: o servidor de Armas escreve também o atributo `Player.ArmaSlot` (slot do inventário da arma equipada, `nil` sem arma). O evento `Inventario` leva `equipado: number?`: P6 pode ler esse atributo em vez de guardar estado próprio. Armas usa `Inventario.aoMudar` para desequipar sozinha se o item sair do slot (largou, morreu, trocou).
@@ -163,6 +163,7 @@ Contrato e divisão em `docs/mapa-v2.md`. 14 módulos em `ferramentas/mapa/` (es
   carro). `client/Camera.luau` não foi editado.
 
 ## Veiculos
+- **2026-11-14 (freio de mão no Shift, farol no L, condução ágil, vidros locais invisíveis na cabine):** escrito sem Studio, nunca tocado em Play. Detalhes e o que afinar em `docs/veiculos.md` ("Freio de mão, farol e condução dinâmica"). Não passou pelo Studio: nada "sem vir do repo".
 - **V2 (servidor, 2026-11-03)**: `server/Veiculos.luau`, `server/VeiculoModelo.luau` + edições em `Rede` (`LigarMotor`, `Buzina`),
   `init.server` (`Veiculos` depois de `Loot`), `Sons` (`Sons.loop`, aviso de som sem ids uma vez por nome), `Loot`
   (`registrarCompartimento`), `Armas` (`ehPecaVeiculo` em `ehAlvo` e em `acertar`, require preguiçoso de `Veiculos`), `Vida` (`"batida"`).
@@ -267,6 +268,11 @@ Peças que o modelo não permite separar (todas em `Carroceria`, registradas aqu
 - **Implementação (Fases A/B):** vão de bala/corte em parede parte do chão da peça (contrato); parte pequena demais ou não-Block é destruída inteira; `velImpulso` do
   atropelo (30) foi inventado para o "acima de um limite" do §6.3; **Atualizado em 2026-11-05 (conforme `docs/destruicao.md` § Estado, ~l.373):** Fases A, B e C feitas e testadas no Studio em 2026-11-04 (place antigo `11042026_1`, Play, servidor e cliente; arma real, Rastejador abrindo vão, atropelo, console sem erro); `MonstroArrombar` migrado e `abrirBuraco`/`VidaParede` removidos. O `velImpulso` do atropelo continua sendo número inventado. **Ainda NÃO testado em jogo** (mesma fonte): carro real dirigido por jogador, explosão, FPS com dezenas de peças danificadas, dano do atropelo no monstro real, grupo bomba/tanque, telhado/laje, marreta.
 - **Teste no void (2026-11-05): resolvido.** O usuário aprovou; `Destruicao.classificar`, `Monstros.atualizarConstrucoes` (atenuação de ruído) e `MonstroArrombar` usam `Shared/Raizes.obter` (Mapa + `Workspace.ZonaTeste.Construcoes/Props`, sem cache; regra `Regras/Raizes`, `tests/Raizes.spec.luau`). Destruição, arrombar e ruído com parede agora se testam na zona. Ainda fora: `Veiculos.coletarProps`, `Loot` e `Combustivel` (varrem só `Mapa`).
+- **Destruição v2 (2026-11-16, pedido do usuário: tiro e carro "realmente quebrar", poste cai e faz barulho, vão do carro com forma de carro, furo de espingarda):**
+  feito no código, `checar.ps1` verde, **nunca rodou no Studio** (esta sessão não era a dona). Contrato em `docs/destruicao.md` §11. Conferir em Play na ZonaTeste: furo de pistola/espingarda em
+  madeira e tijolo, carro real atravessando parede (forma do vão), poste caindo (junta na base, som ao bater, volta a ancorar deitado), FPS com dezenas de furos.
+  Decidir/conferir: (a) `client/Filtro/FiltroPostes` e a luz do poste deitado (a `PointLight` continua acesa e o filtro pode não saber que o poste caiu); (b) poste caído bloqueia a rua
+  (fica colidindo); (c) `PosteCai` reaproveita o som de `CarroBatida` até achar um de metal caindo; (d) `posteCai` 82 dB é chute.
 - **Marreta:** não existe item. Entra como arma nova (`Config/Armas` + `Config/Itens` com `tipoDano = "marreta"`) sem mudar o sistema.
 
 ## Rastejador (2026-11-04)
@@ -378,6 +384,7 @@ A4 (animação do corpo, 3ª pessoa) — NADA visto no Studio (o place `kay_113p
 - **Sobras de teste:** a bancada de FK está em `ferramentas/animacao/bancada.luau` (colar como ModuleScript em ServerStorage no Studio; usa `ServerScriptService.Server.Aparencia.revestir`); `screen_capture` aceita `camera_position`/`look_at_position`. O Studio caiu com `workspace.Bancada` e `ServerStorage.Bancada` criados em edição (se o place for restaurado sem salvar, sumiram; se salvou, apagar os dois).
 
 ## Combustível (2026-11-05, contrato em `docs/combustivel.md`)
+- 2026-11-14: mangueira 32 studs + botão "Carregar carro" (tecla G a pé, evento `CarregarCarro`) + carro/partida mais silenciosos (ver `docs/combustivel.md` §12). Testado em Play: pegar mangueira, G pluga na van (11,2 → 17,4 L), G solta. Falta: ouvir o som, afinar `alcanceCarregar`, ver a corda de 32 studs no visual.
 Escrito por 5 agentes Sonnet (S1 regras/config, S2 servidor do carro, S3 posto/mangueira/mão, S4 cliente do carro, S5 cliente da mangueira); `pwsh scripts/checar.ps1` verde. **NADA testado no Studio ainda.**
 - **Para ver no Studio (nada disto foi visto):** posição/cor da `Tampa` nos 6 tipos e com malha (sedan calculado em ≈(-4,1; 0,25; 6,5)); `Bocal` da bomba e a mangueira Verlet (cilindro ao longo da corda, pontas, chão, 1ª pessoa: a mão pode estar invisível);
   prompts E/F da bomba sem sobrepor (S3 pôs `UIOffset (0,-70)` no F); etiqueta de gasolina sobre a Tampa em 1ª/3ª pessoa; medidor na `Cabine` (pode ficar tapado pelo volante) e o "E/F" no `SurfaceGui`; botões touch (grade 2×2); `Seat:Sit` ao trocar de banco com 2 clientes; `irPosto`/`darGasolina`/`estadoCombustivel` (Teste).
@@ -425,3 +432,110 @@ Contrato em `docs/filtro-ditherdown.md`. Branch `filtros-ditherdown`, tudo nasce
 - **Afinar números por captura:** alfas do Dither, mínimos das scanlines, período e velocidade das Bandas, `offsetMax` do VHS, forças padrão; o espaço de cor do projeto Unity original é desconhecido.
 - **Pixelado indisponível:** o Roblox não tem shader de tela, leitura dos pixels do frame nem escala de render, então não dá para reduzir a resolução do 3D; a linha aparece desabilitada com o motivo. Tampouco há quantização por pixel (o Dither é só o padrão Bayer sobreposto).
 - **Seletor:** os cliques de um preset tocam o som de clique uma vez por preferência (o `pedir` toca sempre); aceitável, ajustar se incomodar.
+### Áudio PSX (2026-11-05, contrato em `docs/audio-psx.md`)
+- **Fora do repo:** `build/audio/` (46 OGG convertidos, 37,98 MB, gitignored; refazer com `python ferramentas/audio/converter_psx.py`) e a pasta de origem `C:\Users\cerfr\Downloads\psx sttuff\1-audio\`.
+- **Upload não feito** (precisa do aval do usuário e da conta liberada): `python ferramentas/audio/enviar_audio.py` (dry-run antes) e `python ferramentas/audio/gerar_config_audio.py`. Até lá `Sons.luau` usa os ids antigos.
+- **Sem teste de ouvido:** `PassoTerra`/`PassoPedra`, carpete = Dirt a 0,3, grama alta = Grass a 0,7 com variação 0,1; dB de `terra` (-3) e `pedra` (+2) são palpites para o playtest (`docs/calculos.md`).
+- Os OGG de Stairs sobem mas ficam sem uso (`SonsPSX.passos.Stairs`): falta marca de escada no mapa. Glow, Echo, Lost e Drift não foram convertidos (sobras para perigo/monstro).
+- Ids antigos de passos/ambiente continuam no `Sons.luau` como fallback; apagar depois de o usuário ouvir e aprovar.
+- Footsteps sem licença declarada: confirmar antes de publicar o jogo.
+
+### Malhas dos personagens (Parte M, 2026-11-06, contrato em `docs/personagens.md` §4 "Malhas")
+- FBX de 15 malhas gerados para office_worker e survivor_woman (CC BY 4.0) e, sem entrar no config, villager_man/woman e male_casual (licença desconhecida) em `modelos 3d/personagens/`; `PersonagensMalhas.luau` gerado com tudo `false`. Nada enviado (403). Falta: enviar como Model, medir pivô, ler MeshIds, `enviados.json` + `gerar_config_personagens.py`; ver se o Roblox aplica cor de vértice; decidir se o Lua estica por peça ou escala o conjunto (caixas nativas ≠ R15).
+
+### Seletor de personagem (Parte S, 2026-11-06, contrato em `docs/personagens.md` §4 "Parte S")
+- Escrito e com `checar.ps1` verde nos meus arquivos, **nada visto no Studio**. `CharacterAutoLoads = false` (em `default.project.json` e `build.project.json`): ninguém nasce antes de escolher; testes que esperavam o nascimento automático usam `Teste:Invoke("personagem", nil, n)`. A dona do Studio confere: 1º nascimento em pad do Spawn, seletor em 4:3/celular, prévia 3D, respawn manual e botão "Trocar personagem" na morte, `CreateMeshPartAsync` com a string de MeshId (pode exigir `Content`), `Server/Admin` ação `visual` não limpa `MeshPart`.
+- Malhas: escala uniforme do conjunto por `alturaTotalStuds` e posição por `centroMontagem` a partir da `HumanoidRootPart` (ver `docs/personagens.md` Estado, decisão 5); falta ver no Studio (lado +X/-X, altura dos pés, vãos nas juntas, `CreateMeshPartAsync`). Villagers/male_casual só entram no elenco com a licença confirmada.
+
+### Primeira pessoa com rig e clipes (Parte A2, 2026-11-06, contrato em `docs/personagens.md` §4 "Primeira pessoa")
+- `BracosViewmodel` (rig R15 mínimo preso à câmera, tocando os clipes de `Animacao`) escrito e com os testes puros verdes, **sem ver no Studio**. A dona do Studio confere: `Animator` num Model filho de `CurrentCamera`, `RegisterKeyframeSequence` + `LoadAnimation` em runtime, onde os braços aparecem (calibrados para o Cabo cair em `ArmasVista.classes[c].base` no `Idle`), IK da esquerda, braço esquerdo só na recarga em arma de uma mão. Se algo falhar o plano B de blocos entra sozinho, com `warn` único.
+- Item na mão em 1ª pessoa agora depende do clipe `corpo/mao/SegurarUmaMao` (A1); sem ele nenhum item aparece, como antes. Decidir qual braço o clipe anima e se a lanterna na esquerda precisa de clipe próprio.
+- Atenção a quem mexer em `PersonagemVisual.criarParte` com malhas: ela pode esperar o download; o viewmodel não pode esperar no render, então usa blocos de cor até `BracosViewmodel.aquecer` terminar (a malha só aparece na reconstrução seguinte, ex.: próximo equipar).
+
+### Animações de corpo (Parte A1, 2026-11-06, contrato em `docs/personagens.md` §4 "Animações")
+- Escrito e com `checar.ps1` verde, **nada visto no Studio**. 17 clipes novos em `assets/animacoes/corpo/` montados em runtime (`Shared/Animacao`, sem upload). Conferir no Studio: `RegisterKeyframeSequence` + `LoadAnimation` no cliente, prioridades (carro/mão Action2, ações Action3, Morte Action4), replicação, o corpo caindo no `Morte` (raiz -2,3 studs é palpite) e o agachar do `Pegar`.
+- **Mudanças em arquivos de outras áreas (uma linha cada):** `server/Vida.luau` `BreakJointsOnDeath = false`; `server/Armas.luau` atributo `Player.GolpeSeq`; `default.project.json` e `build.project.json` `Shared.AnimacoesDados -> assets/animacoes`; `client/init.client.luau` linha `AnimacaoCorpo`.
+- `Pegar`/`Largar` no jogador local são heurística (evento `Inventario` + `workspace.ItensChao` perto); trocar por sinal se `ItensChaoCliente`/`InventarioUI` passarem a emitir um. Agachar continua procedural (sem clipe). Outros jogadores não têm o IK da mão esquerda.
+- `ferramentas/animacao/montar_corpo.luau` grava `build/anim_corpo/*.rbxm` para enviar quando a conta sair do 403 (o `enviar_animacoes.py` ainda lê só `build/anim_armas`: estender e preencher `Config/AnimacoesCorpo.animacoes` quando for enviar).
+
+## Envio e integração no Studio (2026-11-13)
+- Chave Open Cloud nova no `.env`; a variável de ambiente do Windows `ROBLOX_OPEN_CLOUD_KEY` (chave antiga) tem prioridade sobre o `.env`: apagar ou atualizar. Moderação NÃO era o problema (o 401 era chave inválida).
+- Enviado e ligado no jogo (MeshId lido no Studio com `InsertService:LoadAsset`): 9 armas (`Config/ArmasMalhas`), `office_worker` (`Config/PersonagensMalhas`), 28 clipes de arma (`ArmasAnim`) e 17 de corpo (`AnimacoesCorpo`).
+- Fora por decisão: `survivor_woman` (pontinhos rosados na textura, olhar antes), `peDeCabra` (faixa vermelha na textura), `faca`, villagers e `male_casual` (licença).
+- O R15 deste place usa **AnimationConstraint** (não Motor6D) em todas as juntas. `BracosViewmodel` e `Movimento` (agachar) só aceitavam Motor6D: corrigidos para aceitar os dois. Agachar ainda NÃO foi visto funcionando.
+- `PersonagemVisual`: `CollisionFidelity`/`RenderFidelity` só podem ser dados na criação da MeshPart (`CreateMeshPartAsync` com opções); escrever depois dá erro de capability.
+- Viewmodel: o deslocamento da malha do braço é medido na pose de repouso (cadeia de juntas), senão sai errado com o clipe tocando.
+- Falta ajustar na 1ª pessoa: a mão da malha não fica na empunhadura da arma (a arma está certa; o braço de malha tem outras proporções que o R15). Ajustar `Config/ArmasVista.rig` / posição do Cabo por classe.
+- Texturas em "Reviewing" não carregam até o Roblox aprovar (aparece "No asset content representation"); as armas e o `office_worker` já carregaram.
+- Teste de UI: o clique simulado no botão Confirmar não dispara o `Activated`; Enter funciona.
+
+## Corcunda, MonstroPS1, Florescida, Esfolado (2026-11-14)
+Enviado (Open Cloud, sem Studio: **nenhum place oficial estava aberto**, só `teste-filtros.rbxl`, então a sessão NÃO escreveu no Studio nem testou em Play):
+- Corcunda: modelo 83181162241062, textura (Image, segura, Approved) 125972263271742; clipes Idle 126705685075497, Walk 127706882446156, Run 82427937169158, Attack 138211862077034, Death 104689901091543.
+- Florescida: modelo 113860362783014, textura (Image, segura, Approved) 128840723426490; Idle 121389882359411, Walk 84091338479906, Run 87952059832101, Attack 122495672894711, Death 110077999764273.
+- MonstroPS1: modelo 82098452856067 (já aprovado); clipes Idle 72039337975288, Walk 87451285750869, Run 125675285725360, Attack 83517615297153, Death 132303928876511.
+  **Sem textura no Config**: a imagem aprovada foi enviada como Decal (74873188512456) e o id da imagem só sai por `InsertService:LoadAsset(decal)` no Studio (assetdelivery pede login). Fazer no Studio, gravar `imagemId` em `modelos 3d/monstrops1/enviados.json`, rodar `gerar_config_monstros.py`. (Não reenviar a imagem.)
+Pendente, quando houver Studio no place oficial (PlaceId 135860309517450):
+1. Importar os três, medir o repouso dos ossos (`rest_roblox_bruto.txt` é DERIVADO) e comparar com `derivar_repouso_roblox.py --conferir`; se diferir, refazer `gerar_anim` + `montar_anim_rbxm` + `enviar_monstros --animacoes` + `gerar_config_monstros`.
+2. Checklist do `docs/preset-monstro.md` §5 na ZonaTeste (escala, 5 clipes por `screen_capture`, patinação, degrau, console; Florescida: casa fechada e carro). **Nada disso foi testado**; os clipes nunca foram vistos tocando.
+3. PROVISÓRIOS: alturas (2,0 / 2,0 / 2,2 m), `degrau.andar` (2,7 / 2,4 / 3,0), `raioFolga` e `veiculo` da Florescida, arrombar da Florescida (números do Rastejador). Walk da Florescida a 8 studs/s passa de 3x e patina ~10%; Walk do MonstroPS1 a 6 studs/s roda a 2,5x.
+4. Corcunda e MonstroPS1 não têm `arrombar`/`veiculo`: com portas fechadas só entram por onde passa o navmesh. Florescida (nível 2) nasce junto do nível 1: mais forte (vida 200, dano 35).
+5. A textura segura do Corcunda tem um rosto pixelado minúsculo e escuro (~10 px, não é foto); aprovada pela moderação.
+**Esfolado:** continua em blocos (sem `malha`), sem nenhum asset. Espera uma textura que passe na moderação (a candidata `modelos 3d/_ps2/Esfolado/Esfolado_atlas_seguro.png` não foi aprovada pelo usuário). Não referenciar o modelo 80702343660137 nem o decal 139636577622625.
+No place sem vir do repo: nada novo (nenhuma escrita no Studio).
+**Atualização 2026-11-14 (depois do 1º playtest do usuário: MonstroPS1 sem textura e com animação ruim; Florescida tem de ser gigante e forte):**
+- MonstroPS1: textura ligada (id da imagem 130533141359461, tirado do Decal por `InsertService:LoadAsset` no Studio). Repouso **medido** no Studio (monstro parado): o centro do MeshPart fica 0,151 stud em x fora do x=0 do Blender (braços baixados deixam a caixa assimétrica); `gerar_anim_rastejador.py` agora acha esse deslocamento pelos ossos raiz e corrige (erro do repouso 2e-5). Clipes refeitos (tronco curvado, braços pendurados com as lâminas, corrida com braços para trás): Idle 117430542161491, Walk 100239684602901, Run 71054830237765, Attack 73573965582588, Death 98625933718320. Modelo o mesmo (82098452856067).
+- Florescida: 5,5 m = 16 studs, nível 3 (vida 600, dano 70, Calmo 10 / Caça 27). Modelo novo 123431633584876; clipes Idle 117464033342945, Walk 71694210511855, Run 95599350033205, Attack 82278693254202, Death 119237674809248. Repouso derivado (o derivado bateu com o medido no tamanho 2,2 m). Degrau, arrombar e veículo escalados por 2,75: **PROVISÓRIOS**. Um corpo de 16 studs não cabe em casa nenhuma: conferir se ela arromba prédio inteiro ou fica presa.
+- Corcunda: o repouso medido em 2026-11-14 veio de um monstro em movimento (a medida de `WorldCFrame` dos filhos inclui o `Transform` dos pais), então não vale; medir com o monstro parado.
+- Ainda não visto tocando no Studio pela IA: o usuário viu em Play. Para os números novos valerem, Stop + Play (o Rojo está servindo).
+
+## Som v2 (2026-11-14, contrato em `docs/som.md`)
+Fases A (regras + Config), B (servidor: emitir e ouvir), C (detritos, esbarrões, item caindo) e F (segurar a respiração) escritas e com `checar.ps1` verde. **Nada foi testado no Studio** (fase D) nem em Play: a sessão que escreveu não era dona do Studio. Não mudou nada em `Workspace.Mapa`/`mapa/Mapa.rbxm`; os detritos nascem em runtime em `workspace.Detritos` (e, no teste, em `ZonaTeste.Detritos`).
+**No place sem vir do repo:** nada.
+
+### Sons sem id (catálogo `Config/Sons`, `ids = {}`; `Sons.tocar` avisa uma vez e segue; o ruído e o HUD funcionam sem o áudio)
+`PassoVidro`, `DetritoVidro`, `DetritoLata`, `DetritoLataRolar`, `DetritoGarrafa`, `DetritoFolhas`, `DetritoGalho`, `DetritoEntulho`, `DetritoTabua`, `EsbarrarMadeira`, `EsbarrarMetal`, `EsbarrarVidro`, `EsbarrarEstofado`, `EsbarrarPiano`, `EsbarrarVeiculo`, `Arfar`, `SoltarAr`. `Coracao` já tinha id e o minigame o reaproveita (mais rápido com a proximidade). O **item caindo** emite ruído mas **não toca nenhum som** (a doc não nomeia um; faltam sons por classe: metal/vidro/macio/padrão). O Corcunda imita os tipos novos com `DetritoLata`, `EsbarrarMadeira`, `CartuchoCai` e `SoltarAr` (`PresetsMonstro.corcunda.habilidades.emboscada.sons`).
+
+### O que o Som v2 não fez por causa da lista "Pode mexer" (§9): precisa de decisão ou de outra sessão
+1. **`Sons.tocar` com `bandas`** (§7.3): `server/Sons.luau` não está na lista. Hoje os sons 3D continuam com `RollOffMaxDistance` pelo `db` (= max das bandas), o comportamento de antes. Para usar `Som.alcanceEvento(bandas, ...)` basta `opcoes.bandas` em `Sons.tocar` e o `Ruido` passar `bandas` (poucas linhas).
+2. **`server/init.server.luau` e `client/init.client.luau`** não estão na lista: `Detritos`, `Obstaculos` e `Respiracao` (servidor) são iniciados pelo `Ruido.iniciar`, e `RespiracaoMinigame` (cliente) pelo `HudSom.iniciar`. Funciona, mas o certo é listá-los nas `ORDEM` e tirar a partida de dentro do Ruido/HudSom.
+3. **UI do minigame sem a skill `ui-roblox`** (sem spec JSON nem preview): a tela é montada por código em `client/RespiracaoMinigame.luau` (barra, zona, marcador, faixa de tensão, vinheta de 4 bordas com `UIGradient`, dica de 1 linha na 1ª vez, botão de toque "Segurar" pelo `ContextActionService`). Refazer pela skill se o usuário quiser o padrão visual dela.
+4. `Percepcao.estimar` fica como está: o raio do erro por espécie/banda entra como "distância efetiva" (`raioErro / erroPorDistancia`), sem mexer em `Regras/Percepcao`.
+5. `MeuRuido` leva como 4º argumento a **chave do rótulo** (o `dominante` se tiver rótulo em `Config/Som.medidor.rotulos`, senão o `tipo`), não o `dominante` cru: o `dominante` do esbarrão é a classe, e o HUD precisa de "esbarrão!". `RuidoDebug` ganhou o 4º argumento `banda` (cor do disco).
+
+### Testes de Studio da fase D (só a dona do Studio, em Play na `ZonaTeste`, skill `teste-no-void`)
+1. `ServerStorage.Teste:Invoke("lista")` mostra `audicao`, `detritos`, `contardetritos`, `respiracao`, `custoobstaculos`. `Invoke("audicao")` imprime o alcance de cada espécie (agachado/andar/correr, concreto, ambiente atual) para comparar com a tabela da §8 (noite: referência 12/36/190, Rastejador 9/29/153, Wrapper 6/18/98, Corcunda 18/56/292, MonstroPS1 7/23/124, Florescida 5/23/85).
+2. Andar, correr e agachar perto de um Rastejador e conferir a distância em que ele reage (o HUD mostra o rótulo: passo, equipamento, respiração, mato).
+3. `Invoke("detritos", nil, 2)`: pisar em cada tipo e ver o HUD ("vidro!", "lata!"...); lata chutada anda 2 a 5 studs e, correndo, faz o 2º barulho 0,6 s depois; garrafa correndo vira vidro; galho some; folhas e entulho ficam. Depois apagar `ZonaTeste` (leva os detritos junto) e conferir que `workspace.Detritos` não ganhou nada do teste.
+4. Correr contra uma cadeira e um arquivo (monte-os em `ZonaTeste.Construcoes` com o atributo `Movel`): HUD "esbarrão!". Andando, só 25% das vezes.
+5. Largar uma lata/garrafa/arma pelo inventário e ver o monstro ir ao ponto do pouso; morrer com 5 itens: no máximo 4 sons.
+6. Pulso do Rastejador com o jogador andando e agachado (agachado não é sentido pelo chão; andando até ~25 studs); MonstroPS1 raspando (dá para chegar mais perto).
+7. `Invoke("respiracao")`: abre o minigame com um monstro fictício a 8 studs. Conferir: F segura (e o botão "Segurar" no celular), a faixa estreita quando a proximidade sobe, o fôlego (10 + 8 × estamina/100 s) acaba com "soltar o ar" (28 dB), errar = "arfar!" (58 dB, estamina −10), andar fecha sem som, vinheta, áudio abafado e batimento. Com monstro de verdade em Investiga a ≤ 12 studs (jogador agachado/parado) o minigame abre sozinho; Caça fecha.
+8. Console sem erro: `Ruido`, `Monstros`, `Detritos`, `Obstaculos`, `Respiracao`, `HudSom`, `RespiracaoMinigame`.
+
+### Números a medir / escolhidos pelo escritor (PROVISÓRIO, todos em `Config/`)
+- Tudo marcado PROVISÓRIO na doc (§3 a §7, §13). Os que **a doc não dava** e o escritor escolheu: `detritos.tipos.<x>.raio` (distância do pé: vidro 1,0, lata/garrafa 0,5, folhas 1,5, galho 0,6, entulho 1,0, tábua 1,2), tamanho/cor/material de cada detrito, `detritos.partilha` (cidade 40%, vila 20%, fábrica 15%, floresta 25%; planície e posto da guarda não recebem), `detritos.dentroFracao` (60% dos detritos de cidade/vila/fábrica nascem dentro de prédios), a semente 20261114, a posição do som do esbarrão (centro da caixa), `vegetacao.caixaBaixa` (1,6 × 1,5 × 1,6 ao agachar/deitar), os pesos do lança-foguetes (6 kg), do míssil (2 kg) e dos recipientes vazios (garrafa 0,2 / galão 0,5), e a barra de cereal em 0,4 como o resto da comida.
+- A doc diz que sem carga e descansado o alcance de referência "fica igual ao de hoje"; dá ~11 / 36 / ~190 a 195 (hoje 11 / 36 / 200) porque a respiração soma um pouco: dentro de 12 studs no correr (`tests/Passo.spec.luau`).
+- Detrito de outro andar só aciona com |Δy| <= 3 studs do pé (constante `ALTURA_MAX_DIFERENCA` em `Detritos.luau`, não é Config: mover para o Config se o playtest pedir).
+- O chão do detrito (galho 30, entulho 36, tábua 40) vale em qualquer modo (a doc dá um número só; agachado/deitado não o reduzem).
+
+### Custo medido/estimado (nada medido em Studio; instrumentação pronta)
+- **Detritos:** `colocarTodos` imprime no console `[Detritos] N detritos colocados em X s (T tentativas): vidro=.. lata=..` ao terminar (5000 detritos, até 12 tentativas cada, 1 raycast + 1 `GetPartBoundsInBox` por tentativa, cede o quadro a cada 100). Estimativa: 30 a 60 mil consultas, 1 a 3 s de CPU espalhadas em ~1 min. **Medir no Studio.** Memória: 5000 modelos de 1 a 3 peças (5 a 15 mil `Part` ancoradas, sem colisão/consulta/sombra); com `StreamingEnabled` só chegam ao cliente as vizinhas.
+- **Obstaculos:** `Obstaculos.amostrar` é UMA `GetPartBoundsInBox` (Include de Construções/Props/Vegetação, `MaxParts = 40`) por jogador em movimento a 10 Hz, mais a subida de até 4 ancestrais por peça achada. `Invoke("custoobstaculos")` imprime o tempo médio por chamada. Estimativa: < 0,05 ms por chamada, ~100 chamadas/s com 10 jogadores. **Medir com 10 jogadores.**
+- **Respiracao:** 5 Hz por jogador; só varre monstros (`Monstros.proximos` percorre a lista) se o jogador estiver parado/agachado/deitado e fora da recarga.
+- **Audição:** o corte sem paredes de `processarRuido` mantém o custo de raycast de antes (via chão nunca paga raycast); `Audicao.precisaParedes` ainda poupa o raycast quando o chão já vence o ar.
+
+### Decisões abertas (§11)
+Tudo nos padrões aprovados. **Pausa de escuta** (`Config/Audicao.pausaEscuta.ligado = false`): o interruptor existe no Config, mas não há código atrás dele; hoje o monstro em Investiga já fica parado ao chegar ao ponto estimado até o timeout de 12 s (o `Audicao.atencao` já dá o −3 de "parado"), então a pausa só faria diferença se a IA passasse a andar de novo antes disso. Implementar quando o usuário decidir ligá-la. O Calmo do MonstroPS1 **não emite** ruído de raspar (só a arrancada emite); a surdez de raspar vale no Calmo andando e na arrancada.
+
+## Armas do Gold Bright: pane, engatilhar, recarga rápida, HUD (2026-11-14, contrato em `docs/armas.md` §13)
+Escrito e verde no Lune (rojo build, tests, selene, stylua); **nunca rodou no Studio**.
+- **Testar na ZonaTeste (Play):** pane (pôr `Config/Armas.pane.chanceSemi = 1` para forçar), destravar com `Q`, bomba desengatilhada depois do tiro, recarga tática (+1),
+  recarga rápida e falha (R de novo dentro e fora da janela), pente caindo no chão (aparece item de munição com `balas - 1`), checagem `Z` e as frases, aviso "ARMA TRAVADA".
+- **Clipe `Fire` das escopetas** ainda tem o bombear embutido (0,7 s); `cadencia` ficou em 0,40 / 0,36 só para o teste `ArmasAnimDados` passar. Regerar clipes separados (recuo / bombear).
+- **3ª pessoa:** `ArmasTerceira` não anima engatilhar/checar/recarga rápida; só a 1ª pessoa tem impulsos de mola.
+- **Sons:** faltam sons próprios de pane e de destravar (hoje `CliqueVazio` e `Bombear`).
+- **Equipar zera a pane** (trocar de arma e voltar destrava); guardar por slot se virar abuso.
+- **Decidir:** tempos da recarga rápida (`Config/Armas.recargaRapida`), `pane.tempoDestravar`, frases da checagem, se o pente que cai deve sumir depois de um tempo (hoje é item comum de `ItensChao`).
+- **Munição:** loot agora dá 1 pente por sorteio; reconferir a economia de munição no playtest (antes: 4 a 16 balas por sorteio de pistola).
+- **No place sem vir do repo:** nada. Tudo está em `src/` e passa pelo Rojo.

@@ -5,7 +5,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Cfg = require(Shared.Config.Rastejador) :: any
 local Malhas = require(Shared.Config.MonstrosMalhas) :: any
 local Regras = require(Shared.Regras.Rastejador)
 
@@ -22,7 +21,7 @@ local function horizontal(v: Vector3): number
 	return math.sqrt(v.X * v.X + v.Z * v.Z)
 end
 
-local function ehTipoDeSom(tipo: string): boolean
+local function ehTipoDeSom(Cfg: any, tipo: string): boolean
 	return table.find(Cfg.veiculo.tiposDeSom, tipo) ~= nil
 end
 
@@ -51,7 +50,11 @@ end
 
 -- Som de veículo ouvido por este monstro: guarda o veículo mais perto da fonte (raioBusca) e o instante.
 function MonstroObjetivo.somVeiculo(d: any, tipo: string, posicao: Vector3, agora: number)
-	if not ehTipoDeSom(tipo) then
+	if d.especie.capacidades.veiculo ~= true then
+		return
+	end
+	local Cfg = d.preset
+	if not ehTipoDeSom(Cfg, tipo) then
 		return
 	end
 	local veic = ctx.servico and ctx.servico("Veiculos")
@@ -108,7 +111,9 @@ local function acharPeca(modelo: Model, parte: string, de: Vector3): BasePart?
 end
 
 local function bater(d: any, v: any, agora: number)
+	local Cfg = d.preset
 	v.proximoGolpe = agora + Cfg.veiculo.intervalo
+	d.clipe = nil -- Attack (no Wrapper, Attack_Lunge)
 	d.golpeAte = agora + (Malhas[d.especie.id] and Malhas[d.especie.id].duracao.Attack or 1)
 	if ctx.animar then
 		ctx.animar(d, agora, true)
@@ -129,6 +134,7 @@ end
 
 -- Um passo. `perc` = d.perc. Devolve { tipo, alvo: Vector3 } para o Monstros seguir, ou nil (fluxo normal: vagar/ponto de som).
 function MonstroObjetivo.passo(d: any, agora: number, perc: any, jogadorPos: Vector3?, distJogador: number?): any?
+	local Cfg = d.preset
 	local cap = d.cap
 	local pos: Vector3 = d.hrp.Position
 	local cands: { [string]: any } = {}

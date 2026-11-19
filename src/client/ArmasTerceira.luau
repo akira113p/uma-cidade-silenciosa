@@ -3,8 +3,12 @@
 -- (a animação replica sozinha para os outros jogadores), liga a mão esquerda por IKControl no ApoioEsquerdo da arma
 -- (ArmaNaMao.Cabo.ApoioEsquerdo, criado por Shared/ArmaModelo) e aplica a camada de MIRA (pitch da câmera em Cintura/Pescoço/
 -- ombros, também nos outros jogadores a até `mira.alcance` studs) enviando o pitch ao servidor (evento Mira, 8 Hz).
--- Tolerante: clipe sem id (Config/ArmasAnim.animacoes = false, enquanto não há upload), sem Animator, sem Apoio ou sem o evento
--- Mira = simplesmente não faz aquela parte, sem erro. Nada aqui decide acerto, dano, pente ou ruído.
+-- Os clipes vêm de Shared/Animacao: id publicado de Config/ArmasAnim se existir, senão a KeyframeSequence montada do JSON
+-- (assets/animacoes/armas) e registrada em runtime, então funciona sem upload. Cada cliente toca os clipes também nos OUTROS
+-- jogadores (seção "Outros jogadores"): equipar/mira por atributos do Player (ArmaEquipada, MiraPitch), tiro pelo evento Disparo,
+-- recarga por Recarregando, golpe por GolpeSeq (o servidor sobe esse contador a cada golpe aceito, server/Armas.luau).
+-- Tolerante: sem dado/clipe, sem Animator, sem Apoio ou sem o evento Mira = simplesmente não faz aquela parte, sem erro.
+-- Nada aqui decide acerto, dano, pente ou ruído.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -14,6 +18,7 @@ local Config = Shared:WaitForChild("Config")
 local Rede = require(Shared:WaitForChild("Rede"))
 local CfgArmas = require(Config:WaitForChild("Armas"))
 local CfgAnim = require(Config:WaitForChild("ArmasAnim"))
+local Animacao = require(Shared:WaitForChild("Animacao"))
 local ArmasSinais = require(script.Parent.ArmasSinais)
 
 local ArmasTerceira = {}
@@ -43,23 +48,18 @@ local polo: Attachment? = nil
 
 -- Util -----------------------------------------------------------------------------------------------------------------
 
-local function idDe(c: string, clipe: string): string?
-	-- gancho de teste no Studio: atributo do jogador (id de KeyframeSequence registrada), sem upload
+-- Gancho de teste no Studio: atributo do jogador com o id de uma KeyframeSequence registrada, sem upload.
+local function idTeste(c: string, clipe: string): string?
 	if RunService:IsStudio() then
 		local teste = jogador:GetAttribute("AnimTeste_" .. c .. "_" .. clipe)
 		if type(teste) == "string" and teste ~= "" then
 			return teste
 		end
 	end
-	local porClasse = (CfgAnim.animacoes :: any)[c]
-	local id = porClasse and porClasse[clipe]
-	if type(id) == "string" and id ~= "" then
-		return id
-	end
 	return nil
 end
 
--- Trilha do clipe (carrega uma vez por personagem); nil se o clipe não tem id/animator.
+-- Trilha do clipe (carrega uma vez por personagem); nil se o clipe não existe/não carregou. Prioridade e laço vêm do JSON.
 local function trilha(c: string, clipe: string): AnimationTrack?
 	local chave = c .. "/" .. clipe
 	local t = trilhas[chave]
@@ -69,33 +69,24 @@ local function trilha(c: string, clipe: string): AnimationTrack?
 	if not animator then
 		return nil
 	end
-	local id = idDe(c, clipe)
-	if not id then
+	local nova = Animacao.trilha(animator, "armas/" .. c, clipe, { id = idTeste(c, clipe) })
+	if not nova then
 		if not semId[chave] then
 			semId[chave] = true
 		end
 		return nil
 	end
-	local a = Instance.new("Animation")
-	a.AnimationId = id
-	local ok, nova = pcall(function()
-		return (animator :: Animator):LoadAnimation(a)
-	end)
-	if not ok or not nova then
-		return nil
-	end
-	local nomePrio = clipe == "Idle" and "Action"
-		or (string.find(clipe, "Recarga") or clipe == "Reload") and "Action3"
-		or "Action2"
-	nova.Priority = (Enum.AnimationPriority :: any)[nomePrio]
-	nova.Looped = clipe == "Idle"
 	trilhas[chave] = nova
-	return nova :: AnimationTrack
+	return nova
 end
 
 local function duracaoNativa(c: string, clipe: string): number
-	local d = (CfgAnim.duracao :: any)[c]
-	return d and d[clipe] or 1
+	local d = Animacao.duracao("armas/" .. c, clipe)
+	if d > 0 then
+		return d
+	end
+	local porClasse = (CfgAnim.duracao :: any)[c]
+	return porClasse and porClasse[clipe] or 1
 end
 
 local function pararTodas(fade: number)
@@ -478,6 +469,235 @@ local function atualizarIK(dt: number, agora: number)
 	c.Enabled = ikPeso > 0.001 or ikAlvo > 0
 end
 
+-- Outros jogadores ---------------------------------------------------------------------------------------------------------
+-- Cada cliente toca os clipes no Animator dos outros (o registro em runtime só vale em quem registrou). Estado vindo do servidor:
+-- Player.ArmaEquipada (arma na mão), Recarregando (bool), GolpeSeq (sobe a cada golpe corpo a corpo aceito) e o evento Disparo
+-- (só chega a quem está perto). Sem IKControl nos outros: a mão de apoio vem só do clipe.
+
+type Remoto = {
+	jogador: Player,
+	personagem: Model?,
+	animator: Animator?,
+	armaId: string?,
+	classe: string?,
+	recargaId: number,
+	recarregando: boolean,
+	ultimoTiro: number,
+	tocadas: { [AnimationTrack]: boolean },
+	ligacoes: { RBXScriptConnection },
+}
+local remotos: { [Player]: Remoto } = {}
+local CLIPES_RECARGA = { "Reload", "RecargaInicio", "RecargaCartucho", "RecargaFim" }
+
+local function remotoTocar(r: Remoto, clipe: string, velocidade: number, fade: number): AnimationTrack?
+	if not (r.classe and r.animator) then
+		return nil
+	end
+	local t = Animacao.trilha(r.animator, "armas/" .. r.classe, clipe)
+	if not t then
+		return nil
+	end
+	r.tocadas[t] = true
+	if t.IsPlaying then
+		t.TimePosition = 0
+		t:AdjustSpeed(velocidade)
+	else
+		t:Play(fade, 1, velocidade)
+	end
+	return t
+end
+
+local function remotoPararRecarga(r: Remoto, fade: number)
+	if not (r.classe and r.animator) then
+		return
+	end
+	for _, nome in CLIPES_RECARGA do
+		local t = Animacao.trilha(r.animator, "armas/" .. r.classe, nome)
+		if t and t.IsPlaying then
+			t:Stop(fade)
+		end
+	end
+end
+
+local function remotoEquipar(r: Remoto, id: string?)
+	if id == r.armaId then
+		return
+	end
+	r.recargaId += 1
+	r.recarregando = false
+	for t in r.tocadas do
+		if t.IsPlaying then
+			t:Stop(FADE)
+		end
+	end
+	table.clear(r.tocadas)
+	local c = if id then (CfgArmas.armas :: any)[id] else nil
+	r.armaId = if c then id else nil
+	r.classe = if c then c.classe else nil
+	if not r.classe then
+		return
+	end
+	remotoTocar(r, "Idle", 1, 0.2)
+	remotoTocar(r, "Equip", 1, 0.08)
+end
+
+local function remotoRecarga(r: Remoto)
+	local id, cl = r.armaId, r.classe
+	local cfgArma = if id then (CfgArmas.armas :: any)[id] else nil
+	if not (cfgArma and cl and cfgArma.recarga) then
+		return
+	end
+	local ativo = r.jogador:GetAttribute("Recarregando") == true
+	local estava = r.recarregando
+	r.recarregando = ativo
+	r.recargaId += 1
+	local meu = r.recargaId
+	local rec = cfgArma.recarga
+	if not ativo then
+		if estava and rec.tipo == "cartucho" then
+			remotoPararRecarga(r, 0.05)
+			remotoTocar(r, "RecargaFim", duracaoNativa(cl, "RecargaFim") / math.max(rec.fim, 0.05), 0.08)
+		else
+			remotoPararRecarga(r, 0.15)
+		end
+		return
+	end
+	if rec.tipo == "pente" then
+		remotoTocar(r, "Reload", duracaoNativa(cl, "Reload") / math.max(rec.tempo, 0.1), 0.15)
+		return
+	end
+	task.spawn(function()
+		local function passo(clipe: string, tempo: number): boolean
+			remotoTocar(r, clipe, duracaoNativa(cl, clipe) / math.max(tempo, 0.05), 0.08)
+			task.wait(tempo)
+			return meu == r.recargaId
+		end
+		if not passo("RecargaInicio", rec.inicio) then
+			return
+		end
+		while passo("RecargaCartucho", rec.porCartucho) do
+			-- repete o cartucho enquanto o servidor diz que ainda recarrega (o fim troca recargaId e sai do laço)
+			if not r.recarregando then
+				return
+			end
+		end
+	end)
+end
+
+local function remotoGolpe(r: Remoto)
+	local cl = r.classe
+	local seq = r.jogador:GetAttribute("GolpeSeq")
+	if not cl or type(seq) ~= "number" then
+		return
+	end
+	if cl == "faca" then
+		remotoTocar(r, "Golpe" .. (seq % 2 + 1), 1, 0.04)
+	else
+		remotoTocar(r, "Golpe", 1, 0.05)
+	end
+end
+
+local function remotoDisparo(atirador: Player, idArma: string)
+	local r = remotos[atirador]
+	if not (r and r.classe and r.armaId == idArma) then
+		return
+	end
+	local agora = os.clock()
+	if agora - r.ultimoTiro < 0.05 then
+		return -- escopeta manda um Disparo por chumbinho agrupado
+	end
+	r.ultimoTiro = agora
+	local cfgArma = (CfgArmas.armas :: any)[idArma]
+	local dur = duracaoNativa(r.classe, "Fire")
+	remotoTocar(r, "Fire", math.max(1, dur / math.max(cfgArma and cfgArma.cadencia or dur, 0.05)), 0.02)
+end
+
+local function desligarRemoto(p: Player)
+	local r = remotos[p]
+	if not r then
+		return
+	end
+	remotos[p] = nil
+	for _, l in r.ligacoes do
+		l:Disconnect()
+	end
+	for t in r.tocadas do
+		if t.IsPlaying then
+			t:Stop(0)
+		end
+	end
+end
+
+local function ligarRemoto(p: Player)
+	if p == jogador or remotos[p] then
+		return
+	end
+	local r: Remoto = {
+		jogador = p,
+		personagem = nil,
+		animator = nil,
+		armaId = nil,
+		classe = nil,
+		recargaId = 0,
+		recarregando = false,
+		ultimoTiro = 0,
+		tocadas = {},
+		ligacoes = {},
+	}
+	remotos[p] = r
+	local function aoPersonagemRemoto(c: Model?)
+		r.personagem = c
+		r.animator = nil
+		r.armaId = nil
+		r.classe = nil
+		r.recargaId += 1
+		r.recarregando = false
+		table.clear(r.tocadas)
+		if not c then
+			return
+		end
+		task.spawn(function()
+			local h = c:WaitForChild("Humanoid", 10)
+			local a = h and h:WaitForChild("Animator", 10)
+			if r.personagem == c and a and a:IsA("Animator") then
+				r.animator = a
+				local id = p:GetAttribute("ArmaEquipada")
+				remotoEquipar(r, if type(id) == "string" then id else nil)
+				if p:GetAttribute("Recarregando") == true then
+					remotoRecarga(r)
+				end
+			end
+		end)
+	end
+	table.insert(r.ligacoes, p.CharacterAdded:Connect(aoPersonagemRemoto))
+	table.insert(
+		r.ligacoes,
+		p:GetAttributeChangedSignal("ArmaEquipada"):Connect(function()
+			if r.animator then
+				local id = p:GetAttribute("ArmaEquipada")
+				remotoEquipar(r, if type(id) == "string" then id else nil)
+			end
+		end)
+	)
+	table.insert(
+		r.ligacoes,
+		p:GetAttributeChangedSignal("Recarregando"):Connect(function()
+			if r.animator then
+				remotoRecarga(r)
+			end
+		end)
+	)
+	table.insert(
+		r.ligacoes,
+		p:GetAttributeChangedSignal("GolpeSeq"):Connect(function()
+			if r.animator then
+				remotoGolpe(r)
+			end
+		end)
+	)
+	aoPersonagemRemoto(p.Character)
+end
+
 -- Personagem -----------------------------------------------------------------------------------------------------------
 
 local function aoPersonagem(p: Model)
@@ -527,6 +747,19 @@ function ArmasTerceira.iniciar()
 	jogador.CharacterAdded:Connect(aoPersonagem)
 	if jogador.Character then
 		aoPersonagem(jogador.Character)
+	end
+
+	-- os outros jogadores: o corpo deles também ganha os clipes (cada cliente toca no Animator que vê)
+	for _, p in Players:GetPlayers() do
+		ligarRemoto(p)
+	end
+	Players.PlayerAdded:Connect(ligarRemoto)
+	Players.PlayerRemoving:Connect(desligarRemoto)
+	local okDisparo, eventoDisparo = pcall(Rede.evento, "Disparo")
+	if okDisparo then
+		eventoDisparo.OnClientEvent:Connect(function(atirador: Player, idArma: string)
+			remotoDisparo(atirador, idArma)
+		end)
 	end
 
 	-- depois da Camera e do Animator: o Transform já veio do clipe/IK neste quadro

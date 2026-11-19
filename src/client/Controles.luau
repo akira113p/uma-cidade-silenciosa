@@ -34,15 +34,42 @@ function Controles.iniciar()
 	local criarBotao = UserInputService.TouchEnabled
 
 	-- Alterna pelo atributo que o servidor devolveu, não por estado local: se o pedido for recusado, não desincroniza.
+	-- Toque = agacha/levanta (deitado: passa a agachado). Segurar `segurarDeitar` s = deita/levanta.
+	local deitar = Rede.evento("Deitar")
+	local ficha = 0
+	local deitouNestaTecla = false
 	local function aoAgachar(_nome: string, estado: Enum.UserInputState)
 		if estado == Enum.UserInputState.Begin then
-			agachar:FireServer(jogador:GetAttribute("Agachado") ~= true)
+			ficha += 1
+			local minha = ficha
+			deitouNestaTecla = false
+			task.delay(ConfigMovimento.segurarDeitar, function()
+				if ficha == minha then -- ainda segurando
+					deitouNestaTecla = true
+					deitar:FireServer(jogador:GetAttribute("Deitado") ~= true)
+				end
+			end)
+		elseif estado == Enum.UserInputState.End or estado == Enum.UserInputState.Cancel then
+			ficha += 1
+			if not deitouNestaTecla and estado == Enum.UserInputState.End then
+				if jogador:GetAttribute("Deitado") == true then
+					agachar:FireServer(true)
+				else
+					agachar:FireServer(jogador:GetAttribute("Agachado") ~= true)
+				end
+			end
 		end
 		return Enum.ContextActionResult.Pass
 	end
 
 	local function aoCorrer(_nome: string, estado: Enum.UserInputState)
 		if estado == Enum.UserInputState.Begin then
+			-- dentro do carro o Shift é o freio de mão (Direcao), não corrida
+			local personagem = jogador.Character
+			local humanoide = personagem and personagem:FindFirstChildOfClass("Humanoid")
+			if humanoide and humanoide.SeatPart ~= nil then
+				return Enum.ContextActionResult.Pass
+			end
 			correr:FireServer(true)
 		elseif estado == Enum.UserInputState.End or estado == Enum.UserInputState.Cancel then
 			correr:FireServer(false)

@@ -45,6 +45,7 @@ local ultimaVarreduraCorpo = 0
 local volanteReal: BasePart? = nil
 local yawAcumulado = 0
 local yawAnterior = 0
+local fovAtual = 70
 
 local function vetor(v: any): Vector3?
 	if typeof(v) == "Vector3" then
@@ -142,6 +143,17 @@ local function restaurarCorpo()
 		volanteReal.LocalTransparencyModifier = 0
 	end
 	volanteReal = nil
+end
+
+-- Vidros do carro (blocos e malhas) somem só para quem está dentro: de noite, com névoa, o para-brisa tingido tapa a estrada.
+-- O tiro continua acertando o vidro (só a aparência local muda).
+local function esconderVidros(modelo: Model)
+	for _, filho in modelo:GetChildren() do
+		if filho:IsA("BasePart") and string.sub(filho.Name, 1, 6) == "Vidro_" then
+			filho.LocalTransparencyModifier = 1
+			escondidas[filho] = true
+		end
+	end
 end
 
 local function esconderCorpo()
@@ -298,14 +310,14 @@ local function montar(modelo: Model, banco: BasePart?, motorista: boolean)
 	end
 	addBloco(
 		"Painel",
-		Vector3.new(tam.X * 0.88, 0.5, 1.1),
-		CFrame.new(centro + Vector3.new(0, -0.3, -1.0)) * CFrame.Angles(math.rad(-12), 0, 0)
+		Vector3.new(tam.X * 0.88, 0.34, 0.9),
+		CFrame.new(centro + Vector3.new(0, -0.42, -1.0)) * CFrame.Angles(math.rad(-12), 0, 0)
 	)
 	for sinal = -1, 1, 2 do
 		addBloco(
 			if sinal < 0 then "ColunaE" else "ColunaD",
-			Vector3.new(0.28, 2.3, 0.4),
-			CFrame.new(Vector3.new(sinal * (tam.X / 2 - 0.5), olhoMotorista.Y + 0.4, olhoMotorista.Z - 2.0))
+			Vector3.new(0.16, 2.3, 0.28),
+			CFrame.new(Vector3.new(sinal * (tam.X / 2 - 0.3), olhoMotorista.Y + 0.4, olhoMotorista.Z - 2.0))
 				* CFrame.Angles(math.rad(-28), math.rad(sinal * -8), 0)
 		)
 	end
@@ -318,6 +330,8 @@ local function montar(modelo: Model, banco: BasePart?, motorista: boolean)
 	local _, yaw0 = chassi.CFrame:ToOrientation()
 	yawAnterior = yaw0
 	esconderCorpo()
+	esconderVidros(modelo)
+	fovAtual = camera.FieldOfView
 end
 
 local function preferencias(): (boolean, number)
@@ -458,6 +472,8 @@ local function passo()
 	local ligado = a.modelo:GetAttribute("MotorLigado") == true
 	local tremor = (est.fracao + (if ligado then OCIOSO else 0)) * cfgCabine("tremor", TREMOR_PADRAO) * fator
 	local roll = est.fracao * cfgCabine("roll", ROLL_PADRAO) * fator
+	-- derrapando: o horizonte inclina para o lado da deriva (teto 4 graus; respeita Pref_Tremor/Pref_Intensidade)
+	roll -= math.clamp(est.deslize * cfgCabine("rolagemDeslize", 0.1), -4, 4) * fator
 	local tx = math.noise(agora * 31, 2.1, 0) * 2 * tremor
 	local ty = math.noise(agora * 31, 8.7, 0) * 2 * tremor
 	local tr = math.noise(agora * 19, 5.3, 0) * roll
@@ -471,10 +487,20 @@ local function passo()
 		yawAcumulado += delta
 		rotacao = CFrame.Angles(0, yawAcumulado, 0) * rotacao
 	end
-	local posicao = chassi.CFrame:PointToWorldSpace(a.olho)
+	-- câmera um pouco acima do olho do personagem para ver a rua por cima do painel (Config/Veiculos.camera.olhoAlturaExtra)
+	local posicao = chassi.CFrame:PointToWorldSpace(a.olho + Vector3.new(0, cfgCabine("olhoAlturaExtra", 0.9), 0))
 	local cf = CFrame.new(posicao) * rotacao
 	cf = cf * CFrame.new(tx, ty, 0) * CFrame.Angles(0, 0, math.rad(tr))
 	camera.CFrame = cf
+
+	-- FOV mais aberto dentro do carro (vê mais dos lados) e que abre com a velocidade; sobrescreve o da Camera neste quadro
+	local fovBase = jogador:GetAttribute("Pref_FOV")
+	if type(fovBase) ~= "number" then
+		fovBase = CfgCamera.preferenciasPadrao.Pref_FOV
+	end
+	local alvoFov = math.min(fovBase + cfgCabine("fovExtra", 8) + est.fracao * cfgCabine("fovVelocidade", 10), 110)
+	fovAtual += (alvoFov - fovAtual) * (1 - math.exp(-4 * math.clamp(os.clock() - ultimoQuadro, 0, 0.1)))
+	camera.FieldOfView = fovAtual
 
 	local agoraQuadro = os.clock()
 	local dtQuadro = math.clamp(agoraQuadro - ultimoQuadro, 0, 0.1)

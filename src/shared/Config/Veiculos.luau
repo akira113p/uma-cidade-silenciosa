@@ -4,7 +4,7 @@
 -- Conversões: velMax = maxSpeed(PZ) x 0.65 (studs/s); massa = mass(PZ) x 1.9;
 -- torque (força por roda no chão) = massa x 19.6 (4 rodas = 40% do peso: sobe rampa de ~22°; o viaduto tem 8°). Com o torque do PZ x 3
 -- a picape tinha 12% do peso e travava no pé do viaduto (medido 2026-11-04). A aceleração continua pela rampa de velocidade da Direcao.
--- dbBase = 45 + 0.35 x engineLoudness(PZ). Unidades: studs, studs/s, dB. 1 stud = 0.28 m (Config/Som.metrosPorStud).
+-- dbBase = (45 + 0.35 x engineLoudness(PZ)) - 28: 2026-11-14 o usuário pediu carro bem mais silencioso (era 64..84, agora 36..56). Unidades: studs, studs/s, dB. 1 stud = 0.28 m (Config/Som.metrosPorStud).
 
 return {
 	tipos = {
@@ -16,7 +16,7 @@ return {
 			massa = 1520,
 			velMax = 58,
 			torque = 29800,
-			dbBase = 73,
+			dbBase = 45,
 			assentos = 4,
 			tanque = 55, -- litros (docs/combustivel.md §3)
 			peso = 30,
@@ -30,7 +30,7 @@ return {
 			massa = 1235,
 			velMax = 45,
 			torque = 24200,
-			dbBase = 64,
+			dbBase = 36,
 			assentos = 4,
 			tanque = 40, -- litros (docs/combustivel.md §3)
 			peso = 25,
@@ -44,7 +44,7 @@ return {
 			massa = 1900,
 			velMax = 58,
 			torque = 37300,
-			dbBase = 80,
+			dbBase = 52,
 			assentos = 4,
 			tanque = 70, -- litros (docs/combustivel.md §3)
 			peso = 14,
@@ -58,7 +58,7 @@ return {
 			massa = 1960,
 			velMax = 45,
 			torque = 38500,
-			dbBase = 84,
+			dbBase = 56,
 			assentos = 2,
 			tanque = 80, -- litros (docs/combustivel.md §3)
 			peso = 14,
@@ -72,7 +72,7 @@ return {
 			massa = 2200,
 			velMax = 45,
 			torque = 43200,
-			dbBase = 80,
+			dbBase = 52,
 			assentos = 3,
 			tanque = 90, -- litros (docs/combustivel.md §3)
 			peso = 9,
@@ -86,7 +86,7 @@ return {
 			massa = 1520,
 			velMax = 78,
 			torque = 38000,
-			dbBase = 76,
+			dbBase = 48,
 			assentos = 2,
 			tanque = 50, -- litros (docs/combustivel.md §3)
 			peso = 4,
@@ -197,14 +197,14 @@ return {
 		escalaMotorOutros = 0.15,
 		chanceVidroLado = 1.2, -- x severidade, vidro do lado atingido
 		chanceVidroOutros = 0.25,
-		chancePneu = 0.5, -- x severidade, pneus do lado atingido
+		chancePneu = 0.25, -- x severidade, pneus do lado atingido (era 0.5: pneu com o dobro de vida)
 		danoOcupante = { limiar = 20, porDeltaV = 1.1, maximo = 90 }, -- vida: (deltaV - limiar) x porDeltaV
 	},
 
 	-- Tiro/golpe em peça: chance = chanceX x dano / danoReferencia (teto 1).
 	tiro = {
 		danoReferencia = 20,
-		chancePneu = 0.7,
+		chancePneu = 0.35, -- era 0.7: pneu com o dobro de vida
 		chanceVidro = 0.85,
 		danoMotor = 0.6, -- vida do motor tirada por dano
 		danoCarroceria = 0.8,
@@ -212,15 +212,46 @@ return {
 
 	ruido = {
 		intervaloMotor = 1.5, -- s entre emissões com motor ligado
-		aceleracaoDb = 10, -- dbMotor: sobe de ocioso (dbBase) até dbBase + isto na velocidade máxima
+		aceleracaoDb = 5, -- dbMotor: sobe de ocioso (dbBase) até dbBase + isto na velocidade máxima
 		bonusMotorRuim = 8, -- dB a mais com motor em 0 (proporcional)
 		bonusCapoFaltando = 4,
 	},
 
 	-- sair: E dentro do carro (evento SairCarro); pular também sai. trocarBanco: F, vai para o próximo banco livre (evento TrocarBanco).
-	teclas = { ligar = { "G" }, buzina = { "H" }, sair = { "E" }, trocarBanco = { "F" } },
+	-- farol: L liga/apaga (evento Farol, servidor). freioMao: SEGURAR Shift (só no cliente, Direcao; o servidor só ouve o ruído).
+	teclas = {
+		ligar = { "G" },
+		buzina = { "H" },
+		sair = { "E" },
+		trocarBanco = { "F" },
+		farol = { "L" },
+		freioMao = { "LeftShift", "RightShift" },
+	},
+
+	-- Faróis (2026-11-14): dois SpotLights na frente + um PointLight de preenchimento cada, criados em VeiculoModelo.criar e
+	-- ligados pelo atributo FarolLigado do modelo (replica para todos). PROVISÓRIO: afinar no Studio (asfalto escuro reflete pouco;
+	-- o Roblox corta Range em 60). Não gasta gasolina nem faz ruído; funciona com o motor desligado.
+	farol = {
+		cor = { 255, 238, 205 },
+		angulo = 62, -- graus (Angle do SpotLight)
+		alcance = 60, -- studs
+		brilho = 18,
+		inclinacao = 6, -- graus para baixo: o facho cai na estrada em vez de ir ao céu
+		preenchimento = { alcance = 14, brilho = 0.9 }, -- PointLight colado em cada farol (chão em volta do nariz)
+		lado = 0.3, -- x do farol em fração da largura do carro (± isto)
+		altura = -0.14, -- y em fração da altura
+	},
+
+	-- Derrapagem (freio de mão): ruído de pneu. O servidor mede o deslize lateral do carro do motorista (10 Hz).
+	derrapagem = {
+		velMin = 12, -- studs/s para contar como derrapagem
+		deslizeMin = 9, -- studs/s de velocidade lateral
+		intervalo = 1.0, -- s entre emissões de ruído (ação carroDerrapar de Config/Som)
+	},
 
 	-- Cabine (cliente): tremor/roll opcionais. A posição do olho NÃO é daqui: vem por tipo de Config/VeiculosMalhas
 	-- (olho = topo do banco + 2.70 studs, ver docs/veiculos-modelos.md) e chega ao cliente no atributo OlhoLocal do modelo.
-	camera = {},
+	-- fovExtra: graus somados ao Pref_FOV dentro do carro (vê mais dos lados); fovVelocidade: graus a mais na velocidade máxima;
+	-- rolagemDeslize: graus de inclinação do horizonte por stud/s de deslize lateral (teto 4).
+	camera = { olhoAlturaExtra = 0.9, fovExtra = 8, fovVelocidade = 10, rolagemDeslize = 0.1 },
 }

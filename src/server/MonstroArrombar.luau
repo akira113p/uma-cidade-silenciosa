@@ -6,7 +6,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Cfg = require(Shared.Config.Rastejador) :: any
 local Malhas = require(Shared.Config.MonstrosMalhas) :: any
 local Regras = require(Shared.Regras.Rastejador)
 local Raizes = require(Shared.Raizes)
@@ -29,7 +28,7 @@ local params = RaycastParams.new()
 params.FilterType = Enum.RaycastFilterType.Include
 params.IgnoreWater = true
 local construcoesAtual: { Instance } = {}
-local classe: { [Instance]: boolean } = setmetatable({}, { __mode = "k" }) :: any -- cache: peça -> arrombável
+local classe: { [any]: { [Instance]: boolean } } = setmetatable({}, { __mode = "k" }) :: any -- cache: preset -> peça -> arrombável
 
 local function atualizar(): boolean
 	local lista = Raizes.obter("Construcoes") -- Mapa e ZonaTeste; sem cache, a pasta pode surgir ou sumir
@@ -44,8 +43,13 @@ local function horizontal(v: Vector3): number
 	return math.sqrt(v.X * v.X + v.Z * v.Z)
 end
 
-local function arrombavel(p: Instance): boolean
-	local c = classe[p]
+local function arrombavel(Cfg: any, p: Instance): boolean
+	local cache = classe[Cfg]
+	if not cache then
+		cache = setmetatable({}, { __mode = "k" }) :: any
+		classe[Cfg] = cache
+	end
+	local c = cache[p]
 	if c ~= nil then
 		return c
 	end
@@ -55,7 +59,7 @@ local function arrombavel(p: Instance): boolean
 		local s = p.Size
 		ok = Regras.paredeArrombavel({ s.X, s.Y, s.Z }, false, p:GetAttributes(), Cfg) -- só "Parede" chega aqui: piso/laje/telhado têm outro nome
 	end
-	classe[p] = ok
+	cache[p] = ok
 	return ok
 end
 
@@ -83,7 +87,7 @@ function MonstroArrombar.dentro(ponto: Vector3, erro: number?): boolean
 end
 
 -- Primeira parede arrombável ao longo de um raio (até 5 acertos seguidos, o raio segue de dentro da peça).
-local function primeiraParede(origem: Vector3, dir0: Vector3): (BasePart?, Vector3?, Vector3?)
+local function primeiraParede(Cfg: any, origem: Vector3, dir0: Vector3): (BasePart?, Vector3?, Vector3?)
 	local pos = origem
 	local fim = origem + dir0
 	local dir = dir0
@@ -92,7 +96,7 @@ local function primeiraParede(origem: Vector3, dir0: Vector3): (BasePart?, Vecto
 		if not r then
 			return nil
 		end
-		if arrombavel(r.Instance) then
+		if arrombavel(Cfg, r.Instance) then
 			return r.Instance :: BasePart, r.Position, r.Normal
 		end
 		pos = r.Position + dir.Unit * 0.2
@@ -114,6 +118,7 @@ local function acharParede(
 	if not atualizar() then
 		return nil
 	end
+	local Cfg = d.preset
 	local D = destruicao()
 	local origem: Vector3 = d.hrp.Position
 	local base = alvo - origem
@@ -127,12 +132,12 @@ local function acharParede(
 	for _, graus in Cfg.arrombar.angulos do
 		local a = math.rad(graus)
 		local dir = CFrame.Angles(0, a, 0):VectorToWorldSpace(base)
-		local peca, ponto, normal = primeiraParede(origem, dir)
+		local peca, ponto, normal = primeiraParede(Cfg, origem, dir)
 		if peca and ponto and normal and not vistas[peca] and not (ruins and (ruins[peca] or 0) > agora) then
 			vistas[peca] = true
 			table.insert(pecas, { peca = peca, ponto = ponto, normal = normal })
 			table.insert(cands, {
-				golpes = D.golpesPara(peca, Cfg.arrombar.dano, "garra"),
+				golpes = D.golpesPara(peca, Cfg.arrombar.dano, Cfg.arrombar.tipoDano),
 				distancia = horizontal(ponto - origem),
 			})
 		end
@@ -147,6 +152,10 @@ end
 
 -- Candidato "parede" para o objetivo: em andamento, ou nova (caminho sem entrada curta / travado 3x) em direção a `alvo`.
 function MonstroArrombar.candidato(d: any, alvo: Vector3, agora: number, erro: number?): any?
+	if d.especie.capacidades.arrombar ~= true then
+		return nil -- Corcunda, MonstroPS1 e Florescida (fachada própria) não arrombam
+	end
+	local Cfg = d.preset
 	local cap = d.cap
 	local p = cap.parede
 	if p then
@@ -198,6 +207,7 @@ local avisos = 0
 
 -- Impacto do golpe (atrasoImpacto depois do início do clipe): dá o dano à Destruicao, que escurece a parede e, a 0 de vida, abre o vão.
 local function impacto(d: any, p: any)
+	local Cfg = d.preset
 	local peca: BasePart = p.peca
 	if not (d.vivo and peca.Parent) then
 		return
@@ -210,7 +220,7 @@ local function impacto(d: any, p: any)
 		return
 	end
 	local res = D.dano(peca, Cfg.arrombar.dano, {
-		tipo = "garra",
+		tipo = Cfg.arrombar.tipoDano,
 		ponto = p.ponto,
 		normal = p.normal,
 		fonte = d.modelo,
@@ -229,14 +239,22 @@ local function impacto(d: any, p: any)
 end
 
 local function bater(d: any, p: any, agora: number)
+	local Cfg = d.preset
 	-- (o desistir é de MonstroArrombar.candidato)
-	p.proximoGolpe = agora + Cfg.arrombar.intervalo
-	d.golpeAte = agora
-		+ math.max(Malhas[d.especie.id] and Malhas[d.especie.id].duracao.Attack or 1, Cfg.arrombar.intervalo)
-	if ctx.animar then
-		ctx.animar(d, agora, true)
+	-- preset com `arrombar.recuperacao` (cabeçada do Wrapper): próxima batida só depois do impacto + recuperação, parado e vulnerável
+	local espera = if Cfg.arrombar.recuperacao
+		then (Cfg.arrombar.atrasoImpacto or Cfg.golpe.atrasoImpacto) + Cfg.arrombar.recuperacao
+		else Cfg.arrombar.intervalo
+	p.proximoGolpe = agora + espera
+	local clipe = Cfg.arrombar.clipe
+	local malha = Malhas[d.especie.id]
+	local duracaoClipe = malha and (malha.duracao[clipe] or malha.duracao.Attack)
+	if ctx.tocarAcao then
+		ctx.tocarAcao(d, clipe, agora, Cfg.arrombar.intervalo, math.max(duracaoClipe or 1, Cfg.arrombar.intervalo))
 	end
-	task.delay(Cfg.golpe.atrasoImpacto, function()
+	local padraoImpacto = Cfg.arrombar.atrasoImpacto or Cfg.golpe.atrasoImpacto
+	local atraso = if ctx.evento then ctx.evento(d, clipe, "impacto", padraoImpacto) else padraoImpacto
+	task.delay(atraso, function()
 		local ok, erro = pcall(impacto, d, p)
 		if not ok and avisos < 5 then
 			avisos += 1
@@ -247,6 +265,7 @@ end
 
 -- Um passo com objetivo "parede": devolve o ponto para onde andar (encostar na parede) e bate quando perto.
 function MonstroArrombar.passo(d: any, agora: number): (Vector3?, boolean?)
+	local Cfg = d.preset
 	local p = d.cap.parede
 	if not p then
 		return nil

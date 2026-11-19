@@ -1,4 +1,4 @@
-# Uma Cidade Silenciosa (título provisório)
+﻿# Uma Cidade Silenciosa (título provisório)
 
 Jogo Roblox de sobrevivência PvP numa cidade infestada por monstros cegos que caçam pelo som. Primeira pessoa,
 estética PS1. Inspirado no conceito de "Um Lugar Silencioso", com nome e criaturas originais.
@@ -7,8 +7,9 @@ Comunicação em português, direta.
 ## Regras de versão (valem para toda IA, em toda sessão)
 **Place oficial: "CIDADE SILENCIOSA", PlaceId `135860309517450`.** Este é o único lugar do texto onde o id é a referência (o outro é `servePlaceIds`
 em `default.project.json`). Se o usuário trocar o place, trocar só esses dois.
-1. **Um só place oficial.** Proibido criar `.rbxl` novo para testar, abrir outro place ou "montar um place de playtest". `build/place.rbxl` é
-   artefato do `checar.ps1`, não se abre.
+1. **Place oficial é a referência.** (Atualizado pelo usuário em 2026-11-13.) Se precisar, a IA **pode** criar um `.rbxl` de teste (em `build/`, nunca versionado
+   como place oficial) e **pode abrir uma instância do "CIDADE SILENCIOSA"** (`135860309517450`) no Studio. O que vale é sempre conferir o `game.PlaceId`
+   do Studio alvo antes de escrever (regra 2). `build/place.rbxl` continua sendo artefato do `checar.ps1`.
 2. Ao abrir o Studio, antes de escrever nele: conferir `game.PlaceId` (o id acima) e `get_studio_state`. Id diferente = parar e avisar o usuário.
 3. `rojo serve default.project.json` só nesse place, porta 34872 (o `servePlaceIds` recusa os outros). **Nunca** `rojo serve build.project.json`
    (tem o mapa, ~155 mil peças, e congela o plugin).
@@ -16,10 +17,15 @@ em `default.project.json`). Se o usuário trocar o place, trocar só esses dois.
    `Workspace.Mapa` no place oficial, com o usuário sabendo. Ninguém edita o mapa à mão no Studio.
 5. **Todo teste é dentro do place oficial, mas no void:** `Workspace.ZonaTeste` em (6000, 300, 6000), em Play sempre que possível; nada dentro de
    `Workspace.Mapa`. Receita, limites do código e limpeza: skill `teste-no-void`.
-6. **Só uma sessão escreve no Studio por vez.** Antes: `list_roblox_studios`/`get_studio_state`; Studio com Play ativo ou de outra sessão, não mexer.
+6. **Só uma sessão escreve no Studio por vez: a "dona do Studio".** Sem ser nomeada pelo usuário, a sessão NÃO é a dona: só edita arquivos
+   do repo (e o Rojo leva ao Studio), nunca usa o MCP do Studio para escrever, dar Play, nem sobe `rojo serve`. A dona roda o `rojo serve` e os testes na ZonaTeste.
+   **Atualizado em 2026-11-13 (autorização do usuário): a sessão que ele nomeia dona pode se chamar de dona, mexer nas coisas pelo Studio (MCP), dar Play/Stop e mexer
+   com o Studio em Play** (não precisa esperar o Play acabar). Antes de escrever: `list_roblox_studios`/`get_studio_state` e conferir o PlaceId. Cada sessão editora
+   recebe do usuário as pastas que pode mexer; fora delas, pergunta. Se duas precisarem do mesmo arquivo, combinar com o usuário ou usar `git worktree` (não testado neste projeto:
+   só o worktree da dona alimenta o Rojo). Mapa continua só pela regra 4.
 7. **Toda mudança durável vai para arquivo no repo** (`src/`, `ferramentas/`, `docs/`), nunca só no Studio. O que ficar no place sem vir do repo
    (mapa gerado, malha enviada, ajuste manual) é registrado em `docs/pendencias-integracao.md` > "No place sem vir do repo".
-8. **Nenhuma IA salva ou publica o place** (File > Save, Publish) sem o usuário pedir.
+8. **Salvar o place (File > Save, `save_place`): a dona do Studio pode** (autorizado pelo usuário em 2026-11-13). **Publicar** (Publish to Roblox) continua só quando o usuário pedir.
 9. **Sessão versionada:** começa com `pwsh scripts/sessao.ps1 -Inicio`, termina com `pwsh scripts/sessao.ps1 -Fim -Mensagem "..."` (roda `checar.ps1`,
    atualiza `Config/Versao`, commita, cria a tag `sessao-AAAA-MM-DD-N`, faz push). **Sessões paralelas não fazem `git add -A` às cegas:** passar
    `-Caminhos a,b,c` só com o que é seu; o script imprime a lista do que entrou, e você a confere antes de dar o `-Fim` por bom.
@@ -58,6 +64,12 @@ em `default.project.json`). Se o usuário trocar o place, trocar só esses dois.
   Largar põe o modelo no chão, morte espalha, a bolsa deixou de existir, coleta olhando + E, 35% dos 880 pontos Loot. Armas mantêm o `ArmaModelo`. Contrato, estado e pendências em `docs/itens-no-mundo.md` (§6-7).
 - 2026-11-05 (sessão e versão): fluxo de versão único, descrito em "Regras de versão" acima: place oficial, `servePlaceIds`, `scripts/sessao.ps1` (-Inicio/-Fim, tag por sessão), testes no void
   (`.claude/skills/teste-no-void`). `checar.sh` usa a mesma build que o `.ps1` e o gerador v1 (legado) não grava mais em `mapa/Mapa.rbxm`. Os `.rbxl` antigos de `build/` ficam como estão (não apagar), mas não se abrem.
+- 2026-11-14 (Corcunda, MonstroPS1, Florescida): nascem no mapa (Florescida por `nascerSempre`), presets em `Config/PresetsMonstro`, malha/texturas seguras/5 clipes enviados pela Open Cloud, `checar.ps1` verde; **sem Studio, nunca tocados em Play**, MonstroPS1 sem textura no Config; Esfolado fora (moderação). Ver `docs/pendencias-integracao.md` "Corcunda, MonstroPS1...".
+- 2026-11-14 (armas do Gold Bright): pane (5% semi / 1,25% auto, 1 por pente), escopetas de bomba engatilhadas na mão (`Q`), recarga tática +1, recarga rápida/falha (R de novo) com pente caindo no chão,
+  HUD de munição nova (checagem `Z`, frases, sem contador) e munição achada = 1 pente inteiro. Regras puras em `Regras/Armas`, contrato em `docs/armas.md` §13, comportamento de referência em `pesquisa/gold-bright-armas.md`
+  (reescrito em Luau; REA/Ghidra em `E:\ferramentas`). `checar.ps1` verde; **nunca rodou no Studio**. Faltam: lanterna, animação de comer com a lata e tela vermelha de pouca vida (pedidos do usuário).
+- 2026-11-16 (destruição v2): furo de tiro local (espingarda fura casa num tiro), vão em forma (elipse, silhueta do carro), carro 2x mais forte, postes/placas/semáforo tombam e fazem
+  ruído ao bater no chão. `checar.ps1` verde, **sem Studio**. Ver `docs/destruicao.md` §11 e `docs/pendencias-integracao.md` "Destruição v2".
 - Próximo: Fase 9 (playtest humano de 20 min com 3+ clientes, ajustar números), ouvir e confirmar os sons, decidir
   pendências de `docs/pendencias-integracao.md`.
 - Rodar: `rojo serve default.project.json` (porta 34872, sem o mapa) + Connect, **só no place oficial** (ver Regras de versão); o mapa vem do place. Nunca abrir `.rbxl` de teste nem
@@ -81,6 +93,7 @@ em `default.project.json`). Se o usuário trocar o place, trocar só esses dois.
 | `docs/combustivel.md` | combustível: tanque, posto, mangueira, recipientes, passageiros, HUD |
 | `docs/itens-no-mundo.md` | modelo de blocos dos itens, mão, itens soltos no chão, largar/morte, coleta |
 | `docs/destruicao.md` | sistema universal de dano a construções: materiais, dano por tipo, escurecer, quebrar, carro, integração |
+| `docs/som.md` | Som v2: bandas, via chão, passo em camadas, detritos/esbarrão/item caindo, audição por espécie (fases A–E para o Sonnet) |
 | `docs/calculos.md` | todas as fórmulas e números (som, monstros, corpo, sobrevivência, câmera, PvP) |
 | `docs/decisoes.md` | decisões do usuário + pendentes (skill `registrar-decisao`) |
 | `pesquisa/` | APIs conferidas e fontes |

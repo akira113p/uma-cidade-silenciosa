@@ -160,7 +160,7 @@ O `Model` da bomba NÃO tem `PrimaryPart` e o pivô padrão do Roblox não é a 
 `base = a Part com Size ≈ (2.4, 0.35, 1.8)` (base de concreto, centro local (0, 0.175, 0)) → `origemCF = base.CFrame * CFrame.new(0, -0.175, 0)`. Tudo abaixo é local a `origemCF`.
 Corpo: Part com Size ≈ (2.0, 4.85, 1.5), centro (0, 2.775, 0). Altura total 6,5; largura X −1,2…1,26; profundidade Z −0,9…0,9. **Frente (visor) = −Z. Bico e coldre ficam no lado +X** (peças a x = 1,15):
 coldre (0.2×1.2×0.8 em (1.15, 3.5, −0.2)), mangueira vertical (cilindro Ø0.22, y 0.9…3.0, em (1.15, 1.95, −0.5)), bico horizontal (cilindro Ø0.22, Z −0.55…0.35, em (1.15, 0.9, −0.1)), cor `(30,30,34)`.
-- `Attachment` `Bocal`: parent = a Part do corpo, posição local à `origemCF` = `(1.15, 3.0, −0.5)` (topo da mangueira vertical), orientação: +Y mundo.
+- `Attachment` `Bocal`: parent = a Part do corpo, posição local à `origemCF` = `(0.5, 1.8, −0.3)` (DENTRO do corpo, desde 2026-11-14; antes `(1.15, 3.0, −0.5)`, na lateral e em cima), orientação: +Y mundo.
 - Enquanto a mangueira desta bomba está ativa, o servidor deixa `Transparency = 1` as duas peças cilíndricas `(30,30,34)` a x ≈ 1,15 (a mangueira vertical e o bico estáticos) e restaura ao guardar. Identificar por `Shape`/Size/posição relativa à origem (tolerância 0,05). Se não achar, ignora (mantém visíveis).
 - Prompts na Part do corpo, `MaxActivationDistance = alcanceBomba`. Posto: 4 bombas, ilhas 4×0,6×8 (z local do posto −15…−7); um carro de prop fica no vão entre as bombas 1 e 2 (pode estar sobreposto à ilha; não é problema deste sistema).
 - Posto de teste: `ServerStorage.Teste:Invoke("irPosto")` (S3 registra) teleporta o jogador ao lado da bomba mais próxima.
@@ -317,3 +317,11 @@ Instâncias (S3 escreve; S5 lê): `workspace.Mangueiras/<UserId>` (§5.1).
 3. Studio (MCP): invocar carro cheio/meio/vazio; vazio não liga; ligado consome e desliga em 0; HUD (1ª e 3ª pessoa) e agulha mostram; etiqueta aparece perto da tampa; pegar mangueira na bomba, plugar na tampa (motor desligado), nível sobe, enche e para, desplugar; afastar > 16,5 studs solta;
    encher galão e garrafa na bomba (inventário), despejar no carro; dois jogadores em um carro (multiplayer simulado com 2 clientes no Studio), trocar de banco, motorista sai com passageiro.
 4. Console sem erro de script. Nenhuma `Instance.new` por quadro no cliente da mangueira.
+
+## 12. Ajustes de 2026-11-14 (pedido do usuário)
+
+- **Mangueira maior:** `comprimento` 14 → 32 studs, `tolerancia` 2,5 → 4, `segmentos` 14 → 26 (cliente: `ITERACOES` 4 → 8). Antes ela não chegava na tampa do carro ("Mangueira curta demais").
+- **Botão "Carregar carro"** (`Rede` evento `CarregarCarro`, cliente → servidor): aparece com a mangueira na mão; botão na tela (toque/clique) ou tecla `Config/Combustivel.mangueira.teclaCarregar` (G, só a pé). O servidor (`Combustivel.aoCarregar`) pluga na `Tampa` mais próxima do jogador
+  dentro de `alcanceCarregar` (16 studs), com as mesmas recusas de `plugar` (motor ligado, queimado, tanque cheio, longe do bocal). Já plugada, o mesmo botão desplugar ("Soltar do carro"). O prompt "Plugar mangueira" na tampa continua existindo.
+- **Menos barulho do carro** (só números): `Som.acoes.carroLigar` 70 → 48, `carroFalhar` 62 → 44; `Veiculos.tipos[x].dbBase` −16 (agora 48..68); `ruido.aceleracaoDb` 10 → 8. `Som.acoes.carro` (motor morrendo sem gasolina, 80) ficou (a tabela de `tests/Som.spec` o fixa).
+- **2ª rodada (mesmo dia):** `carroLigar` 48 → 34, `carroFalhar` 44 → 32, `dbBase` mais −12 (agora 36..52 conforme o tipo; `aceleracaoDb` 8 → 5). Câmera da cabine +0,9 stud (`Config/Veiculos.camera.olhoAlturaExtra`, `Cabine.luau`), só a câmera: mãos e painel ficam onde estavam.

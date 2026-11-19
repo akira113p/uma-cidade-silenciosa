@@ -70,6 +70,69 @@ return {
 	-- Mira central: ticks que abrem com o espalhamento (só estético; o servidor decide o espalhamento real).
 	mira = { tick = 7, espessura = 2, folgaMinima = 3, suavizar = 14 },
 
+	-- Braços com rig R15 e clipes (docs/personagens.md, Parte A2; src/client/BracosViewmodel.luau). TUDO PROVISÓRIO como o resto:
+	-- nunca visto no Studio. A arma continua posta por `base` + molas; o rig é calculado para que o Cabo, na primeira pose do
+	-- clipe Idle, caia exatamente em `base` (então os números de `base` valem para os dois caminhos).
+	rig = {
+		espessura = 0.9, -- X e Z das peças do braço (os braços ficam um pouco mais finos que os do corpo)
+		compensarFov = true, -- a arma mantém o lugar na tela quando o FOV muda (corrida); referência abaixo
+		fovReferencia = 70,
+		velocidade = { minimo = 0.4, maximo = 4 }, -- limites do AdjustSpeed dos clipes
+		tiroMaximo = 4,
+		fade = { idle = 0.2, equip = 0.08, tiro = 0.02, golpe = 0.05, recarga = 0.12, cancelar = 0.15 },
+		-- Onde o tronco do rig fica (espaço da câmera) se a calibração pelo clipe falhar (clipe sem poses, sem KeyframeSequence).
+		torsoReserva = { pos = v(0.2, -1.55, 0.7), rot = v(0, 0, 0) },
+		-- Arma de uma mão: o braço esquerdo só aparece enquanto toca um clipe de recarga (o repouso dele ficaria pendurado no quadro).
+		esquerdaSoNaRecarga = true,
+	},
+
+	-- Item que não é arma (lanterna, galão, garrafa, comida; ItemNaMao). Usa o rig com o clipe `corpo/mao`/`SegurarUmaMao`;
+	-- `base` = onde a mão que segura o item fica (espaço da câmera); sem o clipe (A1) o item continua sem viewmodel.
+	item = {
+		grupo = "corpo/mao",
+		clipe = "SegurarUmaMao",
+		base = { pos = v(0.6, -0.8, -1.3), rot = v(0, 0, 0) },
+		correr = { pos = v(-0.1, -0.3, 0.2), rot = v(-12, 12, 0) },
+	},
+
+	-- Viewmodel do Gold Bright (src/client/ViewmodelGB.luau, Config/ArmasGB gerado; docs/gold-bright-import.md). PROVISÓRIO: nunca
+	-- visto no Studio. O rig vem posto pela câmera original do jogo (Config/ArmasGB.camera); `ajuste` desloca tudo no espaço da câmera.
+	-- O original desenhava os braços numa câmera de FOV 55 (a nossa é 70): se ficarem pequenos/longe, aproximar em `ajuste.pos.z`.
+	gb = {
+		-- As poses (quadril, mira, corrida/parede, "não atira", coice, velocidades) vêm do jogo original, por arma, em
+		-- Config/ArmasGB.<id>.vista (gerado). Aqui ficam só os ajustes nossos e o que o original não guarda nos assets.
+		ajuste = { pos = v(0, 0, 0), rot = v(0, 0, 0) }, -- deslocamento extra no espaço da câmera (studs, graus)
+		porArma = {} :: {
+			[string]: { pos: { x: number, y: number, z: number }, rot: { x: number, y: number, z: number } },
+		},
+		velocidade = { minimo = 0.4, maximo = 2.5 }, -- limites do AdjustSpeed ao encaixar clipe na duração do servidor
+		fade = { idle = 0.2, acao = 0.08, tiro = 0.02 },
+		-- 1 = projeção igual à câmera das armas do original (FOV 55); 0 = sem emular (rig na posição real, fica menor).
+		emularFov = 1,
+		coiceEscala = 1, -- multiplica o coice do original (WeaponModelRecoil.Fire)
+		velPose = 4, -- 1/s: entrar/sair da pose de corrida/parede/"não atira" (aditionalMovementRotation do original: 4)
+		parede = { metros = 1.6 }, -- GunHandler.distToWall < 1,6 m = pose de corrida (arma abaixada)
+		sway = { ganho = 0.4, maximo = 6, suavizar = 10 }, -- graus
+		mira = { sway = 0.3 }, -- sway mirando = fração do normal
+		luneta = { limiar = 0.92, zoom = 0.35 }, -- mira completa (0..1) que liga o retículo; FOV x zoom
+		-- Ajuste NOSSO por cima dos dados do original (as imagens de referência do usuário mostram o relógio e a checagem/recarga
+		-- mais para cima do que a cadeia do jogo dá): graus de giro do rig para cima, em volta da câmera. Mirando = 0.
+		inclinar = { base = 6, acao = 22, suavizar = 6 },
+		-- Cruz de vida no mostrador do relógio (Player.SetHealthColor do original): pior fração entre as partes fatais.
+		relogio = {
+			tamanho = 0.45, -- braço da cruz / diâmetro do mostrador
+			verde = 0.7,
+			amarelo = 0.45,
+			laranja = 0.2,
+			cores = {
+				verde = { 60, 230, 90 },
+				amarelo = { 235, 215, 40 },
+				laranja = { 240, 130, 30 },
+				vermelho = { 220, 35, 35 },
+			},
+		},
+	},
+
 	-- Detalhes por classe de animação (docs/armas.md §9).
 	classes = {
 		----------------------------------------------------------------------------------------------- faca

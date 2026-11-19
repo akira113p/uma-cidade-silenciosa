@@ -9,9 +9,11 @@ return {
 	passoAtributo = 0.1, -- L; o atributo Combustivel só muda quando varia >= isto
 
 	mangueira = {
-		comprimento = 14, -- studs, máximo entre o bocal da bomba e a ponta
-		tolerancia = 2.5, -- studs acima de comprimento: o servidor solta a mangueira
-		segmentos = 14, -- pontos da corda Verlet (cliente)
+		comprimento = 32, -- studs, máximo entre o bocal da bomba e a ponta (era 14: não alcançava o carro)
+		tolerancia = 4, -- studs acima de comprimento: o servidor solta a mangueira
+		segmentos = 26, -- pontos da corda Verlet (cliente); ~1,3 stud por segmento
+		alcanceCarregar = 16, -- studs: o botão "Carregar carro" pluga na tampa mais próxima dentro deste raio (a partir do jogador)
+		teclaCarregar = "G", -- atalho do botão "Carregar carro" (só a pé, com mangueira na mão; G também liga o motor, mas só sentado)
 		distanciaDesenho = 150, -- studs da câmera; além disso a mangueira não é simulada
 		raio = 0.18, -- studs
 		vazaoLps = 0.8, -- L/s ao abastecer carro pela mangueira

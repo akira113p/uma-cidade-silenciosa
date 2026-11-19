@@ -8,6 +8,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Rede = require(Shared:WaitForChild("Rede"))
 local Config = Shared:WaitForChild("Config")
 local ConfigCamera = require(Config:WaitForChild("Camera"))
+local MIRA_FOV = require(Config:WaitForChild("Armas")).mira.fov -- zoom com o botão direito (Player.Mirando)
 local Teclas = require(script.Parent.Teclas)
 local ConfigMovimento = require(Config:WaitForChild("Movimento"))
 local ConfigSom = require(Config:WaitForChild("Som"))
@@ -30,6 +31,7 @@ local fase = 0
 local balanco = 0 -- 0..1: quanto do balanço está ativo (suaviza começar/parar)
 local modoBalanco = "andar" -- último modo andando, para o balanço sair no mesmo ritmo em que entrou
 local deslocAgachado = 0 -- offset Y atual da altura dos olhos
+local deslocFrente = 0 -- offset Z atual (deitado: a câmera vai para onde a cabeça fica)
 local fovAtual: number? = nil
 local velocidadeQueda = 0
 local cacando = false
@@ -221,10 +223,17 @@ local function passo(dt: number)
 	end
 
 	-- Altura dos olhos agachado (não é tremor: continua com Pref_Tremor desligado).
-	local alvoAgachado = if agachado and not morto then ConfigCamera.alturaOlhosAgachado else 0
+	local deitado = jogador:GetAttribute("Deitado") == true and not morto
+	local alvoAgachado = if deitado
+		then ConfigCamera.alturaOlhosDeitado
+		elseif agachado and not morto then ConfigCamera.alturaOlhosAgachado
+		else 0
+	deslocFrente += ((if deitado then ConfigCamera.frenteDeitado else 0) - deslocFrente) * (1 - math.exp(
+		-SUAVIZAR_AGACHAR * dt
+	))
 	deslocAgachado += (alvoAgachado - deslocAgachado) * (1 - math.exp(-SUAVIZAR_AGACHAR * dt))
 
-	humanoide.CameraOffset = Vector3.new(dx + tx, deslocAgachado + dy + ty, 0)
+	humanoide.CameraOffset = Vector3.new(dx + tx, deslocAgachado + dy + ty, deslocFrente)
 	if roll ~= 0 then
 		cam.CFrame *= CFrame.Angles(0, 0, math.rad(roll))
 	end
@@ -244,6 +253,10 @@ local function passo(dt: number)
 		base = ConfigCamera.preferenciasPadrao.Pref_FOV
 	end
 	local alvoFov = Regras.fovAlvo(modo, base, ConfigCamera)
+	if jogador:GetAttribute("Mirando") == true and jogador:GetAttribute("Correndo") ~= true then
+		local luneta = jogador:GetAttribute("LunetaZoom") -- client/ViewmodelGB: mira completa com luneta
+		alvoFov *= if type(luneta) == "number" then luneta else MIRA_FOV
+	end
 	local atual = fovAtual or alvoFov
 	atual += (alvoFov - atual) * (1 - math.exp(-3 / ConfigCamera.transicaoFov * dt))
 	fovAtual = atual
@@ -275,6 +288,7 @@ function Camera.iniciar()
 		fase = 0
 		balanco = 0
 		deslocAgachado = 0
+		deslocFrente = 0
 		velocidadeQueda = 0
 		cacando = false
 	end)

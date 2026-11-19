@@ -1,0 +1,53 @@
+{
+  "grupo": "corpo/mao",
+  "rig": "R15",
+  "poses": {
+    "umaMao": {
+      "RightShoulder": [28, -4, 0], "RightElbow": [70, 0, 0], "RightWrist": [-14, 0, 0]
+    },
+    "umaMaoEsq": {
+      "LeftShoulder": [28, 4, 0], "LeftElbow": [70, 0, 0], "LeftWrist": [-14, 0, 0]
+    },
+    "galao": {
+      "RightShoulder": [6, -3, 0], "RightElbow": [16, 0, 0], "RightWrist": [4, 0, 0]
+    },
+    "boca": {
+      "RightShoulder": [42, -8, 0], "RightElbow": [128, 0, 0], "RightWrist": [-30, 0, 0]
+    }
+  },
+  "clipes": {
+    "SegurarUmaMao": {
+      "duracao": 2.2, "loop": true, "prioridade": "Action2",
+      "quadros": [
+        { "t": 0.0, "de": "umaMao" },
+        { "t": 1.1, "de": "umaMao", "juntas": { "RightShoulder": [27.5, -4, 0], "RightElbow": [71, 0, 0] }, "easing": "Cubic-InOut" },
+        { "t": 2.2, "de": "umaMao", "easing": "Cubic-InOut" }
+      ]
+    },
+    "SegurarUmaMaoEsq": {
+      "duracao": 2.2, "loop": true, "prioridade": "Action2",
+      "quadros": [
+        { "t": 0.0, "de": "umaMaoEsq" },
+        { "t": 1.1, "de": "umaMaoEsq", "juntas": { "LeftShoulder": [27.5, 4, 0], "LeftElbow": [71, 0, 0] }, "easing": "Cubic-InOut" },
+        { "t": 2.2, "de": "umaMaoEsq", "easing": "Cubic-InOut" }
+      ]
+    },
+    "SegurarGalao": {
+      "duracao": 2.4, "loop": true, "prioridade": "Action2",
+      "quadros": [
+        { "t": 0.0, "de": "galao" },
+        { "t": 1.2, "de": "galao", "juntas": { "RightShoulder": [7, -3, 0], "RightElbow": [18, 0, 0] }, "easing": "Cubic-InOut" },
+        { "t": 2.4, "de": "galao", "easing": "Cubic-InOut" }
+      ]
+    },
+    "Usar": {
+      "duracao": 1.5, "loop": false, "prioridade": "Action3",
+      "quadros": [
+        { "t": 0.0, "de": "umaMao", "juntas": { "Neck": [0, 0, 0] } },
+        { "t": 0.45, "de": "boca", "juntas": { "Neck": [-4, 0, 0] }, "easing": "Cubic-InOut" },
+        { "t": 0.9, "de": "boca", "juntas": { "Neck": [10, 0, 0] }, "marcadores": ["Consumiu"], "easing": "Cubic-InOut" },
+        { "t": 1.5, "de": "umaMao", "juntas": { "Neck": [0, 0, 0] }, "easing": "Cubic-InOut" }
+      ]
+    }
+  }
+}

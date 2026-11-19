@@ -106,6 +106,8 @@ export type CfgQueda = { dano: number, alcance: number, queda: Queda? }
 export type CfgBloom = { bloom: { porTiro: number, maximo: number, recuperacao: number } }
 export type CfgRecarga = {
 	pente: number,
+	engatilhar: string?,
+	tempoEngatilhar: number?,
 	recarga: { tipo: string, tempo: number?, inicio: number?, porCartucho: number?, fim: number? },
 }
 
@@ -215,7 +217,9 @@ function Armas.tempoRecarga(cfg: CfgRecarga, pente: number, reserva: number): nu
 		end
 		return (r.inicio or 0) + n * (r.porCartucho or 0) + (r.fim or 0)
 	end
-	return r.tempo or 0
+	-- arma de pente recarregada VAZIA: a câmara está vazia, então o fim da recarga inclui engatilhar (docs/armas.md §13.3)
+	local extra = if cfg.engatilhar == "auto" and pente <= 0 then (cfg.tempoEngatilhar or 0) else 0
+	return (r.tempo or 0) + extra
 end
 
 -- Chumbinhos por disparo (1 para armas comuns).
@@ -230,6 +234,207 @@ function Armas.danoExplosao(distancia: number, raio: number, danoCentro: number,
 	end
 	local t = distancia / raio
 	return danoCentro * (1 + (fatorBorda - 1) * t)
+end
+
+----------------------------------------------------------------------------------------------- pane, engatilhar, recarga
+-- docs/armas.md §13 e pesquisa/gold-bright-armas.md. Tudo puro: o servidor guarda `engatilhada`/`travada` e sorteia; o cliente
+-- usa as mesmas funções só para prever (nunca para decidir).
+
+export type CfgPane = { chanceSemi: number, chanceAuto: number, tempoDestravar: number }
+export type CfgRapida = { janelaDe: number, janelaAte: number, fator: number, minimoApos: number, penalidade: number }
+export type CfgEngatilhar = { engatilhar: string?, modo: string?, tempoEngatilhar: number? }
+
+-- A arma usa engatilhar? ("auto" = pente, "manual" = bomba; o lançador não tem).
+function Armas.usaEngatilhar(cfg: CfgEngatilhar): boolean
+	return cfg.engatilhar == "auto" or cfg.engatilhar == "manual"
+end
+
+-- Só arma de pente (engatilha sozinha) pode travar.
+function Armas.podePanear(cfg: CfgEngatilhar): boolean
+	return cfg.engatilhar == "auto"
+end
+
+-- Chance de travar a cada tiro: automática 1,25%, semiautomática 5% (valores do Gold Bright; Config/Armas.pane).
+function Armas.chancePane(cfg: CfgEngatilhar, pane: CfgPane): number
+	if not Armas.podePanear(cfg) then
+		return 0
+	end
+	return if cfg.modo == "auto" then pane.chanceAuto else pane.chanceSemi
+end
+
+-- Travou neste tiro? `penteDepois` = balas que sobraram DEPOIS do tiro; `sorteio` em [0, 1). Nunca trava a última bala
+-- nem duas vezes no mesmo pente. O Gold Bright sorteia e trava quando o valor passa de 1 - chance.
+function Armas.travou(
+	cfg: CfgEngatilhar,
+	pane: CfgPane,
+	travadaNestePente: boolean,
+	penteDepois: number,
+	sorteio: number
+): boolean
+	if travadaNestePente or penteDepois < 1 or not finito(sorteio) then
+		return false
+	end
+	local chance = Armas.chancePane(cfg, pane)
+	return chance > 0 and sorteio > 1 - chance
+end
+
+-- A arma fica engatilhada depois do tiro? Pente: sim, salvo se travou. Bomba: não (engatilhar na mão). Lançador: sempre pronto.
+function Armas.engatilhadaAposTiro(cfg: CfgEngatilhar, travou: boolean): boolean
+	if cfg.engatilhar == "auto" then
+		return not travou
+	end
+	if cfg.engatilhar == "manual" then
+		return false
+	end
+	return true
+end
+
+-- Ao equipar: engatilhada se há bala (guardada pronta). Sem bala, não.
+function Armas.engatilhadaAoEquipar(cfg: CfgEngatilhar, pente: number): boolean
+	if not Armas.usaEngatilhar(cfg) then
+		return true
+	end
+	return pente >= 1
+end
+
+-- Por que não dá para atirar além de pente/recarga: "engatilhando" (a mão está ocupada), "travada" ou "desengatilhada".
+function Armas.bloqueioDeTiro(
+	cfg: CfgEngatilhar,
+	engatilhada: boolean?,
+	travada: boolean?,
+	engatilhando: boolean?
+): string?
+	if engatilhando == true then
+		return "engatilhando"
+	end
+	if travada == true then
+		return "travada"
+	end
+	if Armas.usaEngatilhar(cfg) and engatilhada == false then
+		return "desengatilhada"
+	end
+	return nil
+end
+
+-- O que a tecla de engatilhar faz agora? Devolve (acao, segundos):
+--   "vazio" (sem balas: só o clique), "nada" (já engatilhada e sem pane), "destravar" (pane: tira a bala presa) ou "engatilhar".
+function Armas.engatilhar(
+	cfg: CfgEngatilhar,
+	pente: number,
+	engatilhada: boolean,
+	travada: boolean,
+	pane: CfgPane
+): (string, number)
+	if not Armas.usaEngatilhar(cfg) then
+		return "nada", 0
+	end
+	if pente < 1 then
+		return "vazio", 0
+	end
+	if travada then
+		return "destravar", pane.tempoDestravar
+	end
+	if engatilhada then
+		return "nada", 0
+	end
+	return "engatilhar", cfg.tempoEngatilhar or 0
+end
+
+-- Capacidade da recarga: com bala na câmara (arma de pente engatilhada, sem pane, pente >= 1) cabe +1. Arma vazia, bomba e
+-- lançador: a capacidade normal.
+function Armas.capacidadeRecarga(
+	cfg: { pente: number, engatilhar: string? },
+	pente: number,
+	engatilhada: boolean?,
+	travada: boolean?
+): number
+	if cfg.engatilhar == "auto" and engatilhada == true and travada ~= true and pente >= 1 then
+		return cfg.pente + 1
+	end
+	return cfg.pente
+end
+
+-- Dá para recarregar? Há espaço (pente abaixo da capacidade) e reserva.
+function Armas.podeRecarregar(
+	cfg: { pente: number, engatilhar: string? },
+	pente: number,
+	reserva: number,
+	engatilhada: boolean?,
+	travada: boolean?
+): boolean
+	return reserva >= 1 and pente < Armas.capacidadeRecarga(cfg, pente, engatilhada, travada)
+end
+
+-- R de novo durante a recarga de PENTE: "rapida" (dentro da janela), "falha" (fora, uma vez só) ou "ignorar".
+-- `decorrido` e `duracao` em s; `jaAtrapalhou`/`jaFoiRapida` evitam repetir.
+function Armas.cliqueNaRecarga(
+	cfg: { recarga: { tipo: string } },
+	rapida: CfgRapida,
+	decorrido: number,
+	duracao: number,
+	jaAtrapalhou: boolean,
+	jaFoiRapida: boolean
+): string
+	if cfg.recarga.tipo ~= "pente" or jaAtrapalhou or jaFoiRapida or duracao <= 0 or not finito(decorrido) then
+		return "ignorar"
+	end
+	local f = decorrido / duracao
+	if f >= rapida.janelaDe and f <= rapida.janelaAte then
+		return "rapida"
+	end
+	return "falha"
+end
+
+-- Nova duração TOTAL (a partir do início da recarga) depois do clique: rápida = fator × duração (mas nunca antes de
+-- decorrido + minimoApos); falha = duração + penalidade.
+function Armas.duracaoAposClique(acao: string, rapida: CfgRapida, decorrido: number, duracao: number): number
+	if acao == "rapida" then
+		return math.max(duracao * rapida.fator, decorrido + rapida.minimoApos)
+	end
+	if acao == "falha" then
+		return duracao + rapida.penalidade
+	end
+	return duracao
+end
+
+-- Balas do pente velho que caem no chão na recarga rápida: tudo menos a bala da câmara (que fica na arma). Arma de pente
+-- engatilhada e sem pane guarda 1; senão o pente inteiro cai. Devolve (balasNoChao, balasQueFicamNaArma).
+function Armas.penteVelho(pente: number, engatilhada: boolean?, travada: boolean?): (number, number)
+	local camara = if engatilhada == true and travada ~= true and pente >= 1 then 1 else 0
+	return math.max(0, pente - camara), camara
+end
+
+-- Frase do pente na checagem de munição (sem número, como no jogo de referência): o jogador "olha" o pente.
+function Armas.frasePente(pente: number, capacidade: number): string
+	if pente <= 0 then
+		return "Vazio."
+	end
+	local f = pente / math.max(1, capacidade)
+	if f <= 0.2 then
+		return "Só restam algumas balas."
+	elseif f <= 0.45 then
+		return "Menos da metade."
+	elseif f <= 0.7 then
+		return "Mais ou menos metade."
+	elseif f < 0.999 then
+		return "Quase cheio."
+	end
+	return "Cheio."
+end
+
+-- Frase da reserva em "pentes" da arma na mão (arredonda para meio pente para baixo).
+function Armas.fraseReserva(reserva: number, capacidade: number): string
+	if reserva <= 0 then
+		return "Sem reserva."
+	end
+	local pentes = math.floor(reserva / math.max(1, capacidade) * 2) / 2
+	if pentes < 1 then
+		return "Reserva: menos de um pente."
+	end
+	local inteiro = math.floor(pentes)
+	local meio = pentes - inteiro >= 0.5
+	local nome = if inteiro == 1 and not meio then "pente" else "pentes"
+	return string.format("Reserva: %d%s %s.", inteiro, if meio then " e meio" else "", nome)
 end
 
 return Armas

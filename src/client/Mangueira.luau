@@ -6,6 +6,7 @@ local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Rede = require(Shared:WaitForChild("Rede"))
@@ -17,7 +18,7 @@ local jogador = Players.LocalPlayer
 local CFG = Cfg.mangueira
 
 local AMORTECIMENTO = 0.98 -- por quadro; evita a corda balançar para sempre
-local ITERACOES = 4 -- passadas das restrições de distância por quadro
+local ITERACOES = 8 -- passadas (era 4; a corda ficou maior, 26 pontos) das restrições de distância por quadro
 local DT_MAX = 1 / 30 -- passo máximo da simulação (queda de FPS não explode a corda)
 local ATRITO_CHAO = 0.6 -- fração da velocidade horizontal que sobra quando o ponto toca o chão
 local RAIO_ORIGEM = 1.5 -- studs acima do ponto de onde o raio do chão parte
@@ -150,6 +151,8 @@ local function aplicarPrompt(prompt: ProximityPrompt)
 	end
 end
 
+local aoAtualizarBotao: (() -> ())? = nil -- botão "Carregar carro" (definido mais abaixo)
+
 local function atualizarPrompts()
 	for prompt in prompts do
 		if prompt.Parent == nil then
@@ -157,6 +160,9 @@ local function atualizarPrompts()
 		else
 			aplicarPrompt(prompt)
 		end
+	end
+	if aoAtualizarBotao then
+		aoAtualizarBotao()
 	end
 end
 
@@ -429,9 +435,67 @@ local function novaMangueira(pasta: Instance)
 	atualizarPrompts()
 end
 
+-- Botão "Carregar carro" ------------------------------------------------------------------------------------------------
+
+-- Aparece com a mangueira na mão (a pé). Toque/clique ou a tecla Cfg.teclaCarregar mandam CarregarCarro; o servidor acha a
+-- tampa mais próxima, pluga e começa a encher (ou despluga, se já estiver plugada). Texto muda conforme o estado.
+local function criarBotaoCarregar()
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "CarregarCarro"
+	gui.ResetOnSpawn = false
+	gui.IgnoreGuiInset = true
+	gui.DisplayOrder = 11
+	gui.Enabled = false
+	gui.Parent = jogador:WaitForChild("PlayerGui")
+
+	local botao = Instance.new("TextButton")
+	botao.Name = "Botao"
+	botao.AnchorPoint = Vector2.new(0.5, 1)
+	botao.Position = UDim2.new(0.5, 0, 1, -150)
+	botao.Size = UDim2.fromOffset(230, 46)
+	botao.BackgroundColor3 = Color3.fromRGB(20, 20, 22)
+	botao.BackgroundTransparency = 0.15
+	botao.TextColor3 = Color3.fromRGB(235, 235, 230)
+	botao.TextSize = 20
+	botao.Font = Enum.Font.Code
+	botao.AutoButtonColor = true
+	botao.Parent = gui
+	local contorno = Instance.new("UIStroke")
+	contorno.Thickness = 1.5
+	contorno.Color = Color3.fromRGB(200, 180, 40)
+	contorno.Parent = botao
+
+	local function pedir()
+		if gui.Enabled then
+			Rede.evento("CarregarCarro"):FireServer()
+		end
+	end
+	botao.Activated:Connect(pedir)
+
+	local tecla = (Enum.KeyCode :: any)[Cfg.mangueira.teclaCarregar]
+	UserInputService.InputBegan:Connect(function(entrada, _)
+		if entrada.UserInputType == Enum.UserInputType.Keyboard and entrada.KeyCode == tecla then
+			if not UserInputService:GetFocusedTextBox() then
+				pedir()
+			end
+		end
+	end)
+
+	local function atualizar()
+		local minha = minhaMangueira()
+		gui.Enabled = jogador:GetAttribute("Mangueira") == true and minha ~= nil
+		local plugada = minha ~= nil and minha:GetAttribute("Estado") == "plugada"
+		local nomeTecla = Cfg.mangueira.teclaCarregar
+		botao.Text = if plugada then "Soltar do carro [" .. nomeTecla .. "]" else "Carregar carro [" .. nomeTecla .. "]"
+		contorno.Color = if plugada then Color3.fromRGB(80, 185, 80) else Color3.fromRGB(200, 180, 40)
+	end
+	return atualizar
+end
+
 -- Início -------------------------------------------------------------------------------------------------------------
 
 function Mangueira.iniciar()
+	aoAtualizarBotao = criarBotaoCarregar()
 	local pasta = Instance.new("Folder")
 	pasta.Name = "MangueiraLocal"
 	pasta.Parent = workspace.CurrentCamera or workspace:WaitForChild("Camera")

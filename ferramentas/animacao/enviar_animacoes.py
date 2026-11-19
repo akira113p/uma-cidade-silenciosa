@@ -16,8 +16,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "modelos"))
 import enviar_veiculos as ev  # noqa: E402
 
-ENTRADA = ev.RAIZ / "build" / "anim_armas"
-ENVIADOS = ev.RAIZ / "ferramentas" / "animacao" / "enviados.json"
+# --corpo: envia build/anim_corpo (clipes de corpo, montar_corpo.luau) e grava enviados_corpo.json
+CORPO = "--corpo" in sys.argv
+ENTRADA = ev.RAIZ / "build" / ("anim_corpo" if CORPO else "anim_armas")
+ENVIADOS = ev.RAIZ / "ferramentas" / "animacao" / ("enviados_corpo.json" if CORPO else "enviados.json")
 TIPOS = dict(ev.TIPOS_ARQUIVO)
 TIPOS[".rbxm"] = ("Animation", "model/x-rbxm")
 ev.TIPOS_ARQUIVO = TIPOS

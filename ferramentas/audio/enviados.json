@@ -1,0 +1,416 @@
+{
+  "ambiente/Blur.ogg": {
+    "sha256": "a57556008622082b5b7c28a77c58dab8ff32c0cdc9cb32f22689d9288c008e4c",
+    "assetId": 104930156073979,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "ambiente/Distant.ogg": {
+    "sha256": "b01bcb2acc0c04cbb9938bb849ff5a93ff4d36325eb05862f15b8491356e9828",
+    "assetId": 135775428905962,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "ambiente/Faded.ogg": {
+    "sha256": "906ef1a931662e2c136bc4e3047b2a06b8fb648b3c851bb9292581ed6aa8c624",
+    "assetId": 133103734579561,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "ambiente/Hollow.ogg": {
+    "sha256": "b25621d263fae46289d11e240c7a80df636997a6afa642b857cbbfd59d7ccfcb",
+    "assetId": 114680942893734,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "ambiente/Still.ogg": {
+    "sha256": "b837d32b80d50787aab926efba568ebdca2f86f94537a5dd0c1b7c7607bc5e0d",
+    "assetId": 115189390737676,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "ambiente/Veil.ogg": {
+    "sha256": "49c62bcd8bd6d06b54bdb0c5add71bc7805c9094c39a7db364a36f3f61d9034a",
+    "assetId": 127872286217212,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Concrete_1.ogg": {
+    "sha256": "6c1858ed29e2446437b9387665f24c196fbfd5325de4f1b013015213bdbd44cf",
+    "assetId": 98424367286229,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Concrete_2.ogg": {
+    "sha256": "ef86032d3d6094adcc57e07134fd262cb0a86ca7635ca55c8fd12a0b1185f770",
+    "assetId": 106238691482441,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Concrete_3.ogg": {
+    "sha256": "009ecf110237313fbd99aedd854460439fe2483479233079f56be7aa26473ac3",
+    "assetId": 70981900139155,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Concrete_4.ogg": {
+    "sha256": "b3d74a8c1fea24a9f535c5def643a976b13d779feca577aad90488c84912db2d",
+    "assetId": 76564272421308,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Concrete_5.ogg": {
+    "sha256": "12ddb2d3fc16a3948491632535d1cbea58287d7e8ca469704508c9d12c41d09e",
+    "assetId": 115011133167211,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Dirt_1.ogg": {
+    "sha256": "e75e46fe8d662fd1f02de449b88272f657e81a35416f730c18c8f20a24217f40",
+    "assetId": 111094188626020,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Dirt_2.ogg": {
+    "sha256": "3b3af218947a2b0ebcecfbc1a42f2292ef259b324085e72973807e222e491510",
+    "assetId": 126843992627805,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Dirt_3.ogg": {
+    "sha256": "2edd5bec3a0e818e5b97a7a2a9132aa056e320724d2d08cb710eecc69f44dc8b",
+    "assetId": 111035776159254,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Dirt_4.ogg": {
+    "sha256": "e0b57546dc60bfc200dc82ed4c6e4116bc40be330d3af9d1539b3ccb51cfbda2",
+    "assetId": 137110316710587,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Dirt_5.ogg": {
+    "sha256": "3d9cf4efab073cd6ac548292e8761ff86c72df20501038519a89f87c6ec91558",
+    "assetId": 89523733750749,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Grass_1.ogg": {
+    "sha256": "b1645d24982964d427d54be4998757e97cc4142c3832cbe1fa246896ffafe0c9",
+    "assetId": 89617786408128,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Grass_2.ogg": {
+    "sha256": "d79476415f71f996532b4ceecc7f820ec4b931452d8eb31daa3f622ab8d8280b",
+    "assetId": 110588167105928,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Grass_3.ogg": {
+    "sha256": "7274328f8745a0a97e5a4a7baeced5422f8085e84b82f2001fdbc59e0661d22e",
+    "assetId": 136708090899031,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Grass_4.ogg": {
+    "sha256": "a2347c632207ee55aa6498004907e3905978dc0bd9715fda0666af8e782f4718",
+    "assetId": 112274719997296,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Grass_5.ogg": {
+    "sha256": "601ab24232226284f241a35a1b508a3a5a56de6adf94768bb901f67196e472ca",
+    "assetId": 90239165993352,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Grass_6.ogg": {
+    "sha256": "70a602f41df25312bc454e84557d9d64418b95c8ca0354f683f1373c6df69efd",
+    "assetId": 71166371776774,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Gravel_1.ogg": {
+    "sha256": "0b47481071b1fa64b02a3bea93f408e297794d0738384f89ae3deec8a8db5aff",
+    "assetId": 130753324899745,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Gravel_2.ogg": {
+    "sha256": "1e9e55999d76ed0289d240432330bf031da6ce3002a97d97601abb19b7381670",
+    "assetId": 98227104991260,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Gravel_3.ogg": {
+    "sha256": "9f889a1f14877e63877a09076ea4b811e1e63851f31d39daea733530076cdeab",
+    "assetId": 125044404414849,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Gravel_4.ogg": {
+    "sha256": "b936b3c7988451968ef4ecfe7b0fbc382991e44f66ff88efb609a03643aace86",
+    "assetId": 139714883369384,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Gravel_5.ogg": {
+    "sha256": "2b215d587fcac6988911efacb0b99892a932246ca92be8f98cc233a01189651f",
+    "assetId": 98939802011940,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Metal_1.ogg": {
+    "sha256": "639af364a60e00c22b78df46daca783e1f47f39801f07d2ab2b78f83990a43cf",
+    "assetId": 117662083038043,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Metal_2.ogg": {
+    "sha256": "5af0c4720a9ca49ba19b578f4a7554f5d177d09f01b2537989dc07c966a7ece8",
+    "assetId": 103479183966792,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Metal_3.ogg": {
+    "sha256": "113b1d246eb3119ec2e4e87cfbb3c96b0c2c5561fc35bf833f6dcdcbf1857070",
+    "assetId": 139445040110543,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Metal_4.ogg": {
+    "sha256": "fe0df3f18196aaa3aea6f117a7cb536d2786aa9dce055d113cfab369e217ac08",
+    "assetId": 137006362486852,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Metal_5.ogg": {
+    "sha256": "415a05a17da03f8c38c102de41649ff7b9ab906c2f484b2f382b63e8e495342e",
+    "assetId": 100977375130368,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Stairs_1.ogg": {
+    "sha256": "f1f3dca18913f783c24925e9da8be154fc0941e5478a913765839dfec190b0e5",
+    "assetId": 131083561510869,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Stairs_2.ogg": {
+    "sha256": "911e2a0cfc77ff2b6e31b02b8e3e6400a9e12b342854968aefe46f5cf1c8ddc2",
+    "assetId": 75607510247958,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Stairs_3.ogg": {
+    "sha256": "f9de9cc5ce308c6469eb0032fc61c36b9ddc96591a28c88715bb511c81f1f9a5",
+    "assetId": 105081701291392,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Stairs_4.ogg": {
+    "sha256": "004a92ffd9ed2f5c06f363e9c27e89e0e67902c28dc2971ee8a1f5915570b2a2",
+    "assetId": 104712845874278,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Stairs_5.ogg": {
+    "sha256": "1dfe331f830f90749041c8249f31848648776efbf83386b296b474afb3953a3f",
+    "assetId": 75917560981146,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Stone_1.ogg": {
+    "sha256": "b9f141e4fafc7727b96db0b2e7475c57dd0ed8a11e5ca7f5bc58c56737f030a3",
+    "assetId": 85263891634588,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Stone_2.ogg": {
+    "sha256": "e2cbb4864caf05cbdf92b8f68eb5703ddf06ed8f3ccbc2b6c4955cc98172ba31",
+    "assetId": 138603798449317,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Stone_3.ogg": {
+    "sha256": "a2d19f5c4442423dffb179e0e1df31b5beafb10a4fcbbd42ddb15a6573f99c9e",
+    "assetId": 104153888779450,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Stone_4.ogg": {
+    "sha256": "e8faa5d27796485b70a4a6a0d19a16182097ec641a07f13ab14cc9fb16ce30aa",
+    "assetId": 99742392490555,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Wood_1.ogg": {
+    "sha256": "e9f8a0c37b8a36eba25dc05e184f65ecf8540b0c406fd93d183e74de5ac8cb10",
+    "assetId": 132158430802061,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Wood_2.ogg": {
+    "sha256": "9c0588f8eeb7685757c87275981e1c6bd551a266fd8913192628501170a7768b",
+    "assetId": 128911629926943,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Wood_3.ogg": {
+    "sha256": "92a3f3601bd60b0bf68bc5dc3263ef53fcce0e52593dfdea748ff284c6c87c85",
+    "assetId": 139318855252527,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Wood_4.ogg": {
+    "sha256": "44c310df2747a6221d802fe06bfd70394e12aa6b7c81115bee7765368c3cdeee",
+    "assetId": 129143597217825,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "passos/Wood_5.ogg": {
+    "sha256": "316a6562e6726886ddc1f4ab6901f196b756fdf957bf0fbb62b7dd12ef11c66f",
+    "assetId": 102509336033458,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  }
+}

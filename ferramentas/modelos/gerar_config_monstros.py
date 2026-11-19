@@ -7,21 +7,31 @@ enviados.json: Model = assetId do modelo; textura: o assetId devolvido e de um D
 """
 
 import json
+import subprocess
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[2]
-PASTA = RAIZ / "modelos 3d" / "rastejador"
 SAIDA = RAIZ / "src" / "shared" / "Config" / "MonstrosMalhas.luau"
-ACOES = ["Idle", "Walk", "Run", "Attack", "Death"]
+# chave em MonstrosMalhas (= Config/Monstros.especies[i].id) -> pasta em modelos 3d/. Quem ainda nao tem manifesto.json e pulado.
+MONSTROS = {
+    "Rastejador": "rastejador",
+    "Wrapper": "wrapper",
+    "Corcunda": "corcunda",
+    "MonstroPS1": "monstrops1",
+    "Florescida": "florescida",
+}
+ORDEM = ["Idle", "Walk", "Run", "Attack", "Death"]  # depois destas, as outras do manifesto em ordem alfabetica
 
 
 def n(x):
     return ("%.4f" % x).rstrip("0").rstrip(".")
 
 
-def main():
-    man = json.loads((PASTA / "manifesto.json").read_text(encoding="utf-8"))
-    env = json.loads((PASTA / "enviados.json").read_text(encoding="utf-8"))
+def bloco(chave, pasta):
+    man = json.loads((pasta / "manifesto.json").read_text(encoding="utf-8"))
+    env_arq = pasta / "enviados.json"
+    env = json.loads(env_arq.read_text(encoding="utf-8")) if env_arq.exists() else {}
+    prefixo = man.get("prefixo_anim") or chave + "_"
     s = man["escala_blender_para_fbx"]
     dim = [v * s for v in man["dimensoes_blend"]["tamanho"]]  # x largura, y comprimento (Blender) , z altura
     cmn, cmx = man["corpo_blend"]["min"], man["corpo_blend"]["max"]
@@ -30,7 +40,8 @@ def main():
     corpo_tam = [(cmx[0] - cmn[0]) * s, (cmx[2] - cmn[2]) * s, (cmx[1] - cmn[1]) * s]
     corpo_centro = [-(cmx[0] + cmn[0]) / 2 * s, ((cmx[2] + cmn[2]) / 2 - zc) * s, (cmx[1] + cmn[1]) / 2 * s]
     chao_corpo = (cmn[2]) * s  # fundo do corpo acima do chao
-    linhas = ["-- GERADO por ferramentas/modelos/gerar_config_monstros.py. Nao editar a mao.", "", "return {", "\tRastejador = {"]
+    ACOES = sorted(man["acoes"], key=lambda a: (ORDEM.index(a) if a in ORDEM else len(ORDEM), a))
+    linhas = ["	%s = {" % chave]
     mod = env.get(man["arquivo"], {}).get("assetId")
     tex = env.get(man["textura"], {}).get("imagemId")
     if mod:
@@ -43,14 +54,39 @@ def main():
     linhas.append("\t\tfundoDoCorpo = %s, -- studs do chao ate o fundo do corpo (HipHeight)" % n(chao_corpo))
     linhas.append("\t\tanimacoes = {")
     for a in ACOES:
-        i = env.get("anim/Rastejador_%s.rbxm" % a, {}).get("assetId")
+        i = env.get("anim/%s%s.rbxm" % (prefixo, a), {}).get("assetId")
         if i:
             linhas.append('\t\t\t%s = "rbxassetid://%d",' % (a, i))
     linhas.append("\t\t},")
-    linhas.append("\t\tduracao = { " + ", ".join("%s = %s" % (a, n(man["acoes"][a]["quadros"] - 1) if False else n((man["acoes"][a]["quadros"] - 1) / man["acoes"][a]["fps"])) for a in ACOES if a in man["acoes"]) + " }, -- s")
+    linhas.append("\t\tduracao = { " + ", ".join("%s = %s" % (a, n((man["acoes"][a]["quadros"] - 1) / man["acoes"][a]["fps"])) for a in ACOES) + " }, -- s")
+    ev = man.get("eventos") or {}
+    if ev:
+        linhas.append("\t\teventos = { -- s desde o inicio do clipe (medido no clipe)")
+        for a in ACOES:
+            if a in ev:
+                linhas.append("\t\t\t%s = { %s }," % (a, ", ".join("%s = %s" % (k, n(v)) for k, v in sorted(ev[a].items()))))
+        linhas.append("\t\t},")
+    nat = man.get("nativas_blend") or {}
+    if nat:
+        linhas.append("\t\tnativas = { " + ", ".join("%s = %s" % (a, n(nat[a] * s)) for a in ACOES if a in nat) + " }, -- studs/s sem patinar")
     linhas.append("\t},")
+    return linhas
+
+
+def main():
+    linhas = ["-- GERADO por ferramentas/modelos/gerar_config_monstros.py. Nao editar a mao.", "", "return {"]
+    for chave, nome in MONSTROS.items():
+        pasta = RAIZ / "modelos 3d" / nome
+        if (pasta / "manifesto.json").exists():
+            linhas += bloco(chave, pasta)
     linhas.append("}")
-    SAIDA.write_text("\n".join(linhas) + "\n", encoding="utf-8")
+    with open(SAIDA, "w", encoding="utf-8", newline=chr(10)) as f:
+        f.write(chr(10).join(linhas) + chr(10))
+    # formata como o checar.ps1 exige (linhas longas de duracao quebram); sem stylua no PATH, fica como gerado
+    try:
+        subprocess.run(["stylua", str(SAIDA)], check=False)
+    except FileNotFoundError:
+        print("stylua nao encontrado: rode 'stylua' no arquivo gerado")
     print(SAIDA)
 
 

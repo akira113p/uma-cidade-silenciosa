@@ -12,7 +12,7 @@ local Raizes = require(Shared:WaitForChild("Raizes"))
 
 local Destruicao = {}
 
-export type TipoDano = "bala" | "corte" | "alavanca" | "marreta" | "garra" | "soco" | "impacto" | "explosao"
+export type TipoDano = "bala" | "corte" | "lamina" | "alavanca" | "marreta" | "garra" | "soco" | "impacto" | "explosao"
 export type Info = {
 	tipo: TipoDano,
 	ponto: Vector3?,
@@ -21,6 +21,10 @@ export type Info = {
 	largura: number?,
 	altura: number?,
 	ruido: string?,
+	forma: string?, -- "retangulo" | "elipse" | "carro" (padrão: Config/Destruicao.formaPorTipo, senão retângulo)
+	base: number?, -- Y de mundo do pé do vão (carro: base do chassi)
+	topo: number?, -- Y de mundo do alto do vão (carro: teto do chassi + folga)
+	direcao: Vector3?, -- para onde a pancada empurra (prop derrubável tomba para lá)
 }
 export type Resultado = { quebrou: boolean, fracao: number, efetivo: number, classe: string, vidaRestante: number }
 type Extras = { normal: Vector3?, chao: Vector3? }
@@ -36,7 +40,7 @@ export type Evento = {
 	grupo: string?,
 }
 
-type Cls = { papel: string, grupo: string?, modelo: Model? }
+type Cls = { papel: string, grupo: string?, modelo: Model?, derrubavel: string? }
 type Estado = {
 	vida: number,
 	vidaMax: number,
@@ -47,7 +51,8 @@ type Estado = {
 	transp0: number?,
 	grupo: string?,
 	modelo: Model?,
-	travada: boolean?, -- limites estourados: só escurece
+	travada: boolean?, -- limites estourados (ou prop já tombado): só escurece
+	marcas: { { p: Vector3, dano: number } }?, -- furos de tiro em formação (ponto local, dano acumulado)
 }
 
 local fraca = { __mode = "k" }
@@ -125,6 +130,7 @@ local function classificar(inst: Instance): Cls?
 	end
 	local movel = false
 	local prop: string? = nil
+	local propModelo: Model? = nil
 	local atual = inst.Parent
 	while atual and atual ~= raiz and atual ~= workspace do
 		if atual:IsA("Model") then
@@ -141,6 +147,7 @@ local function classificar(inst: Instance): Cls?
 			local p = atual:GetAttribute("Prop")
 			if prop == nil and type(p) == "string" then
 				prop = p
+				propModelo = atual
 			end
 		end
 		atual = atual.Parent
@@ -154,6 +161,9 @@ local function classificar(inst: Instance): Cls?
 			return { papel = papel.papel }
 		end
 		return nil
+	end
+	if prop and Cfg.derrubaveis[prop] and propModelo then
+		return { papel = "derrubavel", modelo = propModelo, derrubavel = prop }
 	end
 	if prop and Cfg.props[prop] then
 		return { papel = "prop" }
@@ -175,8 +185,8 @@ end
 
 -- Classe, vida máxima e material da peça (ou do grupo), sem criar estado.
 local function dadosDe(inst: Instance, cls: Cls): (string, number, string)
-	if cls.grupo then
-		local g = Cfg.grupos[cls.grupo]
+	local g = if cls.grupo then Cfg.grupos[cls.grupo] elseif cls.derrubavel then Cfg.derrubaveis[cls.derrubavel] else nil
+	if g then
 		return Regras.classeDe(g.material, CfgMat).classe, g.vida, g.material
 	end
 	local peca = inst :: BasePart
@@ -201,7 +211,7 @@ local function estadoDe(inst: Instance, cls: Cls): Estado
 		material = material,
 		papel = cls.papel,
 		estagio = 0,
-		transp0 = if cls.grupo then nil else (inst :: BasePart).Transparency,
+		transp0 = if cls.modelo then nil else (inst :: BasePart).Transparency,
 		grupo = cls.grupo,
 		modelo = cls.modelo,
 	}
@@ -253,7 +263,7 @@ local function pintar(inst: Instance, e: Estado)
 	end
 end
 
-local function poeira(ponto: Vector3, cor: { number })
+local function poeira(ponto: Vector3, cor: { number }, quantidade: number?)
 	local c = Cfg.poeira
 	local ancora = Instance.new("Part")
 	ancora.Anchored = true
@@ -273,7 +283,7 @@ local function poeira(ponto: Vector3, cor: { number })
 	emissor.Color = ColorSequence.new(Color3.fromRGB(cor[1], cor[2], cor[3]))
 	emissor.Parent = ancora
 	ancora.Parent = workspace
-	emissor:Emit(c.quantidade)
+	emissor:Emit(quantidade or c.quantidade)
 	Debris:AddItem(ancora, c.duracao)
 end
 
@@ -314,8 +324,15 @@ local function posicaoDe(inst: Instance, cls: Cls): Vector3
 	return (inst :: BasePart).Position
 end
 
--- Divide a peça em retalhos (clones Anchored) em volta do vão e a destrói. Devolve (centro do vão, quebrou).
-local function cortar(peca: BasePart, e: Estado, info: Info, ponto: Vector3): (Vector3?, boolean, Extras?)
+-- Divide a peça em retalhos (clones Anchored) em volta do vão e a destrói. O vão é uma pilha de faixas (retângulo, elipse em
+-- degraus, silhueta do carro). `herdado` = fração de dano com que os retalhos nascem. Devolve (centro do vão, cortou, extras).
+local function cortar(
+	peca: BasePart,
+	e: Estado,
+	info: Info,
+	ponto: Vector3,
+	herdado: number
+): (Vector3?, boolean, Extras?)
 	local s = peca.Size
 	local dims = { s.X, s.Y, s.Z }
 	local eixoFino = 1
@@ -331,15 +348,30 @@ local function cortar(peca: BasePart, e: Estado, info: Info, ponto: Vector3): (V
 	if info.altura then
 		buraco.altura = math.min(info.altura, dims[2])
 	end
-	local ancoraChao = eixoFino ~= 2 and info.tipo ~= "bala" -- furo de bala é no ponto do tiro, não do chão para cima
+	local forma = info.forma or Cfg.formaPorTipo[info.tipo] or "retangulo"
+	local ancoraChao = eixoFino ~= 2 and forma == "retangulo" -- furo e explosão: no ponto; golpe e garra: do chão para cima
 	local minimo = Cfg.retalhos.minimo
-	local retalhos = Regras.recortar(dims, eixoFino, pontoLocal, buraco, ancoraChao, minimo)
+	local baseLocal: number? = nil
+	if info.base and eixoFino ~= 2 then
+		local b = c:PointToObjectSpace(Vector3.new(ponto.X, info.base, ponto.Z)).Y
+		if b + dims[2] / 2 < Cfg.carro.soleira then
+			b = -dims[2] / 2 -- o pé do carro quase no chão da parede: o vão desce até o chão, sem degrau
+		end
+		baseLocal = b
+		if info.topo then
+			local t = c:PointToObjectSpace(Vector3.new(ponto.X, info.topo, ponto.Z)).Y
+			buraco.altura = math.clamp(t - b, minimo, dims[2])
+		end
+	end
+	local faixas = Regras.faixas(dims, eixoFino, pontoLocal, buraco, forma, ancoraChao, minimo, Cfg, baseLocal)
+	if #faixas == 0 then
+		return nil, false
+	end
+	local retalhos = Regras.recortarFaixas(dims, eixoFino, faixas)
 	if furosAbertos >= Cfg.limites.buracos or pecasExtras + #retalhos > Cfg.limites.pecasExtras then
 		return nil, false
 	end
-	local vao = Regras.vao(dims, eixoFino, pontoLocal, buraco, ancoraChao, minimo)
 	local pai = peca.Parent
-	local herdado = Cfg.retalhos.danoHerdado
 	for _, r in retalhos do
 		local clone = peca:Clone()
 		clone.Size = Vector3.new(r.tamanho[1], r.tamanho[2], r.tamanho[3])
@@ -363,22 +395,147 @@ local function cortar(peca: BasePart, e: Estado, info: Info, ponto: Vector3): (V
 	end
 	furosAbertos += 1
 	pecasExtras += #retalhos
-	local centro = c:PointToWorldSpace(Vector3.new(vao.centro[1], vao.centro[2], vao.centro[3]))
-	-- normal = eixo da espessura (sem sinal); chão = pé do vão, 1 stud acima da base (só parede vertical): o navmesh não enxerga
-	-- a peça que saiu, então quem atravessa o vão precisa saber onde ele está (MonstroArrombar.buracos)
+	local u, v = Regras.eixosDoPlano(eixoFino)
+	local u0, u1, v0, v1 = Regras.caixaFaixas(faixas)
+	local cl = { 0, 0, 0 }
+	cl[u], cl[v] = (u0 + u1) / 2, (v0 + v1) / 2
+	local centro = c:PointToWorldSpace(Vector3.new(cl[1], cl[2], cl[3]))
+	-- normal = eixo da espessura (sem sinal). chão = pé do vão, 1 stud acima da base, só se o vão encosta no chão da parede e
+	-- passa alguém: o navmesh não enxerga a peça que saiu, então quem atravessa precisa saber onde ele está (vaoUtil)
 	local eixos = { c.RightVector, c.UpVector, c.LookVector }
 	local extras: Extras = { normal = eixos[eixoFino] }
-	if eixoFino ~= 2 then
-		extras.chao = c:PointToWorldSpace(Vector3.new(vao.centro[1], -s.Y / 2 + 1, vao.centro[3]))
+	local P = Cfg.vaoPassavel
+	if eixoFino ~= 2 and v0 <= -dims[v] / 2 + 1e-6 and u1 - u0 >= P.largura and v1 - v0 >= P.altura then
+		local ch = { 0, 0, 0 }
+		ch[u], ch[v] = (u0 + u1) / 2, -dims[v] / 2 + 1
+		extras.chao = c:PointToWorldSpace(Vector3.new(ch[1], ch[2], ch[3]))
 	end
 	peca:Destroy()
 	return centro, true, extras
 end
 
+-- Prop derrubável: as peças acima da sapata viram um corpo só, presas à base por uma junta, e tombam na direção da pancada.
+-- Batendo no chão: som, ruído e poeira; paradas, voltam a ficar ancoradas (deitadas onde caíram).
+local function derrubar(modelo: Model, e: Estado, info: Info, ponto: Vector3)
+	local d = Cfg.derrubar
+	local caixa, tamanho = modelo:GetBoundingBox()
+	local baseY = caixa.Position.Y - tamanho.Y / 2
+	local topoY = caixa.Position.Y + tamanho.Y / 2
+	local caem: { BasePart } = {}
+	local raiz: BasePart? = nil
+	local maior = -1
+	for _, p in modelo:GetDescendants() do
+		if p:IsA("BasePart") and Regras.cai(p.Position.Y, baseY, Cfg) then
+			table.insert(caem, p)
+			local vol = p.Size.X * p.Size.Y * p.Size.Z
+			if vol > maior then
+				raiz, maior = p, vol
+			end
+		end
+	end
+	if not raiz then
+		return
+	end
+	local r = raiz :: BasePart
+	for _, p in caem do
+		if p ~= r then
+			local solda = Instance.new("WeldConstraint")
+			solda.Part0 = r
+			solda.Part1 = p
+			solda.Parent = r
+		end
+	end
+	-- pivô no pé da peça principal (meia altura dela no eixo Y do mundo), em cima da sapata
+	local cf, sz = r.CFrame, r.Size
+	local meia = 0.5
+		* (math.abs(cf.RightVector.Y) * sz.X + math.abs(cf.UpVector.Y) * sz.Y + math.abs(cf.LookVector.Y) * sz.Z)
+	local pivo = Vector3.new(r.Position.X, math.max(baseY, r.Position.Y - meia), r.Position.Z)
+	local a0 = Instance.new("Attachment")
+	a0.Name = "DerrubarPivo"
+	a0.Parent = r
+	a0.WorldPosition = pivo
+	local a1 = Instance.new("Attachment")
+	a1.Name = "DerrubarPivo"
+	a1.Parent = workspace.Terrain
+	a1.WorldPosition = pivo
+	local junta = Instance.new("BallSocketConstraint")
+	junta.Attachment0 = a0
+	junta.Attachment1 = a1
+	junta.Parent = r
+
+	local dir = info.direcao or (if info.normal then -info.normal else nil) or (r.Position - ponto)
+	dir = Vector3.new(dir.X, 0, dir.Z)
+	if dir.Magnitude < 1e-3 then
+		local ang = math.random() * 2 * math.pi
+		dir = Vector3.new(math.cos(ang), 0, math.sin(ang))
+	end
+	dir = dir.Unit
+	for _, p in caem do
+		p.Anchored = false
+	end
+	pcall(function()
+		r:SetNetworkOwner(nil) -- o servidor simula a queda
+	end)
+	local altura = math.max(1, topoY - pivo.Y)
+	-- eixo = cima x dir = (dir.Z, 0, -dir.X): o topo sai a `empurrao` studs/s para `dir`
+	r.AssemblyAngularVelocity = Vector3.new(dir.Z, 0, -dir.X) * (d.empurrao / altura)
+	local topoLocal = r.CFrame:PointToObjectSpace(Vector3.new(pivo.X, topoY, pivo.Z))
+	local classe = CfgMat.classes[e.classe]
+	local fonte = fonteDeRuido(info.fonte)
+
+	task.spawn(function()
+		local t0 = os.clock()
+		local antes = 0
+		local bateu = false
+		local paradoDesde: number? = nil
+		while r.Parent and modelo.Parent do
+			task.wait(d.amostra)
+			local topo = r.CFrame:PointToWorldSpace(topoLocal)
+			local agora = r:GetVelocityAtPosition(topo).Magnitude
+			local t = os.clock() - t0
+			if not bateu and (Regras.bateuNoChao(antes, agora, Cfg) or t >= d.tempoMax) then
+				bateu = true
+				tocarSom(d.som, topo)
+				emitirRuido(d.acao, topo, fonte)
+				poeira(topo, classe.poeira)
+			end
+			if bateu then
+				if agora < d.parado.vel then
+					paradoDesde = paradoDesde or os.clock()
+				else
+					paradoDesde = nil
+				end
+				if paradoDesde and os.clock() - paradoDesde >= d.parado.tempo then
+					break
+				end
+			end
+			if t >= d.tempoAncorar then
+				break
+			end
+			antes = agora
+		end
+		for _, p in caem do
+			if p.Parent then
+				p.Anchored = true
+			end
+		end
+		junta:Destroy()
+		a0:Destroy()
+		a1:Destroy()
+	end)
+end
+
 local function quebrar(inst: Instance, cls: Cls, e: Estado, info: Info, ponto: Vector3): boolean
 	local centro: Vector3? = ponto
 	local extras: Extras? = nil
-	if cls.modelo then
+	if cls.derrubavel and cls.modelo then
+		centro = ponto
+		e.travada = true -- tombou uma vez: daqui em diante só escurece
+		local ok, erro = pcall(derrubar, cls.modelo, e, info, ponto)
+		if not ok then
+			avisar("derrubar", "falha ao derrubar: " .. tostring(erro))
+		end
+	elseif cls.modelo then
 		centro = cls.modelo:GetPivot().Position
 		cls.modelo:Destroy()
 	else
@@ -389,7 +546,7 @@ local function quebrar(inst: Instance, cls: Cls, e: Estado, info: Info, ponto: V
 			centro = peca.Position
 			peca:Destroy()
 		else
-			local ok, vao, cortou, ex = pcall(cortar, peca, e, info, ponto)
+			local ok, vao, cortou, ex = pcall(cortar, peca, e, info, ponto, Cfg.retalhos.danoHerdado)
 			if not ok then
 				avisar("cortar", "falha ao recortar: " .. tostring(vao))
 				return false
@@ -411,9 +568,11 @@ local function quebrar(inst: Instance, cls: Cls, e: Estado, info: Info, ponto: V
 		end
 	end
 	local classe = CfgMat.classes[e.classe]
-	tocarSom(classe.somQuebra, posicao)
-	emitirRuido(classe.acaoQuebra, posicao, fonteDeRuido(info.fonte))
-	poeira(posicao, classe.poeira)
+	if not cls.derrubavel then -- o prop que tomba faz o barulho dele ao bater no chão (derrubar)
+		tocarSom(classe.somQuebra, posicao)
+		emitirRuido(classe.acaoQuebra, posicao, fonteDeRuido(info.fonte))
+		poeira(posicao, classe.poeira)
+	end
 	local Monstros = servico("Monstros")
 	if Monstros and Monstros.invalidarCaminhos then
 		local ok, erro = pcall(Monstros.invalidarCaminhos, posicao, Cfg.invalidarCaminhos.raio)
@@ -440,6 +599,56 @@ local function quebrar(inst: Instance, cls: Cls, e: Estado, info: Info, ponto: V
 		end
 	end
 	return true
+end
+
+-- Furo de tiro só em Part bloco grande, de classe que não estilhaça inteira (vidro) e com limiar definido.
+local function podeFurar(inst: Instance, cls: Cls, e: Estado): boolean
+	if cls.modelo or not inst:IsA("Part") or (inst :: Part).Shape ~= Enum.PartType.Block then
+		return false
+	end
+	local s = (inst :: Part).Size
+	return not CfgMat.classes[e.classe].inteira
+		and not Regras.inteiraSeMenor({ s.X, s.Y, s.Z }, Cfg)
+		and Regras.limiarFuro(e.vidaMax, e.classe, Cfg) < math.huge
+end
+
+-- Soma o dano do tiro na marca mais perto (ou abre uma); passou do limiar, abre o furo em elipse ali. Devolve se furou.
+local function tentarFuro(peca: BasePart, e: Estado, efetivo: number, info: Info, ponto: Vector3): boolean
+	local f = Cfg.furo
+	local lp = peca.CFrame:PointToObjectSpace(ponto)
+	local raio = math.max(f.raio, (info.largura or 0) / 2)
+	local marcas = e.marcas or {}
+	e.marcas = marcas
+	local alvo = nil
+	for _, m in marcas do
+		if (m.p - lp).Magnitude <= raio then
+			alvo = m
+			break
+		end
+	end
+	if not alvo then
+		alvo = { p = lp, dano = 0 }
+		table.insert(marcas, alvo)
+		if #marcas > f.maxMarcas then
+			table.remove(marcas, 1)
+		end
+	end
+	alvo.dano += efetivo
+	if alvo.dano < Regras.limiarFuro(e.vidaMax, e.classe, Cfg) then
+		return false
+	end
+	local tam = Regras.tamanhoFuro(info.largura, Cfg)
+	local herdado = math.clamp(1 - e.vida / e.vidaMax, 0, 1)
+	local furo: Info = { tipo = "bala", forma = "elipse", largura = tam, altura = tam, fonte = info.fonte }
+	local ok, erro, cortou = pcall(cortar, peca, e, furo, ponto, herdado)
+	if not ok then
+		avisar("furo", "falha ao abrir furo: " .. tostring(erro))
+		return false
+	end
+	if cortou then
+		poeira(ponto, CfgMat.classes[e.classe].poeira, f.poeira)
+	end
+	return cortou == true
 end
 
 local function aplicarDano(inst: Instance, quantidade: number, info: Info): Resultado?
@@ -474,7 +683,9 @@ local function aplicarDano(inst: Instance, quantidade: number, info: Info): Resu
 		somImpacto()
 		return resultado(false)
 	end
-	e.vida -= efetivo
+	-- tiro: o dano vai quase todo para o furo local; a peça inteira leva só danoGlobal
+	local furar = info.tipo == "bala" and podeFurar(inst, cls, e)
+	e.vida -= if furar then efetivo * Cfg.furo.danoGlobal else efetivo
 	somImpacto()
 	if info.ruido then
 		emitirRuido(info.ruido, ponto, fonteDeRuido(info.fonte))
@@ -492,6 +703,9 @@ local function aplicarDano(inst: Instance, quantidade: number, info: Info): Resu
 			pintar(inst, e)
 		end
 		return resultado(quebrou)
+	end
+	if furar then
+		tentarFuro(inst :: BasePart, e, efetivo, info, ponto)
 	end
 	return resultado(false)
 end
@@ -650,7 +864,11 @@ function Destruicao.explosao(centro: Vector3, raio: number, dano: number, fonte:
 			local cls = clsDe(a.peca)
 			if a.peca.Parent and cls and vistos[chaveDe(a.peca, cls)] == a.queda then
 				vistos[chaveDe(a.peca, cls)] = -1
-				Destruicao.dano(a.peca, dano * a.queda, { tipo = "explosao", ponto = a.ponto, fonte = fonte })
+				Destruicao.dano(
+					a.peca,
+					dano * a.queda,
+					{ tipo = "explosao", ponto = a.ponto, fonte = fonte, direcao = a.ponto - centro }
+				)
 			end
 		end
 	end)
@@ -739,13 +957,17 @@ function Destruicao.varrerCarro(
 		for _, a in pecasNaCaixa(cf, tamanho) do
 			local peca, cls = a.peca, a.cls
 			local vida, classe = vidaDe(peca, cls)
-			local mult = CfgMat.matriz.impacto[classe] or 0
-			if mult > 0 and peca.Parent and Regras.atravessa(energia * mult, vida) then
+			local efetivo = Regras.danoEfetivo(energia, "impacto", classe, CfgMat) -- com o multiplicador global (antes ficava de fora)
+			if efetivo > 0 and peca.Parent and Regras.atravessa(efetivo, vida) then
 				local res = Destruicao.dano(peca, energia, {
 					tipo = "impacto",
 					ponto = pontoMaisProximo(peca, nariz),
 					fonte = fonte or chassi.Parent,
 					largura = largura + c.larguraVao,
+					forma = "carro",
+					base = pos.Y - altura / 2,
+					topo = pos.Y + altura / 2 + c.folgaAltura,
+					direcao = dir,
 				})
 				if res and res.quebrou then
 					saida.custoCarroceria += Regras.custoCarroceria(vida, Cfg)
@@ -806,6 +1028,10 @@ function Destruicao.impactoCarro(
 			ponto = pontoMaisProximo(melhor, nariz),
 			fonte = fonte or chassi.Parent,
 			largura = largura + c.larguraVao,
+			forma = "carro",
+			base = pos.Y - altura / 2,
+			topo = pos.Y + altura / 2 + c.folgaAltura,
+			direcao = dir,
 		})
 		if res and res.quebrou then
 			custo = Regras.custoCarroceria(vida, Cfg)

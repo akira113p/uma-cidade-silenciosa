@@ -12,62 +12,123 @@ local function ids(lista: { number }): { string }
 	return t
 end
 
+-- No Roblox o require é por instância; no Lune (testes) é por caminho relativo ao arquivo.
+local function carregar(nome: string): any
+	if typeof(script) == "Instance" then
+		return require((script :: any).Parent:WaitForChild(nome))
+	end
+	return (require :: any)("./" .. nome)
+end
+
+-- Ids enviados do pacote PSX (gerado por ferramentas/audio/gerar_config_audio.py; lista vazia = ainda não enviado).
+local PSX = carregar("SonsPSX")
+-- Sons novos dos monstros (gerado por ferramentas/som/enviar_som.py; docs/monstros/logica.md §9). Faltando = lista vazia.
+local NM = carregar("SonsMonstros")
+local function monstro(nome: string): { string }
+	local id = NM.sons[nome]
+	return if id then ids({ id }) else {}
+end
+local falasCorcunda = ids(NM.VozCorcunda)
+
+-- Usa só os ids novos se houver; senão os antigos (o jogo não fica mudo até o upload acontecer; docs/audio-psx.md §3).
+local function novoOuAntigo(novos: { number }?, antigos: { number }): { string }
+	if novos and #novos > 0 then
+		return ids(novos)
+	end
+	return ids(antigos)
+end
+
+-- Junta só os ids que existem (faixa de ambiente ainda não enviada vem nil).
+local function existentes(...: number?): { number }
+	local pacote = table.pack(...)
+	local t = {}
+	for i = 1, pacote.n do
+		if pacote[i] then
+			table.insert(t, pacote[i])
+		end
+	end
+	return t
+end
+
+local ANTIGOS_CONCRETO = { 87061775498714, 120195545352847, 108290664490396, 106961831442199, 112000835797556 }
+local ANTIGOS_GRAMA_BAIXA = { 129956418693357, 78534941650081, 110522236020035, 135037154891351 }
+local ANTIGOS_METAL = { 140728903346385, 139723537411614, 135890657963973, 9125818616 }
+local passoMetal = novoOuAntigo(PSX.passos.Metal, ANTIGOS_METAL) -- MangueiraSolta reaproveita a mesma lista
+
 return {
 	-- Passos (um por superfície de Config/Som.superficies). pitch varia ±variacao.
 	PassoConcreto = {
-		ids = ids({ 87061775498714, 120195545352847, 108290664490396, 106961831442199, 112000835797556 }),
+		ids = novoOuAntigo(PSX.passos.Concrete, ANTIGOS_CONCRETO),
 		volume = 0.6,
 		variacao = 0.05,
 		grupo = "Efeitos",
-		origem = "Creator Store (IDogeffI, Diman_x86)",
+		origem = "PSX 40 Free Footsteps (Concrete); antigos: Creator Store (IDogeffI, Diman_x86)",
+		confirmado = false,
+	},
+	PassoTerra = {
+		ids = novoOuAntigo(PSX.passos.Dirt, ANTIGOS_GRAMA_BAIXA),
+		volume = 0.55,
+		variacao = 0.05,
+		grupo = "Efeitos",
+		origem = "PSX 40 Free Footsteps (Dirt); antigos: os de grama baixa",
+		confirmado = false,
+	},
+	PassoPedra = {
+		ids = novoOuAntigo(PSX.passos.Stone, ANTIGOS_CONCRETO),
+		volume = 0.6,
+		variacao = 0.05,
+		grupo = "Efeitos",
+		origem = "PSX 40 Free Footsteps (Stone); antigos: os de concreto",
 		confirmado = false,
 	},
 	PassoGramaBaixa = {
-		ids = ids({ 129956418693357, 78534941650081, 110522236020035, 135037154891351 }),
+		ids = novoOuAntigo(PSX.passos.Grass, ANTIGOS_GRAMA_BAIXA),
 		volume = 0.5,
 		variacao = 0.05,
 		grupo = "Efeitos",
-		origem = "Creator Store (Robloxmastermanyay)",
+		origem = "PSX 40 Free Footsteps (Grass); antigos: Creator Store (Robloxmastermanyay)",
 		confirmado = false,
 	},
 	PassoGramaAlta = {
-		ids = ids({ 9114518386, 114626769792529 }),
-		volume = 0.6,
-		variacao = 0.08,
+		-- Mesmo arquivo da grama baixa, mais alto e com mais variação de pitch: dá a diferença.
+		ids = novoOuAntigo(PSX.passos.Grass, { 9114518386, 114626769792529 }),
+		volume = 0.7,
+		variacao = 0.1,
 		grupo = "Efeitos",
-		origem = "ProSoundEffects / levka_321",
+		origem = "PSX 40 Free Footsteps (Grass); antigos: ProSoundEffects / levka_321",
 		confirmado = false,
 	},
 	PassoMadeira = {
-		ids = ids({ 92705710431057, 140525304232464 }),
+		ids = novoOuAntigo(PSX.passos.Wood, { 92705710431057, 140525304232464 }),
 		volume = 0.6,
 		variacao = 0.05,
 		grupo = "Efeitos",
-		origem = "Creator Store (Robloxmastermanyay, Diman_x86 'CSGO')",
+		origem = "PSX 40 Free Footsteps (Wood); antigos: Creator Store (Robloxmastermanyay, Diman_x86 'CSGO')",
 		confirmado = false,
 	},
 	PassoCarpete = {
-		ids = ids({ 91882016473062, 111131620367547, 73343053773763, 123224557798023 }),
-		volume = 0.4,
+		-- O pacote não tem carpete: Dirt abafado é o mais próximo (decisão provisória, docs/audio-psx.md §3.1).
+		ids = novoOuAntigo(PSX.passos.Dirt, { 91882016473062, 111131620367547, 73343053773763, 123224557798023 }),
+		volume = 0.3,
 		variacao = 0.05,
 		grupo = "Efeitos",
-		origem = "Creator Store (iLoveSwiss_0)",
+		origem = "PSX 40 Free Footsteps (Dirt, abafado); antigos: Creator Store (iLoveSwiss_0)",
 		confirmado = false,
 	},
 	PassoCascalho = {
-		ids = ids({ 71307609262509, 104596932601069, 132387836053582 }),
+		ids = novoOuAntigo(PSX.passos.Gravel, { 71307609262509, 104596932601069, 132387836053582 }),
 		volume = 0.6,
 		variacao = 0.05,
 		grupo = "Efeitos",
-		origem = "Creator Store (Diman_x86)",
+		origem = "PSX 40 Free Footsteps (Gravel); antigos: Creator Store (Diman_x86)",
 		confirmado = false,
 	},
 	PassoMetal = {
-		ids = ids({ 140728903346385, 139723537411614, 135890657963973, 9125818616 }),
+		ids = passoMetal,
 		volume = 0.6,
 		variacao = 0.05,
 		grupo = "Efeitos",
-		origem = "Creator Store (Diman_x86 'CSGO', zhernoseki12 'SCP' CC BY-SA), ProSoundEffects",
+		origem = "PSX 40 Free Footsteps (Metal); antigos: Creator Store (Diman_x86 'CSGO', zhernoseki12 'SCP' CC BY-SA), ProSoundEffects",
 		confirmado = false,
 	},
 	PassoAgua = {
@@ -341,6 +402,15 @@ return {
 		origem = "Creator Store (reuso de CarroBatida)",
 		confirmado = false,
 	},
+	-- Poste/placa tombado batendo no chão (docs/destruicao.md §11): reuso de CarroBatida até achar um som de metal caindo.
+	PosteCai = {
+		ids = ids({ 8125594257, 70951531892215 }),
+		volume = 1,
+		variacao = 0.1,
+		grupo = "Efeitos",
+		origem = "Creator Store (reuso de CarroBatida)",
+		confirmado = false,
+	},
 	CarroBatida = {
 		ids = ids({ 8125594257, 70951531892215 }),
 		volume = 1,
@@ -392,6 +462,248 @@ return {
 		confirmado = false,
 	},
 
+	-- Monstros novos (docs/monstros/logica.md §9). Enviados pela Open Cloud (ferramentas/som); origem e licença em docs/creditos.md.
+	-- Sem ids = Sons.tocar ignora com aviso (uma vez). Sons de jogo reaproveitam ids do catálogo quando serviam.
+	PulsoChao = {
+		ids = monstro("PulsoChao"),
+		volume = 0.8,
+		variacao = 0.05,
+		grupo = "Efeitos",
+		origem = "sintético (ffmpeg, ferramentas/som/gerar_sons.py)",
+		confirmado = false,
+	},
+	GritoAbafado = {
+		ids = monstro("GritoAbafado"),
+		volume = 1,
+		variacao = 0.1,
+		grupo = "Efeitos",
+		origem = "sintético (ffmpeg): serra com vibrato + passa-baixa forte, sem boca; provisório, ninguém ouviu",
+		confirmado = false,
+	},
+	SonarOnda = {
+		ids = monstro("SonarOnda"),
+		volume = 0.7,
+		variacao = 0,
+		grupo = "Efeitos",
+		origem = "sintético (ffmpeg)",
+		confirmado = false,
+	},
+	SonarDetectado = {
+		ids = monstro("SonarDetectado"),
+		volume = 0.8,
+		variacao = 0,
+		grupo = "UI",
+		origem = "sintético (ffmpeg)",
+		confirmado = false,
+	},
+	SonarPassou = {
+		ids = monstro("SonarPassou"),
+		volume = 0.6,
+		variacao = 0,
+		grupo = "UI",
+		origem = "sintético (ffmpeg)",
+		confirmado = false,
+	},
+	Empurrao = {
+		ids = ids({ 127713737439439, 97094698098374 }),
+		volume = 0.9,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "Creator Store (reuso de AcertoCarne)",
+		confirmado = false,
+	},
+	PortaAbrir = {
+		ids = ids({ 9120829478, 85624114152325 }),
+		volume = 0.6,
+		variacao = 0.05,
+		grupo = "Efeitos",
+		origem = "ProSoundEffects / No0ne80412 (reuso de Porta)",
+		confirmado = false,
+	},
+	PortaFechar = {
+		ids = ids({ 9120829478, 85624114152325 }),
+		volume = 0.7,
+		variacao = 0.05,
+		grupo = "Efeitos",
+		origem = "ProSoundEffects / No0ne80412 (reuso de Porta)",
+		confirmado = false,
+	},
+	PortaBater = {
+		ids = ids({ 9120829478, 85624114152325 }),
+		volume = 1,
+		variacao = 0.08,
+		grupo = "Efeitos",
+		origem = "ProSoundEffects / No0ne80412 (reuso de Porta, mais alto; trocar por batida seca se soar fraco)",
+		confirmado = false,
+	},
+	RasparLaminas = {
+		ids = monstro("RasparLaminas"),
+		volume = 0.7,
+		variacao = 0.03,
+		grupo = "Efeitos",
+		loop = true,
+		origem = "sintético (ffmpeg), laço de 2 s",
+		confirmado = false,
+	},
+	LaminaLancada = {
+		ids = ids({ 108598690388763, 120847059990228 }),
+		volume = 0.7,
+		variacao = 0.1,
+		grupo = "Efeitos",
+		origem = "Creator Store (reuso de Balanco)",
+		confirmado = false,
+	},
+	LaminaImpacto = {
+		ids = ids({ 9125740081, 9116653976 }),
+		volume = 0.8,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "ProSoundEffects (reuso de AcertoMetal)",
+		confirmado = false,
+	},
+	LaminaAparar = {
+		ids = ids({ 9125740081, 9116653976 }),
+		volume = 0.9,
+		variacao = 0.04,
+		grupo = "Efeitos",
+		origem = "ProSoundEffects (reuso de AcertoMetal)",
+		confirmado = false,
+	},
+	RugidoChao = {
+		ids = ids({ 120080200131565, 126129882321098 }),
+		volume = 1,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "Creator Store (reuso de GritoMonstro; trocar por rugido grave próprio se soar agudo)",
+		confirmado = false,
+	},
+	CaudaGolpe = {
+		ids = ids({ 112611832797358, 9119746108 }),
+		volume = 0.8,
+		variacao = 0.08,
+		grupo = "Efeitos",
+		origem = "Creator Store / ProSoundEffects (reuso de BalancoPesado)",
+		confirmado = false,
+	},
+	FlorEstalo = {
+		ids = monstro("FlorEstalo"),
+		volume = 0.8,
+		variacao = 0.08,
+		grupo = "Efeitos",
+		origem = "sintético (ffmpeg)",
+		confirmado = false,
+	},
+	FlorPlantar = {
+		ids = monstro("FlorPlantar"),
+		volume = 0.7,
+		variacao = 0.05,
+		grupo = "Efeitos",
+		origem = "sintético (ffmpeg)",
+		confirmado = false,
+	},
+	-- Falas do Corcunda (§5.5): "VozCorcunda" sorteia uma; "VozCorcunda_n" toca a n. nomes lista os nomes lógicos.
+	-- Origem: Kenney "Voiceover Pack #1" (CC0, voz de Jeffrey M. Smith), tratada (pitch -8%, passa-baixa 3,5 kHz, bitcrush).
+	VozCorcunda = {
+		ids = falasCorcunda,
+		nomes = {
+			"VozCorcunda_1",
+			"VozCorcunda_2",
+			"VozCorcunda_3",
+			"VozCorcunda_4",
+			"VozCorcunda_5",
+			"VozCorcunda_6",
+			"VozCorcunda_7",
+			"VozCorcunda_8",
+			"VozCorcunda_9",
+			"VozCorcunda_10",
+		},
+		volume = 0.9,
+		variacao = 0.03,
+		grupo = "Voz",
+		origem = "Kenney Voiceover Pack #1 (CC0)",
+		confirmado = false,
+	},
+	VozCorcunda_1 = {
+		ids = if falasCorcunda[1] then { falasCorcunda[1] } else {},
+		volume = 0.9,
+		variacao = 0.03,
+		grupo = "Voz",
+		origem = "Kenney Voiceover Pack #1 (CC0)",
+		confirmado = false,
+	},
+	VozCorcunda_2 = {
+		ids = if falasCorcunda[2] then { falasCorcunda[2] } else {},
+		volume = 0.9,
+		variacao = 0.03,
+		grupo = "Voz",
+		origem = "Kenney Voiceover Pack #1 (CC0)",
+		confirmado = false,
+	},
+	VozCorcunda_3 = {
+		ids = if falasCorcunda[3] then { falasCorcunda[3] } else {},
+		volume = 0.9,
+		variacao = 0.03,
+		grupo = "Voz",
+		origem = "Kenney Voiceover Pack #1 (CC0)",
+		confirmado = false,
+	},
+	VozCorcunda_4 = {
+		ids = if falasCorcunda[4] then { falasCorcunda[4] } else {},
+		volume = 0.9,
+		variacao = 0.03,
+		grupo = "Voz",
+		origem = "Kenney Voiceover Pack #1 (CC0)",
+		confirmado = false,
+	},
+	VozCorcunda_5 = {
+		ids = if falasCorcunda[5] then { falasCorcunda[5] } else {},
+		volume = 0.9,
+		variacao = 0.03,
+		grupo = "Voz",
+		origem = "Kenney Voiceover Pack #1 (CC0)",
+		confirmado = false,
+	},
+	VozCorcunda_6 = {
+		ids = if falasCorcunda[6] then { falasCorcunda[6] } else {},
+		volume = 0.9,
+		variacao = 0.03,
+		grupo = "Voz",
+		origem = "Kenney Voiceover Pack #1 (CC0)",
+		confirmado = false,
+	},
+	VozCorcunda_7 = {
+		ids = if falasCorcunda[7] then { falasCorcunda[7] } else {},
+		volume = 0.9,
+		variacao = 0.03,
+		grupo = "Voz",
+		origem = "Kenney Voiceover Pack #1 (CC0)",
+		confirmado = false,
+	},
+	VozCorcunda_8 = {
+		ids = if falasCorcunda[8] then { falasCorcunda[8] } else {},
+		volume = 0.9,
+		variacao = 0.03,
+		grupo = "Voz",
+		origem = "Kenney Voiceover Pack #1 (CC0)",
+		confirmado = false,
+	},
+	VozCorcunda_9 = {
+		ids = if falasCorcunda[9] then { falasCorcunda[9] } else {},
+		volume = 0.9,
+		variacao = 0.03,
+		grupo = "Voz",
+		origem = "Kenney Voiceover Pack #1 (CC0)",
+		confirmado = false,
+	},
+	VozCorcunda_10 = {
+		ids = if falasCorcunda[10] then { falasCorcunda[10] } else {},
+		volume = 0.9,
+		variacao = 0.03,
+		grupo = "Voz",
+		origem = "Kenney Voiceover Pack #1 (CC0)",
+		confirmado = false,
+	},
+
 	-- Jogador
 	Dor = {
 		ids = ids({ 9120417632, 132677043446218 }),
@@ -413,21 +725,21 @@ return {
 
 	-- Ambiente (loops locais no cliente)
 	AmbienteNoite = {
-		ids = ids({ 9114244841 }),
-		volume = 0.35,
+		ids = novoOuAntigo(existentes(PSX.ambiente.Still, PSX.ambiente.Distant, PSX.ambiente.Veil), { 9114244841 }),
+		volume = 0.3,
 		variacao = 0,
 		grupo = "Ambiente",
 		loop = true,
-		origem = "ProSoundEffects",
+		origem = "PSX Ambient Pack (Still, Distant, Veil; Ambience by CAPTNPHANTOM); antigo: ProSoundEffects",
 		confirmado = false,
 	},
 	AmbienteDia = {
-		ids = ids({ 9114244841 }),
-		volume = 0.15,
+		ids = novoOuAntigo(existentes(PSX.ambiente.Hollow, PSX.ambiente.Blur, PSX.ambiente.Faded), { 9114244841 }),
+		volume = 0.22,
 		variacao = 0,
 		grupo = "Ambiente",
 		loop = true,
-		origem = "ProSoundEffects",
+		origem = "PSX Ambient Pack (Hollow, Blur, Faded; Ambience by CAPTNPHANTOM); antigo: ProSoundEffects",
 		confirmado = false,
 	},
 	AmbienteChuva = {
@@ -458,7 +770,7 @@ return {
 		confirmado = false,
 	},
 	MangueiraSolta = {
-		ids = ids({ 140728903346385, 139723537411614, 135890657963973, 9125818616 }), -- ids de PassoMetal
+		ids = passoMetal, -- mesma lista de PassoMetal
 		volume = 0.6,
 		variacao = 0.05,
 		grupo = "Efeitos",
@@ -471,6 +783,144 @@ return {
 		variacao = 0.1,
 		grupo = "Efeitos",
 		origem = "ProSoundEffects (provisório: reaproveita PassoAgua)",
+		confirmado = false,
+	},
+
+	-- Som v2 (docs/som.md §5, §13): AINDA SEM ID (lista vazia). Sons.tocar avisa uma vez e segue. Ver docs/pendencias-integracao.md "Som v2".
+	PassoVidro = {
+		ids = {}, -- sem áudio ainda: passo em piso de vidro
+		volume = 0.6,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "pendente (Som v2)",
+		confirmado = false,
+	},
+	DetritoVidro = {
+		ids = {}, -- sem áudio ainda: pisar em vidro quebrado
+		volume = 0.9,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "pendente (Som v2)",
+		confirmado = false,
+	},
+	DetritoLata = {
+		ids = {}, -- sem áudio ainda: chutar uma lata
+		volume = 0.8,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "pendente (Som v2)",
+		confirmado = false,
+	},
+	DetritoLataRolar = {
+		ids = {}, -- sem áudio ainda: lata rolando
+		volume = 0.6,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "pendente (Som v2)",
+		confirmado = false,
+	},
+	DetritoGarrafa = {
+		ids = {}, -- sem áudio ainda: garrafa quebrando
+		volume = 0.9,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "pendente (Som v2)",
+		confirmado = false,
+	},
+	DetritoFolhas = {
+		ids = {}, -- sem áudio ainda: folhas secas
+		volume = 0.7,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "pendente (Som v2)",
+		confirmado = false,
+	},
+	DetritoGalho = {
+		ids = {}, -- sem áudio ainda: galho quebrando
+		volume = 0.8,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "pendente (Som v2)",
+		confirmado = false,
+	},
+	DetritoEntulho = {
+		ids = {}, -- sem áudio ainda: entulho rangendo
+		volume = 0.8,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "pendente (Som v2)",
+		confirmado = false,
+	},
+	DetritoTabua = {
+		ids = {}, -- sem áudio ainda: tábua solta do assoalho rangendo
+		volume = 0.8,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "pendente (Som v2)",
+		confirmado = false,
+	},
+	EsbarrarMadeira = {
+		ids = {}, -- sem áudio ainda: esbarrar em móvel de madeira
+		volume = 0.8,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "pendente (Som v2)",
+		confirmado = false,
+	},
+	EsbarrarMetal = {
+		ids = {}, -- sem áudio ainda: esbarrar em móvel de metal
+		volume = 0.9,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "pendente (Som v2)",
+		confirmado = false,
+	},
+	EsbarrarVidro = {
+		ids = {}, -- sem áudio ainda: esbarrar em vitrine ou vidro
+		volume = 0.9,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "pendente (Som v2)",
+		confirmado = false,
+	},
+	EsbarrarEstofado = {
+		ids = {}, -- sem áudio ainda: esbarrar em estofado
+		volume = 0.5,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "pendente (Som v2)",
+		confirmado = false,
+	},
+	EsbarrarPiano = {
+		ids = {}, -- sem áudio ainda: esbarrar em piano
+		volume = 1,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "pendente (Som v2)",
+		confirmado = false,
+	},
+	EsbarrarVeiculo = {
+		ids = {}, -- sem áudio ainda: esbarrar em carro abandonado
+		volume = 0.9,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "pendente (Som v2)",
+		confirmado = false,
+	},
+	Arfar = {
+		ids = {}, -- sem áudio ainda: arfar alto (errou o minigame de segurar a respiração)
+		volume = 0.9,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "pendente (Som v2)",
+		confirmado = false,
+	},
+	SoltarAr = {
+		ids = {}, -- sem áudio ainda: soltar o ar (fôlego acabou)
+		volume = 0.5,
+		variacao = 0.06,
+		grupo = "Efeitos",
+		origem = "pendente (Som v2)",
 		confirmado = false,
 	},
 

@@ -13,6 +13,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Rede = require(Shared:WaitForChild("Rede"))
 local Teclas = require(script.Parent.Teclas)
 local Mouse = require(script.Parent.Mouse)
+local Regra = require(Shared:WaitForChild("Regras"):WaitForChild("Veiculo"))
 
 local Direcao = {}
 
@@ -20,21 +21,35 @@ local jogador = Players.LocalPlayer
 
 -- Padrões de afinação. Qualquer um pode ser sobrescrito em Config/Veiculos.direcao.
 local PADRAO = {
-	segundosAteMax = 4.5, -- s de 0 à velocidade máxima com o pedal no fundo
-	folgaAceleracao = 18, -- studs/s: o comando nunca passa muito da velocidade real (evita acumular com o carro preso)
-	segundosFreio = 0.9, -- s para parar da velocidade máxima
-	segundosRolar = 9, -- s para parar sem pedal (freio-motor fraco)
+	-- Mais ágil (2026-11-14): arranca e freia mais rápido, volante mais vivo e ajudas de aderência/giro.
+	segundosAteMax = 3.2, -- s de 0 à velocidade máxima com o pedal no fundo
+	folgaAceleracao = 24, -- studs/s: o comando nunca passa muito da velocidade real (evita acumular com o carro preso)
+	segundosFreio = 0.7, -- s para parar da velocidade máxima
+	segundosRolar = 7, -- s para parar sem pedal (freio-motor fraco)
 	fatorRe = 0.4, -- marcha à ré = 40% da velocidade máxima
 	torqueRolar = 0.12, -- fração do torque ao soltar o pedal
 	torqueFreio = 4, -- múltiplo do torque ao frear
 	limiarParado = 1.5, -- studs/s: abaixo disto o pedal contrário vira ré em vez de freio
-	anguloMax = 32, -- graus das rodas parado
-	reducaoAngulo = 0.72, -- fração do ângulo que se perde na velocidade máxima
-	grausPorSegundo = 150, -- rapidez de virar a roda
-	grausPorSegundoVolta = 230, -- rapidez de voltar ao centro
+	anguloMax = 34, -- graus das rodas parado (o servo do servidor limita em 35: AnguloDirecao)
+	reducaoAngulo = 0.6, -- fração do ângulo que se perde na velocidade máxima
+	grausPorSegundo = 260, -- rapidez de virar a roda
+	grausPorSegundoVolta = 380, -- rapidez de voltar ao centro
 	puxarGraus = 3.5, -- graus de desvio por unidade de Puxa na velocidade
 	sinalMotor = 1, -- 1 ou -1: inverte o sentido global do motor se o modelo girar ao contrário
 	sinalDirecao = 1, -- idem para a direção
+	-- Freio de mão (segurar Shift): trava as rodas traseiras, solta o atrito delas e exagera o giro: o carro derrapa.
+	freioMaoDesaceleracao = 0.45, -- fração do freio normal aplicada ao comando sem pedal
+	freioMaoAtritoTraseiro = 0.35, -- atrito (máx.) das rodas traseiras com o freio puxado
+	freioMaoGuinada = 1.4, -- multiplicador do giro-alvo (rotação do carro) com o freio puxado
+	-- Ajudas de condução (só com o carro no chão e acima de velMinAjuda)
+	aderenciaLateral = 4.5, -- 1/s: parte do deslize lateral cortada por segundo (carro "colado" ao asfalto)
+	aderenciaLateralFreioMao = 0.6, -- idem com o freio puxado (deixa deslizar, só amortece)
+	ajudaGuinada = 5, -- 1/s: rapidez com que o giro do carro segue o das rodas (resposta imediata ao volante)
+	guinadaMax = 2.6, -- rad/s: teto do giro-alvo
+	contraVolante = 0.45, -- graus de volante automático por stud/s de deslize acima do limiar
+	contraVolanteLimiar = 3, -- studs/s de deslize lateral abaixo dos quais não corrige
+	contraVolanteMax = 14, -- graus
+	velMinAjuda = 4, -- studs/s
 }
 
 local cfg: any = nil
@@ -51,6 +66,8 @@ local estado = {
 	fracao = 0, -- |velocidade| / VelMax, 0..1
 	pedal = 0, -- ThrottleFloat atual
 	freando = false,
+	freioMao = false, -- Shift segurado (ou botão de toque): rodas traseiras travadas, o carro derrapa
+	deslize = 0, -- studs/s de velocidade lateral (direita positivo): a Cabine inclina o horizonte com isto
 }
 Direcao.estado = estado
 
@@ -91,11 +108,20 @@ end
 
 -- Rodas e constraints do carro atual ---------------------------------------------------------------------------
 
-type Motor = { constraint: HingeConstraint, raio: number, sinal: number }
+type Motor = { constraint: HingeConstraint, raio: number, sinal: number, traseira: boolean }
 type Servo = { constraint: HingeConstraint, sinal: number }
 
 local motores: { Motor } = {}
 local servos: { Servo } = {}
+local rodasTraseiras: { BasePart } = {}
+local atritoOriginal: { [BasePart]: PhysicalProperties? | boolean } = {} -- false = a roda não tinha propriedades próprias
+local atritoSolto = false -- true enquanto o atrito das rodas traseiras está reduzido pelo freio de mão
+local entreEixos = 10 -- studs, medido nos Susp_FE/Susp_TD do chassi
+local alturaSolo = 4.5 -- studs: alcance do raio que confere se o carro está no chão
+local filtroSolo = RaycastParams.new()
+filtroSolo.FilterType = Enum.RaycastFilterType.Exclude
+local freioMaoToque = false -- botão de toque segurado
+local teclasFreioMao: { Enum.KeyCode } = {}
 local ultimaVarredura = 0
 local velocidadeComando = 0 -- studs/s com sinal: alvo de rotação das rodas
 
@@ -119,9 +145,22 @@ end
 local function varrer(modelo: Model)
 	table.clear(motores)
 	table.clear(servos)
+	table.clear(rodasTraseiras)
 	local chassi = chassiDe(modelo)
 	if not chassi then
 		return
+	end
+	-- entre-eixos e altura do chassi ao chão (para as ajudas de condução)
+	local aFE, aTD = chassi:FindFirstChild("Susp_FE"), chassi:FindFirstChild("Susp_TD")
+	if aFE and aTD and aFE:IsA("Attachment") and aTD:IsA("Attachment") then
+		entreEixos = math.max(1, math.abs(aTD.Position.Z - aFE.Position.Z))
+	end
+	alturaSolo = chassi.Size.Y / 2 + num(modelo:GetAttribute("RaioRoda"), 1.2) + 0.8
+	for _, nome in { "Roda_TE", "Roda_TD" } do
+		local roda = modelo:FindFirstChild(nome, true)
+		if roda and roda:IsA("BasePart") then
+			table.insert(rodasTraseiras, roda)
+		end
 	end
 	local frente = chassi.CFrame.LookVector
 	local cima = Vector3.yAxis
@@ -147,7 +186,12 @@ local function varrer(modelo: Model)
 					sinal = -sinal
 				end
 			end
-			table.insert(motores, { constraint = filho, raio = math.max(raio, 0.3), sinal = sinal * params.sinalMotor })
+			table.insert(motores, {
+				constraint = filho,
+				raio = math.max(raio, 0.3),
+				sinal = sinal * params.sinalMotor,
+				traseira = sufixo == "TE" or sufixo == "TD",
+			})
 		elseif dir then
 			local eixo = eixoMundo(filho)
 			-- virar à direita = girar negativo em torno do eixo vertical (Attachment0 fica no lado fixo: Suporte)
@@ -157,14 +201,106 @@ local function varrer(modelo: Model)
 	end
 end
 
-local function aplicarMotores(velocidadeAlvo: number, torque: number)
+-- `travarTraseiras`: torque com que as rodas traseiras seguram em 0 (freio de mão); nil = andam como as da frente.
+local function aplicarMotores(velocidadeAlvo: number, torque: number, travarTraseiras: number?)
 	for _, m in motores do
 		local c = m.constraint
 		if c.Parent then
-			c.MotorMaxTorque = torque
-			c.AngularVelocity = velocidadeAlvo / m.raio * m.sinal
+			if travarTraseiras and m.traseira then
+				c.MotorMaxTorque = travarTraseiras
+				c.AngularVelocity = 0
+			else
+				c.MotorMaxTorque = torque
+				c.AngularVelocity = velocidadeAlvo / m.raio * m.sinal
+			end
 		end
 	end
+end
+
+-- Freio de mão puxado: rodas traseiras com atrito baixo (o carro rabeia). Solto: volta ao atrito de antes. A escrita é local,
+-- como a dos motores: o motorista é dono da física, e é ele quem simula o atrito.
+local function atritoTraseiro(solto: boolean)
+	if solto == atritoSolto then
+		return
+	end
+	atritoSolto = solto
+	for _, roda in rodasTraseiras do
+		if roda.Parent then
+			if solto then
+				if atritoOriginal[roda] == nil then
+					atritoOriginal[roda] = roda.CustomPhysicalProperties or false
+				end
+				local o = roda.CustomPhysicalProperties
+				if o then
+					roda.CustomPhysicalProperties = PhysicalProperties.new(
+						o.Density,
+						math.min(o.Friction, params.freioMaoAtritoTraseiro),
+						o.Elasticity,
+						o.FrictionWeight,
+						o.ElasticityWeight
+					)
+				end
+			else
+				local antes = atritoOriginal[roda]
+				if typeof(antes) == "PhysicalProperties" then
+					roda.CustomPhysicalProperties = antes
+				end
+				atritoOriginal[roda] = nil
+			end
+		end
+	end
+end
+
+local function freioMaoApertado(): boolean
+	if freioMaoToque then
+		return true
+	end
+	if Mouse.menuAberto() or UserInputService:GetFocusedTextBox() then
+		return false
+	end
+	for _, tecla in teclasFreioMao do
+		if UserInputService:IsKeyDown(tecla) then
+			return true
+		end
+	end
+	return false
+end
+
+-- Carro no chão? (um raio para baixo, sem o próprio carro nem o personagem)
+local function noChao(chassi: BasePart): boolean
+	return workspace:Raycast(chassi.Position, Vector3.new(0, -alturaSolo, 0), filtroSolo) ~= nil
+end
+
+-- Ajudas de condução, só para o motorista (o dono da física): corta parte do deslize lateral (ou deixa deslizar, com o
+-- freio de mão) e faz o giro do carro seguir o ângulo das rodas, para o volante responder na hora. Devolve o deslize lateral.
+local function ajudasFisicas(chassi: BasePart, dt: number, freioMao: boolean): number
+	local cf = chassi.CFrame
+	local direita = Vector3.new(cf.RightVector.X, 0, cf.RightVector.Z)
+	local frente = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
+	if direita.Magnitude < 0.1 or frente.Magnitude < 0.1 then
+		return 0
+	end
+	direita, frente = direita.Unit, frente.Unit
+	local v = chassi.AssemblyLinearVelocity
+	local lateral = v:Dot(direita)
+	local aoLongo = v:Dot(frente)
+	local plano = math.sqrt(lateral * lateral + aoLongo * aoLongo)
+	if plano < params.velMinAjuda or not noChao(chassi) then
+		return lateral
+	end
+	local grip = if freioMao then params.aderenciaLateralFreioMao else params.aderenciaLateral
+	chassi.AssemblyLinearVelocity = v - direita * (lateral * (1 - math.exp(-grip * dt)))
+	local giro = chassi.AssemblyAngularVelocity
+	local alvo = Regra.guinadaAlvo(
+		estado.angulo,
+		aoLongo,
+		entreEixos,
+		if freioMao then params.freioMaoGuinada else 1,
+		params.guinadaMax
+	)
+	local novo = giro.Y + (alvo - giro.Y) * (1 - math.exp(-params.ajudaGuinada * dt))
+	chassi.AssemblyAngularVelocity = Vector3.new(giro.X, novo, giro.Z)
+	return lateral
 end
 
 -- Passo físico --------------------------------------------------------------------------------------------------
@@ -209,10 +345,12 @@ local function passo(dt: number)
 	local pedal = if ligado then math.clamp(assentoMotorista.ThrottleFloat, -1, 1) else 0
 	local volante = math.clamp(assentoMotorista.SteerFloat, -1, 1)
 	local fracao = math.clamp(math.abs(velocidade) / velMax, 0, 1)
+	local freioMao = freioMaoApertado()
 
 	estado.velocidade = velocidade
 	estado.fracao = fracao
 	estado.pedal = pedal
+	estado.freioMao = freioMao
 
 	-- Direção: ângulo máximo cai com a velocidade; voltar ao centro é mais rápido que virar.
 	local reducao = 1 - params.reducaoAngulo * fracao ^ 0.8
@@ -220,6 +358,16 @@ local function passo(dt: number)
 	if ligado or fracao > 0.02 then
 		alvoAngulo += puxa * params.puxarGraus * (0.3 + fracao)
 	end
+	-- contra-esterço automático: o carro desliza de lado, o volante acompanha a deriva (mais forte com o freio de mão)
+	if velocidade > 2 then
+		alvoAngulo += Regra.contraVolante(
+			estado.deslize,
+			params.contraVolanteLimiar,
+			params.contraVolante * (if freioMao then 1.5 else 1),
+			params.contraVolanteMax
+		)
+	end
+	alvoAngulo = math.clamp(alvoAngulo, -params.anguloMax, params.anguloMax)
 	local taxa = if volante == 0 or math.sign(alvoAngulo) ~= math.sign(estado.angulo)
 		then params.grausPorSegundoVolta
 		else params.grausPorSegundo
@@ -231,10 +379,14 @@ local function passo(dt: number)
 		end
 	end
 
+	atritoTraseiro(freioMao)
+	estado.deslize = ajudasFisicas(chassi, dt, freioMao)
+	local travar = if freioMao then torque * params.torqueFreio else nil -- freio de mão: rodas traseiras seguram em 0
+
 	if not ligado then
 		velocidadeComando = 0
 		estado.freando = false
-		aplicarMotores(0, 0)
+		aplicarMotores(0, 0, travar)
 		return
 	end
 
@@ -268,12 +420,16 @@ local function passo(dt: number)
 			-- virar o pedal com o comando ainda no sentido contrário: zera o comando depressa
 			velocidadeComando = moverPara(velocidadeComando, 0, freio * dt)
 		end
+	elseif freioMao then
+		-- sem acelerar, com o freio de mão: o comando cai depressa (as rodas da frente também seguram um pouco)
+		velocidadeComando = moverPara(velocidadeComando, 0, freio * params.freioMaoDesaceleracao * dt)
+		torqueAplicado = torque * params.torqueRolar * 2
 	else
 		velocidadeComando = moverPara(velocidadeComando, 0, rolar * dt)
 		torqueAplicado = torque * params.torqueRolar
 	end
 
-	aplicarMotores(velocidadeComando, torqueAplicado)
+	aplicarMotores(velocidadeComando, torqueAplicado, travar)
 end
 
 -- Entrar e sair -------------------------------------------------------------------------------------------------
@@ -294,6 +450,10 @@ local function sair()
 	if not estado.ativo then
 		return
 	end
+	atritoTraseiro(false) -- devolve o atrito das rodas traseiras antes de largar o carro
+	table.clear(atritoOriginal)
+	table.clear(rodasTraseiras)
+	freioMaoToque = false
 	-- um último quadro com as rodas travadas até o servidor assumir a posse
 	for _, m in motores do
 		if m.constraint.Parent then
@@ -319,6 +479,8 @@ local function sair()
 	estado.fracao = 0
 	estado.pedal = 0
 	estado.freando = false
+	estado.freioMao = false
+	estado.deslize = 0
 	velocidadeComando = 0
 	if botoes then
 		botoes.Enabled = false
@@ -331,7 +493,7 @@ local function mostrarBotoes(motorista: boolean)
 	if not botoes then
 		return
 	end
-	for _, nome in { "Ligar", "Buzina" } do
+	for _, nome in { "Ligar", "Buzina", "Farol", "Freio" } do
 		local b = botoes:FindFirstChild(nome)
 		if b and b:IsA("GuiObject") then
 			b.Visible = motorista
@@ -355,8 +517,11 @@ local function entrar(banco: BasePart)
 	estado.modelo = modelo
 	estado.banco = banco
 	estado.angulo = 0
+	estado.deslize = 0
 	velocidadeComando = 0
 	ultimaVarredura = 0
+	atritoSolto = false
+	filtroSolo.FilterDescendantsInstances = { modelo, jogador.Character }
 	if botoes then
 		mostrarBotoes(estado.motorista)
 		botoes.Enabled = true
@@ -422,6 +587,8 @@ local function criarBotoes()
 		{ nome = "Banco", evento = "TrocarBanco", coluna = 1, linha = 0 },
 		{ nome = "Ligar", evento = "LigarMotor", coluna = 0, linha = 1 },
 		{ nome = "Buzina", evento = "Buzina", coluna = 1, linha = 1 },
+		{ nome = "Farol", evento = "Farol", coluna = 2, linha = 0 },
+		{ nome = "Freio", evento = nil, coluna = 2, linha = 1 }, -- freio de mão: segurar (não é um evento de rede)
 	}
 	for _, dados in lista do
 		local botao = Instance.new("TextButton")
@@ -440,9 +607,26 @@ local function criarBotoes()
 		contorno.Thickness = 1.5
 		contorno.Color = Color3.fromRGB(8, 8, 10)
 		contorno.Parent = botao
-		botao.Activated:Connect(function()
-			pedir(dados.evento)
-		end)
+		if dados.evento then
+			botao.Activated:Connect(function()
+				pedir(dados.evento)
+			end)
+		else
+			local function segurar(entrada: InputObject, valor: boolean)
+				if
+					entrada.UserInputType == Enum.UserInputType.Touch
+					or entrada.UserInputType == Enum.UserInputType.MouseButton1
+				then
+					freioMaoToque = valor
+				end
+			end
+			botao.InputBegan:Connect(function(entrada)
+				segurar(entrada, true)
+			end)
+			botao.InputEnded:Connect(function(entrada)
+				segurar(entrada, false)
+			end)
+		end
 		botao.Parent = tela
 	end
 	tela.Parent = jogador:WaitForChild("PlayerGui")
@@ -463,6 +647,19 @@ function Direcao.iniciar()
 			pedir("Buzina")
 		end
 	end)
+	Teclas.ligar("veiculoFarol", teclas.farol or { "L" }, function()
+		if estado.motorista then
+			pedir("Farol")
+		end
+	end)
+	-- Freio de mão: segurar. Lido por IsKeyDown a cada quadro em passo() (sem Teclas.ligar, que só vê o apertar).
+	-- O Shift também é a tecla de correr a pé (Controles); sentado, o Controles não pede corrida.
+	for _, nome in teclas.freioMao or { "LeftShift", "RightShift" } do
+		local codigo = (Enum.KeyCode :: any)[nome]
+		if codigo then
+			table.insert(teclasFreioMao, codigo)
+		end
+	end
 	-- Sair: E dentro do carro (o servidor põe o personagem ao lado da porta). Pular também sai (padrão do Roblox).
 	Teclas.ligar("veiculoSair", teclas.sair or { "E" }, function()
 		pedir("SairCarro")

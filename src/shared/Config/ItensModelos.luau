@@ -51,21 +51,6 @@ local function mao()
 	return { pos = { 0, -0.16, 0 }, rot = { -90, 0, 0 } }
 end
 
--- Caixa de munição: corpo + tampa + etiqueta (acento). tam = {x, y, z} total sem a etiqueta.
-local function caixaMunicao(tam, corCaixa, corEtiqueta)
-	local x, h, z = tam[1], tam[2], tam[3]
-	return {
-		partes = {
-			bloco("Caixa", { x, h - 0.08, z }, { 0, -0.04, 0 }, corCaixa, "Cardboard"),
-			bloco("Tampa", { x + 0.02, 0.08, z + 0.02 }, { 0, h / 2 - 0.04, 0 }, corCaixa, "Cardboard"),
-			bloco("Etiqueta", { x * 0.5, 0.08, z * 0.4 }, { 0, h / 2, 0 }, corEtiqueta, "SmoothPlastic"),
-		},
-		mao = mao(),
-		chao = { rot = { 0, 0, 0 } },
-		escalaChao = 1.3,
-	}
-end
-
 -- Pistola: ferrolho, empunhadura inclinada (topo para a frente), guarda-mato e cano (acento claro).
 local function pistola(o)
 	return {
@@ -300,6 +285,75 @@ local modelos = {
 		matMad = "Wood",
 	}),
 
+	-- Gold Bright (2026-11-15): modelos de chão em blocos (a malha do Gold Bright só existe no viewmodel).
+	tt33 = pistola({
+		ferrolho = { 0.16, 0.17, 0.72 },
+		corFerrolho = { 30, 32, 34 },
+		corCabo = { 60, 45, 35 },
+		corCano = { 80, 82, 86 },
+	}),
+	ots20 = pistola({
+		ferrolho = { 0.2, 0.22, 0.62 },
+		corFerrolho = { 45, 47, 50 },
+		corCabo = { 35, 35, 38 },
+		corCano = { 70, 72, 76 },
+	}),
+	mp5 = fuzil({
+		cano = 0.35,
+		coronha = 0.4,
+		metal = { 30, 32, 36 },
+		metal2 = { 55, 58, 62 },
+		mag = { { 0.1, 0.45, 0.14 }, 15 },
+	}),
+	pp91 = fuzil({
+		cano = 0.2,
+		coronha = 0.35,
+		metal = { 35, 37, 40 },
+		metal2 = { 58, 60, 64 },
+		mag = { { 0.1, 0.35, 0.12 }, 0 },
+	}),
+	sr3m = fuzil({
+		cano = 0.45,
+		coronha = 0.5,
+		metal = { 40, 42, 46 },
+		metal2 = { 30, 32, 35 },
+		mag = { { 0.1, 0.4, 0.18 }, 10 },
+	}),
+	ots48k = fuzil({
+		cano = 1.1,
+		coronha = 0.6,
+		metal = { 45, 48, 52 },
+		metal2 = { 65, 68, 72 },
+		mag = { { 0.1, 0.3, 0.16 }, 0 },
+	}),
+	rmb93 = escopeta({
+		cano = 1.0,
+		dCano = 0.13,
+		bomba = 0.45,
+		metal = { 38, 40, 44 },
+		metal2 = { 55, 57, 62 },
+		mad = { 30, 32, 35 },
+		matMad = "Plastic",
+	}),
+	toz34 = escopeta({
+		cano = 1.5,
+		dCano = 0.16,
+		bomba = 0.5,
+		metal = { 55, 57, 60 },
+		metal2 = { 75, 78, 82 },
+		mad = { 110, 72, 42 },
+		matMad = "Wood",
+	}),
+	canoChumbo = {
+		partes = {
+			cil("Cano", 2, 0.16, { 0, 0, -0.6 }, { 90, 92, 95 }, "Metal", "z"),
+			cil("Luva", 0.18, 0.22, { 0, 0, -1.55 }, { 70, 72, 75 }, "Metal", "z"),
+			cil("Fita", 0.45, 0.19, { 0, 0, 0.15 }, { 40, 40, 42 }, "Fabric", "z"),
+		},
+		mao = mao(),
+		chao = { rot = { 0, 0, 0 } },
+	},
+
 	-- Lança-foguetes: tubo verde-oliva no ombro, bocas escuras, apoio da mão da frente e mira.
 	lancaFoguetes = {
 		partes = {
@@ -314,13 +368,51 @@ local modelos = {
 		chao = { rot = { 0, 0, 90 } },
 	},
 
-	municaoPistola = caixaMunicao({ 0.6, 0.3, 0.4 }, { 62, 72, 58 }, { 150, 125, 60 }),
-	municao556 = caixaMunicao({ 0.7, 0.32, 0.4 }, { 52, 62, 50 }, { 140, 140, 120 }),
-	municao545 = caixaMunicao({ 0.64, 0.3, 0.38 }, { 88, 70, 52 }, { 150, 100, 50 }),
-	municaoCalibre12 = caixaMunicao({ 0.56, 0.34, 0.44 }, { 70, 78, 90 }, { 160, 120, 50 }),
+	-- Munição de Pistola: caixinha de papelão oliva com três cartuchos de latão à mostra.
+	municaoPistola = {
+		partes = {
+			bloco("Caixa", { 0.5, 0.2, 0.34 }, { 0, -0.1, 0 }, { 62, 72, 58 }, "Cardboard"),
+			bloco("Etiqueta", { 0.3, 0.08, 0.2 }, { 0, 0.04, 0 }, { 150, 125, 60 }, "SmoothPlastic"),
+			cil("CartuchoA", 0.22, 0.1, { -0.15, 0.11, 0 }, { 190, 150, 70 }, "Metal", "y"),
+			cil("CartuchoB", 0.22, 0.1, { 0, 0.11, 0 }, { 190, 150, 70 }, "Metal", "y"),
+			cil("CartuchoC", 0.22, 0.1, { 0.15, 0.11, 0 }, { 190, 150, 70 }, "Metal", "y"),
+		},
+		mao = mao(),
+		chao = { rot = { 0, 0, 0 } },
+		escalaChao = 1.3,
+	},
 
-	-- Foguete: corpo verde, ogiva clara e aletas em cruz atrás. Deitado naturalmente (eixo em Z).
-	municaoFoguete = {
+	-- Munição de Rifle: caixa militar de lata verde com alça, fecho e faixa amarela.
+	municaoRifle = {
+		partes = {
+			bloco("Caixa", { 0.8, 0.4, 0.38 }, { 0, -0.2, 0 }, { 58, 68, 52 }, "Metal"),
+			bloco("Tampa", { 0.84, 0.08, 0.42 }, { 0, 0.04, 0 }, { 66, 77, 58 }, "Metal"),
+			bloco("Alca", { 0.34, 0.08, 0.08 }, { 0, 0.12, 0 }, { 35, 38, 36 }, "Metal"),
+			bloco("Faixa", { 0.4, 0.1, 0.08 }, { 0, -0.15, -0.19 }, { 200, 170, 60 }, "SmoothPlastic"),
+			bloco("Fecho", { 0.1, 0.12, 0.08 }, { 0, -0.02, -0.2 }, { 150, 155, 150 }, "Metal"),
+		},
+		mao = mao(),
+		chao = { rot = { 0, 0, 0 } },
+		escalaChao = 1.2,
+	},
+
+	-- Munição de Escopeta: três cartuchos vermelhos de base de latão, de pé.
+	municaoEscopeta = {
+		partes = {
+			cil("CartuchoA", 0.5, 0.2, { -0.22, 0, 0 }, { 165, 40, 35 }, "SmoothPlastic", "y"),
+			cil("CartuchoB", 0.5, 0.2, { 0, 0, 0 }, { 165, 40, 35 }, "SmoothPlastic", "y"),
+			cil("CartuchoC", 0.5, 0.2, { 0.22, 0, 0 }, { 165, 40, 35 }, "SmoothPlastic", "y"),
+			cil("BaseA", 0.12, 0.21, { -0.22, -0.31, 0 }, { 190, 150, 70 }, "Metal", "y"),
+			cil("BaseB", 0.12, 0.21, { 0, -0.31, 0 }, { 190, 150, 70 }, "Metal", "y"),
+			cil("BaseC", 0.12, 0.21, { 0.22, -0.31, 0 }, { 190, 150, 70 }, "Metal", "y"),
+		},
+		mao = mao(),
+		chao = { rot = { 0, 0, 90 } },
+		escalaChao = 1.2,
+	},
+
+	-- Munição de Míssil: corpo verde, ogiva clara e aletas em cruz atrás. Deitado naturalmente (eixo em Z).
+	municaoMissil = {
 		partes = {
 			cil("Corpo", 0.8, 0.2, { 0, 0, 0 }, { 70, 80, 58 }, "Metal", "z"),
 			esfera("Ogiva", 0.22, { 0, 0, -0.45 }, { 130, 125, 100 }, "Metal"),

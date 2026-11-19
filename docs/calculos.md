@@ -10,111 +10,22 @@ Unidade: 1 stud = 0,28 m (padrão do Roblox). Personagem com WalkSpeed 16 anda 1
 
 ## 1. Som (mecânica central)
 
-### 1.1 Ruído emitido
-```
-ruido_emitido (dB) = base_da_acao + modificador_da_superficie
-```
-A ação é decidida **no servidor**, pela velocidade do personagem e pelo atributo `Agachado`. O cliente não diz
-quanto barulho fez, senão um exploiter ficaria silencioso.
-
-| Ação | base (dB) | | Superfície (`Humanoid.FloorMaterial`) | modificador |
-|---|---|---|---|---|
-| agachado | 30 | | carpete (`Fabric`, `Carpet`) | −8 |
-| andar | 40 | | grama baixa (`Grass`) | −5 |
-| correr | 55 | | concreto/asfalto (`Concrete`, `Asphalt`, `Pavement`, `Brick`) | 0 |
-| aterrissar (queda < 8 studs) | 50 | | madeira (`Wood`, `WoodPlanks`) | +3 |
-| abrir porta | 45 | | grama alta (`LeafyGrass`) | +5 |
-| golpe corpo a corpo | 55 | | metal (`Metal`, `DiamondPlate`, `CorrodedMetal`) | +8 |
-| quebrar vidro | 75 | | cascalho (`Pebble`, `Slate`) | +6 |
-| carro ligado | 80 | | água (`Water`) | +6 |
-| tiro de pistola | 110 | | | |
-| tiro de fuzil | 120 | | | |
-
-Passos são eventos discretos: um evento de ruído por passo. Ritmo: agachado 1,5 passo/s, andar 2/s, correr 3/s.
-O mesmo ritmo move o balanço da câmera (seção 5), então o tremor que o jogador sente é o passo que o monstro ouve.
-
-### 1.2 Ruído ambiente (mascaramento)
-| Condição | ambiente (dB) |
-|---|---|
-| noite calma | 20 |
-| dia | 25 |
-| chuva | 40 |
-| tempestade | 55 |
-
-A cidade está morta (sem trânsito), por isso o ambiente é baixo. Na tempestade correr no concreto (55 dB) fica inaudível,
-que é o "o ambiente pode ser barulhento e você pode fazer mais barulho" do Miro.
-
-### 1.3 Propagação e audição
-Lei do inverso do quadrado: o som cai 6 dB cada vez que a distância dobra.
-```
-ruido_recebido = ruido_emitido − 20·log10(distância_em_metros) − 10·paredes_entre   (paredes: máx. 3)
-o monstro ouve se: ruido_recebido ≥ ambiente + margem_do_nivel
-alcance (studs) = 10^((ruido_emitido − ambiente − margem_do_nivel) / 20) / 0,28   (teto: 600 studs)
-```
-`paredes_entre` = peças atravessadas por um raycast do som até o monstro (construção em bloco conta como 1).
-
-**Margem por nível** ("quanto menor o nível, mais fácil perceber"; nível 2 "2× mais difícil"): cada nível pede +6 dB,
-o que corta o alcance pela metade.
-
-| Nível | margem (dB) | alcance relativo |
-|---|---|---|
-| 1 | 0 | 100% |
-| 2 | 6 | 50% |
-| 3 | 12 | 25% |
-| Especial | por criatura | — |
-
-### 1.4 Tabela de alcance resultante (studs; 0 = inaudível)
-| Ação | Superfície | dB | Noite N1 | Noite N2 | Noite N3 | Dia N1 | Chuva N1 | Tempestade N1 |
-|---|---|---|---|---|---|---|---|---|
-| agachado | carpete | 22 | 4 | 0 | 0 | 0 | 0 | 0 |
-| agachado | grama baixa | 25 | 6 | 0 | 0 | 0 | 0 | 0 |
-| agachado | concreto | 30 | 11 | 6 | 0 | 6 | 0 | 0 |
-| agachado | grama alta | 35 | 20 | 10 | 5 | 11 | 0 | 0 |
-| agachado | metal | 38 | 28 | 14 | 7 | 16 | 0 | 0 |
-| andar | carpete | 32 | 14 | 7 | 0 | 8 | 0 | 0 |
-| andar | grama baixa | 35 | 20 | 10 | 5 | 11 | 0 | 0 |
-| andar | concreto | 40 | 36 | 18 | 9 | 20 | 0 | 0 |
-| andar | grama alta | 45 | 64 | 32 | 16 | 36 | 6 | 0 |
-| andar | metal | 48 | 90 | 45 | 23 | 50 | 9 | 0 |
-| correr | grama baixa | 50 | 113 | 57 | 28 | 64 | 11 | 0 |
-| correr | concreto | 55 | 201 | 101 | 50 | 113 | 20 | 0 |
-| correr | grama alta | 60 | 357 | 179 | 90 | 201 | 36 | 6 |
-| correr | metal | 63 | 504 | 253 | 127 | 284 | 50 | 9 |
-| abrir porta | — | 45 | 64 | 32 | 16 | 36 | 6 | 0 |
-| golpe corpo a corpo | — | 55 | 201 | 101 | 50 | 113 | 20 | 0 |
-| quebrar vidro | — | 75 | 600 | 600 | 504 | 600 | 201 | 36 |
-| carro ligado | — | 80 | 600 | 600 | 600 | 600 | 357 | 64 |
-| tiro (pistola/fuzil) | — | 110/120 | 600 | 600 | 600 | 600 | 600 | 600 |
-
-Leitura: agachado no carpete de noite só um nível 1 colado em você ouve. Correr no metal à noite chama tudo num raio
-de meio quarteirão grande. Um tiro chama o mapa a 600 studs, o que pesa no PvP: matar outro jogador com arma de fogo
-tem custo.
-
-### 1.5 Mesmo número para jogadores (PvP)
-O som 3D de cada passo toca para os outros jogadores com `RollOffMaxDistance = alcance(ruido, ambiente, margem 0)`.
-O jogador ouve o outro mais ou menos onde um monstro nível 1 ouviria. Uma tabela só, sem dois sistemas.
-
-### 1.6 Medidor de decibéis (HUD)
-Mostra o ruído do último passo/ação e uma marca no nível do ambiente. Verde: abaixo do ambiente. Amarelo: até +10 dB.
-Vermelho: acima de +10 dB.
+**Substituído pelo Som v2: contrato, fórmulas e números em `docs/som.md`** (a tabela de alcance antiga ficou em `tests/Som.spec.luau`, que ainda a confere).
+- Um som = 3 bandas (grave, médio, agudo) em dB a 1 m + a vibração pelo chão; camadas (pisada, equipamento, respiração, vegetação) somam energia (§3.1).
+- Ar: `R = E − 20·log10(m) − absorção·m − parede·n` por banda, `m = max(1, studs · 0,28)`; chão: `−40·log10(m)`, ignora parede (§3.2, §3.3).
+- Ruído ambiente por banda: noite 20/20/18, dia 25/25/22, chuva 32/40/44, tempestade 50/55/55 (§3.4); `Config/Som.ambiente` ficou como o número do meio.
+- Passo no concreto à noite, sem carga: agachado ~11, andar ~36, correr ~200 studs para o ouvinte de referência (limiar 0), os valores de antes (§8).
+- Detritos, esbarrões e item caindo (§5), audição por espécie (`Config/Audicao`, §6) e o minigame de segurar a respiração (§13).
 
 ---
 
 ## 2. Monstros
 
 ### 2.1 Reação ao som (cegos)
-`excesso = ruido_recebido − (ambiente + margem_do_nivel)`, calculado para cada monstro dentro do teto de 600 studs.
-
-| Estado | Entra quando | Faz | Sai quando |
-|---|---|---|---|
-| Calmo | início | vaga devagar na zona dele | — |
-| Investiga | 0 ≤ excesso < 10 | anda até a posição estimada do som | 12 s sem ouvir nada → Calmo |
-| Caça | excesso ≥ 10, ou 2 sons em 5 s | corre até a última posição ouvida, atualiza a cada som | 8 s sem ouvir → Investiga |
-| Ataque | jogador a ≤ 4 studs (toque) | golpeia | jogador sai do alcance |
-
-Posição estimada = posição real + erro aleatório de raio `distância × 0,15`. Longe, ele erra; perto, acerta.
-Monstro nível 1 grita ao entrar em Caça (60 dB, ver Miro: "barulhos que atraem monstros maiores"). Esse grito é
-um evento de ruído como qualquer outro e acorda os níveis 2/3 próximos.
+Resumo; o cálculo de quanto cada monstro ouve é de `docs/som.md` §3.5 e §6 (limiar por banda e por espécie, atenção do estado, via chão), em `Regras/Audicao`.
+Estados: Calmo → Investiga (0 ≤ excesso < 10) → Caça (excesso ≥ 10, ou 2 sons em 5 s) → Ataque (jogador a ≤ 4 studs); Investiga volta a Calmo após 12 s sem ouvir, Caça a Investiga após 8 s.
+Posição estimada = real + erro de raio `distância × erro da espécie × erro da banda` (§3.7); monstro nível 1 grita ao entrar em Caça (60 dB).
+Monstro não ouve monstro de nível igual ou maior. Regra de estados: `Regras/Percepcao` (inalterada).
 
 ### 2.2 Números por nível (PROVISÓRIO)
 Referência: jogador anda 16, agachado 8, correndo 24 studs/s.
@@ -245,7 +156,12 @@ Estágios de escurecer em 20/40/60/80% de dano; a peça quebra em 0 e abre um v�
 | impacto (carro) / explosão | 3 / 4 | 1 / 1,5 | 1 / 1,2 | 1 / 0,8 | 1 / 3 |
 
 Golpes para abrir 1 stud: madeira = machado 3, pé de cabra 5, pistola 12, garra 8; tijolo = pé de cabra 26, machado 60, marreta 5; concreto = pé de cabra 35, marreta 6.
-Carro: dano de impacto = 0,5 × massa × velocidade² × 1,5e-4 (sedan a 58 studs/s ≈ 380: quebra madeira e quase tijolo); a carroceria perde 15% da vida do material destruído.
+Carro: dano de impacto = 0,5 × massa × velocidade² × 3e-4 (2026-11-16; era 1,5e-4), vezes o multiplicador global 1,5. Sedan (1520) a 40 studs/s ≈ 547 efetivo: atravessa tijolo e concreto de 1 stud;
+a 20 studs/s ≈ 137: só madeira. A carroceria perde 6% da vida do material destruído (era 15%). Vão do carro: silhueta (base larga, cabine 82%, teto 60%), largura do carro + 1, do chão até o teto + 0,6.
+Furo de tiro (2026-11-16): cada tiro soma dano num ponto (marcas a até 0,9 stud somam juntas); o furo abre quando a marca passa de vida da peça × 10% (madeira, metal), 7% (alvenaria), 20% (leve).
+A peça inteira leva só 30% do dano do tiro. Furo de uma bala = 0,6 stud; espingarda = espalhamento dos chumbos + 0,6 (até 3,2), em elipse de degraus.
+Exemplos (1 stud): espingarda (8×12) fura madeira, tijolo e concreto num tiro; pistola fura madeira num tiro e tijolo em 3 no mesmo ponto.
+Poste/placa/semáforo (props derrubáveis): vida 90 (placa) a 320 (poste de rodovia); sedan derruba poste de luz (250) acima de ~27 studs/s; tomba e faz ruído `posteCai` 82 dB ao bater no chão.
 Atropelo: (velocidade − 8) × 1,6 de dano, a cada 0,4 s por monstro (58 studs/s ≈ 80).
 
 ## 8. Rastejador (2026-11-04; `src/shared/Config/Rastejador.luau`, regras em `Regras/Rastejador`)

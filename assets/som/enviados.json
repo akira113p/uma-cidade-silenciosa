@@ -1,0 +1,164 @@
+{
+  "VozCorcunda_1.ogg": {
+    "sha256": "305c5b2396d75ae15f1118a7fa72142350e6271dd4096b93012b34222aa78cba",
+    "assetId": 94992460343285,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "VozCorcunda_10.ogg": {
+    "sha256": "0d1372b396e8a4d1577dee615277ddbfb7e7d6ac5cec84df24263130a3ef8238",
+    "assetId": 114164985659710,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "VozCorcunda_2.ogg": {
+    "sha256": "3e3a9131c1f1af00a03b458011e2e6af2ffe096d43e81cc64d149944842e36d5",
+    "assetId": 103492237713962,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "VozCorcunda_3.ogg": {
+    "sha256": "9c12c6bb7cc4c1a957c14a5f1dbc82c1c1b03e88cc4eda17dac56a42136e570b",
+    "assetId": 77974082424855,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "VozCorcunda_4.ogg": {
+    "sha256": "6d5417294bdbf0f1d08555935dcea5648d20e93493615ee62e1de63acd780f54",
+    "assetId": 86266405873125,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "VozCorcunda_5.ogg": {
+    "sha256": "154e4f11f9f461619d1ef30f8c6205f1a23419ab98fc235b168c9ca41aa41f02",
+    "assetId": 90130302176115,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "VozCorcunda_6.ogg": {
+    "sha256": "464daf91591ca6b2fd5048e5ea75199987e7066c46c41170f1a46dbd4d264eda",
+    "assetId": 128777463813841,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "VozCorcunda_7.ogg": {
+    "sha256": "ccb18a8e56a606f6efaa24de2732a3c3f682567c37b93ce58841c27c0cbdf25b",
+    "assetId": 81258087132304,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "VozCorcunda_8.ogg": {
+    "sha256": "8c81a17fade1252e42e9db221c18fb4f4b94b7dca268c17fc18e6666d8f33c87",
+    "assetId": 85506381992292,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "VozCorcunda_9.ogg": {
+    "sha256": "5723fb2bc9ec987e413e66c1f553bdc813cf3400e0921dad1ea1888f5e0ef2c7",
+    "assetId": 102430283541969,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "FlorEstalo.ogg": {
+    "sha256": "7a016e0d9bfda9a4cc21bf44424c01ed9edf4986732ee7fd50272b190b36e5dc",
+    "assetId": 74282665386987,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "FlorPlantar.ogg": {
+    "sha256": "2d93c8ce063e0d53d53a8c72abd446786d8ab4a5746119776ed6625f89fded1d",
+    "assetId": 88922858313040,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "GritoAbafado.ogg": {
+    "sha256": "4d3f71ef379360cb60a741fc5531a2aa60bc3b5fba61165089dd806f04b64c5c",
+    "assetId": 70421208046774,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "PulsoChao.ogg": {
+    "sha256": "12d9e55fb2ea18ee429f0159c744e5c6e7e9ba81a97cb4c17b400c05396fd605",
+    "assetId": 119008788719364,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "RasparLaminas.ogg": {
+    "sha256": "e520ae2046cd345907e61ae4fc9dfcbacc014a3d8a5ce2bd76357165f0a7c448",
+    "assetId": 100474307234447,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "SonarDetectado.ogg": {
+    "sha256": "370a859e422f0269a36e3365486ee92e3a98a629880a0b4fcf25ebbce83d7c62",
+    "assetId": 129127110613344,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "SonarOnda.ogg": {
+    "sha256": "57ac9eae485dae70e426fa3f100a81af8f05197078c13c4d2c2c602a22693717",
+    "assetId": 130025905428151,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  },
+  "SonarPassou.ogg": {
+    "sha256": "cc9070b1907938c2765fb61b3d4db082abc87b46c0168c5c75168eed5454c767",
+    "assetId": 72911055294221,
+    "tipo": "Audio",
+    "revisionId": "1",
+    "moderacao": {
+      "moderationState": "Reviewing"
+    }
+  }
+}

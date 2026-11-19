@@ -1,0 +1,80 @@
+{
+  "grupo": "corpo/carro",
+  "rig": "R15",
+  "poses": {
+    "volante": {
+      "RightShoulder": [58, -4, 0], "RightElbow": [38, 0, 0], "RightWrist": [-6, 0, 0],
+      "LeftShoulder": [58, 4, 0], "LeftElbow": [38, 0, 0], "LeftWrist": [-6, 0, 0]
+    },
+    "volanteEsquerda": {
+      "RightShoulder": [72, -16, 0], "RightElbow": [28, 0, 0], "RightWrist": [-8, 0, 0],
+      "LeftShoulder": [46, 8, 0], "LeftElbow": [54, 0, 0], "LeftWrist": [-4, 0, 0]
+    },
+    "volanteDireita": {
+      "RightShoulder": [46, -8, 0], "RightElbow": [54, 0, 0], "RightWrist": [-4, 0, 0],
+      "LeftShoulder": [72, 16, 0], "LeftElbow": [28, 0, 0], "LeftWrist": [-8, 0, 0]
+    },
+    "colo": {
+      "RightShoulder": [24, -6, 0], "RightElbow": [72, 0, 0], "RightWrist": [-10, 0, 0],
+      "LeftShoulder": [24, 6, 0], "LeftElbow": [72, 0, 0], "LeftWrist": [-10, 0, 0]
+    },
+    "meio": {
+      "RightShoulder": [40, -4, 0], "RightElbow": [52, 0, 0], "RightWrist": [-6, 0, 0],
+      "LeftShoulder": [40, 4, 0], "LeftElbow": [52, 0, 0], "LeftWrist": [-6, 0, 0]
+    },
+    "neutro": {
+      "RightShoulder": [0, 0, 0], "RightElbow": [0, 0, 0], "RightWrist": [0, 0, 0],
+      "LeftShoulder": [0, 0, 0], "LeftElbow": [0, 0, 0], "LeftWrist": [0, 0, 0]
+    }
+  },
+  "clipes": {
+    "MotoristaIdle": {
+      "duracao": 2.4, "loop": true, "prioridade": "Action2",
+      "quadros": [
+        { "t": 0.0, "de": "volante", "juntas": { "Waist": [0, 0, 0] } },
+        { "t": 1.2, "de": "volante", "juntas": { "Waist": [-1.5, 0, 0], "RightShoulder": [57, -4, 0], "LeftShoulder": [57, 4, 0] }, "easing": "Cubic-InOut" },
+        { "t": 2.4, "de": "volante", "juntas": { "Waist": [0, 0, 0] }, "easing": "Cubic-InOut" }
+      ]
+    },
+    "MotoristaViraEsquerda": {
+      "duracao": 0.6, "loop": true, "prioridade": "Action3",
+      "quadros": [
+        { "t": 0.0, "de": "volanteEsquerda" },
+        { "t": 0.3, "de": "volanteEsquerda", "juntas": { "RightShoulder": [71, -16, 0] }, "easing": "Cubic-InOut" },
+        { "t": 0.6, "de": "volanteEsquerda", "easing": "Cubic-InOut" }
+      ]
+    },
+    "MotoristaViraDireita": {
+      "duracao": 0.6, "loop": true, "prioridade": "Action3",
+      "quadros": [
+        { "t": 0.0, "de": "volanteDireita" },
+        { "t": 0.3, "de": "volanteDireita", "juntas": { "LeftShoulder": [71, 16, 0] }, "easing": "Cubic-InOut" },
+        { "t": 0.6, "de": "volanteDireita", "easing": "Cubic-InOut" }
+      ]
+    },
+    "PassageiroIdle": {
+      "duracao": 2.6, "loop": true, "prioridade": "Action2",
+      "quadros": [
+        { "t": 0.0, "de": "colo", "juntas": { "Waist": [0, 0, 0] } },
+        { "t": 1.3, "de": "colo", "juntas": { "Waist": [-1, 0, 0], "RightElbow": [73, 0, 0], "LeftElbow": [73, 0, 0] }, "easing": "Cubic-InOut" },
+        { "t": 2.6, "de": "colo", "juntas": { "Waist": [0, 0, 0] }, "easing": "Cubic-InOut" }
+      ]
+    },
+    "Entrar": {
+      "duracao": 0.5, "loop": false, "prioridade": "Action2",
+      "quadros": [
+        { "t": 0.0, "de": "neutro", "juntas": { "RightShoulder": [10, -10, 0], "RightElbow": [10, 0, 0], "Waist": [0, 0, 0] } },
+        { "t": 0.18, "de": "neutro", "juntas": { "RightShoulder": [80, -28, 0], "RightElbow": [25, 0, 0], "RightWrist": [-10, 0, 0], "LeftShoulder": [26, 4, 0], "LeftElbow": [36, 0, 0], "Waist": [-4, 0, 0] }, "easing": "Cubic-Out" },
+        { "t": 0.5, "de": "meio", "juntas": { "Waist": [0, 0, 0] }, "easing": "Cubic-InOut" }
+      ]
+    },
+    "Sair": {
+      "duracao": 0.5, "loop": false, "prioridade": "Action2",
+      "quadros": [
+        { "t": 0.0, "de": "meio", "juntas": { "Waist": [0, 0, 0] } },
+        { "t": 0.18, "de": "meio", "juntas": { "RightShoulder": [62, -34, 0], "RightElbow": [34, 0, 0], "Waist": [-5, 0, 0] }, "easing": "Cubic-Out" },
+        { "t": 0.5, "de": "neutro", "juntas": { "Waist": [0, 0, 0] }, "easing": "Cubic-InOut" }
+      ]
+    }
+  }
+}

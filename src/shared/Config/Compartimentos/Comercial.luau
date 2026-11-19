@@ -66,8 +66,8 @@ return {
 				{ id = "peDeCabra", peso = 20, qtd = { 1, 1 } },
 				{ id = "machado", peso = 12, qtd = { 1, 1 } },
 				{ id = "bandagem", peso = 18, qtd = { 1, 2 } },
-				{ id = "pistola", peso = 3, qtd = { 1, 1 } },
-				{ id = "municaoPistola", peso = 10, qtd = { 6, 12 } },
+				{ id = "tt33", peso = 3, qtd = { 1, 1 } },
+				{ id = "municaoPistola", peso = 10, qtd = { 17, 17 } },
 				{ id = "barra", peso = 15, qtd = { 1, 2 } },
 				{ id = "agua", peso = 10, qtd = { 1, 2 } },
 			},
@@ -94,8 +94,8 @@ return {
 		seguranca = {
 			rolagens = { 2, 3 },
 			itens = {
-				{ id = "pistola", peso = 25, qtd = { 1, 1 } },
-				{ id = "municaoPistola", peso = 20, qtd = { 8, 16 } },
+				{ id = "tt33", peso = 25, qtd = { 1, 1 } },
+				{ id = "municaoPistola", peso = 20, qtd = { 17, 17 } },
 				{ id = "machado", peso = 12, qtd = { 1, 1 } },
 				{ id = "peDeCabra", peso = 8, qtd = { 1, 1 } },
 				{ id = "faca", peso = 5, qtd = { 1, 1 } },

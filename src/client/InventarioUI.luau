@@ -389,7 +389,7 @@ local function detalhesDe(id: string, pente: number?, reserva: number?): (string
 		end
 		return if arma.tipo == "fogo" then "Arma de fogo" else "Arma corpo a corpo", resumo, "Equipar"
 	elseif def.tipo == "municao" then
-		return "Munição", "Gasta automaticamente ao atirar.", nil
+		return "Munição", "Gasta automaticamente ao atirar.\nSegure na mão para mostrar.", "Segurar"
 	elseif def.tipo == "lanterna" then
 		local tecla = CfgLanterna.teclas[1] or "F"
 		local resumo = tecla .. " liga e apaga.\nSilenciosa, mas os outros jogadores veem o facho."
